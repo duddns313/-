@@ -52,6 +52,11 @@ const EQUIP_TEMPLATES = {
   rabbitFoot: { id: 'rabbitFoot', name: '행운의 토끼발', slot: 'accessory', stat: 'luck', range: [2, 4], tier: 1, price: 50 },
   silverCharm: { id: 'silverCharm', name: '은빛 부적', slot: 'accessory', stat: 'agility', range: [2, 4], tier: 1, price: 50 },
   manaRing: { id: 'manaRing', name: '마력 반지', slot: 'accessory', stat: 'maxMp', range: [5, 10], tier: 2, price: 110 },
+  phoenixLocket: { id: 'phoenixLocket', name: '불사조 로켓', slot: 'accessory', stat: 'luck', range: [5, 9], tier: 3 },
+
+  /* 최상급 장비 — 상점에서 팔지 않으며 강력한 적의 전리품으로만 얻을 수 있다 */
+  obsidianWand: { id: 'obsidianWand', name: '흑요석 지팡이', slot: 'wand', stat: 'atk', range: [16, 22], tier: 4 },
+  centaurHideRobe: { id: 'centaurHideRobe', name: '켄타우로스 가죽 로브', slot: 'robe', stat: 'def', range: [14, 19], tier: 4 },
 };
 
 const EQUIP_TEMPLATES_BY_SLOT = {
@@ -93,6 +98,10 @@ const ITEMS = {
   scrollConfringo: { id: 'scrollConfringo', name: '주문서 : 콘프린고', type: 'scroll', spellId: 'confringo', dc: 10, price: 140, sell: 40, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
   scrollEpiskey: { id: 'scrollEpiskey', name: '주문서 : 에피스키', type: 'scroll', spellId: 'episkey', dc: 5, price: 60, sell: 18, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
   scrollAvifors: { id: 'scrollAvifors', name: '주문서 : 아비포스', type: 'scroll', spellId: 'avifors', dc: 5, price: 55, sell: 16, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
+  scrollBombarda: { id: 'scrollBombarda', name: '주문서 : 봄바르다', type: 'scroll', spellId: 'bombarda', dc: 12, price: 160, sell: 45, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
+  scrollProtegoTotalum: { id: 'scrollProtegoTotalum', name: '주문서 : 프로테고 토탈룸', type: 'scroll', spellId: 'protegoTotalum', dc: 10, price: 130, sell: 38, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
+  scrollHardenSkin: { id: 'scrollHardenSkin', name: '주문서 : 피부 경화술', type: 'scroll', spellId: 'hardenSkin', dc: 7, price: 80, sell: 24, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
+  scrollVulneraSanentur: { id: 'scrollVulneraSanentur', name: '주문서 : 불네라 사넨투르', type: 'scroll', spellId: 'vulneraSanentur', dc: 8, price: 100, sell: 30, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
   scrollSectumsempra: { id: 'scrollSectumsempra', name: '주문서 : 섹텀셈프라 (금서)', type: 'scroll', spellId: 'sectumsempra', dc: 11, price: 0, sell: 50, desc: '금지된 지식. 습득 시 성향이 크게 흔들린다.' },
   scrollAvadaKedavra: { id: 'scrollAvadaKedavra', name: '주문서 : 아바다 케다브라 (금서)', type: 'scroll', spellId: 'avadaKedavra', dc: 14, price: 0, sell: 100, desc: '용서받을 수 없는 저주의 지식. 습득 시 영혼이 크게 어두워진다.' },
 
@@ -100,4 +109,6 @@ const ITEMS = {
   oldDiary: { id: 'oldDiary', name: '낡은 일기장', type: 'quest', desc: '누군가 숨겨둔 듯한 정체불명의 일기장.' },
   rustyKey: { id: 'rustyKey', name: '녹슨 열쇠', type: 'quest', desc: '오래된 자물쇠에 맞을 것 같은 열쇠.' },
   basiliskFang: { id: 'basiliskFang', name: '바실리스크의 송곳니', type: 'quest', desc: '거대한 뱀의 것으로 보이는 송곳니.' },
+  rareHerb: { id: 'rareHerb', name: '희귀한 약초', type: 'quest', desc: '해그리드가 부탁한 귀한 약초.' },
+  nevilleBook: { id: 'nevilleBook', name: '네빌의 약초학 교과서', type: 'quest', desc: '네빌이 잃어버렸다는 낡은 교과서.' },
 };

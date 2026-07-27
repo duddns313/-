@@ -68,6 +68,58 @@ const EVENTS = {
     },
     { id: 'encounter_boggart', text: '옷장 속에서 부스럭거리는 소리가 들린다... 보가트다!', combat: 'boggart' },
     { id: 'encounter_pixie', text: '누군가 풀어놓은 콘월 픽시가 소란을 피운다!', combat: 'pixie' },
+    { id: 'encounter_hinkypunk', text: '어두운 구석에서 정체 모를 불빛이 흔들리며 다가온다. 힝키펑크다!', combat: 'hinkypunk' },
+    {
+      id: 'corridor_prefect',
+      text: '통금 시간이 지난 복도, 반장이 당신을 발견하고 다가온다. "이 시간에 여기서 뭐 하는 거지?"',
+      choices: [
+        {
+          label: '그럴듯한 핑계를 댄다', check: { stat: 'charm', dc: 6 },
+          outcomes: {
+            critical: { effect: { charm: 1, exp: 6 }, text: '반장이 웃으며 넘어가 준다. 오히려 호감을 샀다.' },
+            success: { effect: { exp: 4 }, text: '반장이 못 미더운 듯하지만 그냥 보내준다.' },
+            fail: { effect: { alignment: -1 }, text: '변명이 통하지 않아 훈계를 들었다.' },
+            fumble: { effect: { alignment: -3, gold: -5 }, text: '거짓말이 들통나 기숙사 점수를 깎일 뻔했다. 대신 벌금을 냈다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'corridor_slytherin_taunt',
+      text: '슬리데린 학생 무리가 지나가며 비웃는 말을 던진다.',
+      choices: [
+        {
+          label: '당당하게 맞선다', check: { stat: 'courage', dc: 6 },
+          outcomes: {
+            critical: { effect: { courage: 2, exp: 8 }, text: '기죽지 않는 모습에 오히려 무리가 조용해진다.' },
+            success: { effect: { courage: 1, exp: 4 }, text: '가볍게 받아치고 지나갔다.' },
+            fail: { effect: {}, text: '별다른 대응 없이 지나쳤다.' },
+            fumble: { effect: { alignment: -2 }, text: '말싸움이 커져 서로 감정만 상했다.' },
+          },
+        },
+        { label: '무시하고 지나간다', effect: {}, resultText: '신경 쓰지 않기로 했다.' },
+      ],
+    },
+    {
+      id: 'find_nevilles_book', once: true, requiresFlag: 'neville_book_active', notFlag: 'has_nevilles_book',
+      text: '복도 구석 화분 뒤에 낡은 책 한 권이 떨어져 있다. 네빌이 찾던 것과 비슷하다.',
+      choices: [{ label: '책을 챙긴다', effect: { item: 'nevilleBook', flag: 'has_nevilles_book', exp: 5 }, resultText: '네빌의 교과서를 찾았다! 돌려주러 가자.' }],
+    },
+    {
+      id: 'ron_chat',
+      text: '론이 복도에서 마주치자 반갑게 손을 흔든다. "오늘 무슨 일 있었어?"',
+      choices: [
+        {
+          label: '오늘 있었던 일을 이야기한다', check: { stat: 'charm', dc: 5 },
+          outcomes: {
+            critical: { effect: { companionAffinity: { id: 'ron', amount: 10 }, exp: 6 }, text: '론이 배꼽을 잡고 웃는다. 둘도 없는 이야기 상대가 된 기분이다.' },
+            success: { effect: { companionAffinity: { id: 'ron', amount: 6 }, exp: 4 }, text: '론과 즐겁게 수다를 떨었다.' },
+            fail: { effect: { companionAffinity: { id: 'ron', amount: 2 } }, text: '어색하게 몇 마디만 주고받았다.' },
+            fumble: { effect: {}, text: '론이 딴 생각을 하는 듯 건성으로 대답한다.' },
+          },
+        },
+      ],
+    },
   ],
 
   library: [
@@ -116,12 +168,70 @@ const EVENTS = {
       text: '누군가 두고 간 선배의 필기 노트를 발견했다. 여백에 낯선 주문이 적혀 있다.',
       choices: [{ label: '옮겨 적는다', effect: { item: 'scrollAvifors', exp: 5 }, resultText: '[아비포스] 주문서를 손에 넣었다.' }],
     },
+    {
+      id: 'library_ancient_rune',
+      text: '고대 룬 문자가 새겨진 석판을 발견했다. 해독할 수 있을까?',
+      choices: [
+        {
+          label: '해독을 시도한다', check: { stat: 'intelligence', dc: 8 },
+          outcomes: {
+            critical: { effect: { intelligence: 3, exp: 14, item: 'magicStone' }, text: '완벽하게 해독했다! 숨겨진 지식과 함께 마법석을 발견했다.' },
+            success: { effect: { intelligence: 1, exp: 8 }, text: '일부를 해독하는 데 성공했다.' },
+            fail: { effect: { exp: 2 }, text: '전혀 알아볼 수 없는 문자였다.' },
+            fumble: { effect: { mp: -10 }, text: '잘못된 해석으로 작은 마법 반응이 일어나 마력이 소모되었다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'library_overdue_book',
+      text: '사서 핀스 부인이 연체된 책을 들고 당신을 노려본다.',
+      choices: [
+        {
+          label: '정중히 사과한다', check: { stat: 'charm', dc: 5 },
+          outcomes: {
+            critical: { effect: { charm: 1 }, text: '핀스 부인의 마음이 누그러져 오히려 좋은 책을 추천해준다.' },
+            success: { effect: {}, text: '사과를 받아들여 준다.' },
+            fail: { effect: { gold: -5 }, text: '연체료를 물어야 했다.' },
+            fumble: { effect: { gold: -10, alignment: -1 }, text: '핀스 부인이 단단히 화가 나 벌금을 두 배로 물렸다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'hermione_chat',
+      text: '헤르미온느가 책 더미에 파묻혀 있다가 당신을 보고 웃는다.',
+      choices: [
+        {
+          label: '함께 공부한다', check: { stat: 'intelligence', dc: 5 },
+          outcomes: {
+            critical: { effect: { companionAffinity: { id: 'hermione', amount: 10 }, intelligence: 1 }, text: '헤르미온느와 죽이 잘 맞는다. 즐거운 시간이었다.' },
+            success: { effect: { companionAffinity: { id: 'hermione', amount: 6 } }, text: '함께 공부하며 가까워졌다.' },
+            fail: { effect: { companionAffinity: { id: 'hermione', amount: 2 } }, text: '진도를 따라가기 벅찼지만 나쁘지 않았다.' },
+            fumble: { effect: {}, text: '헤르미온느가 다른 책에 정신이 팔려 있다.' },
+          },
+        },
+      ],
+    },
   ],
 
   forest: [
     { id: 'forest_acromantula', text: '거대한 거미줄 너머로 아크로만툴라가 모습을 드러낸다!', combat: 'acromantula' },
     { id: 'forest_darkcreature', text: '나무 그림자 사이에서 정체를 알 수 없는 어둠의 생명체가 튀어나온다!', combat: 'darkCreature' },
     { id: 'forest_troll', text: '거대한 발소리와 함께 산 트롤이 나타난다!', combat: 'troll' },
+    { id: 'forest_bowtruckle', text: '나무껍질처럼 위장하고 있던 작은 생명체가 나뭇가지를 휘두르며 경계한다. 보우트러클이다!', combat: 'bowtruckle' },
+    { id: 'forest_werewolf', text: '달빛 아래 그림자 하나가 늑대의 형상으로 일렁인다!', combat: 'werewolfShade' },
+    {
+      id: 'forest_basilisk_lair', once: true,
+      requiresFn: (s) => ((s.statsTrack.exploreByTag || {}).forest || 0) >= 8,
+      text: '깊은 굴 속에서 거대한 비늘이 스치는 소리가 들린다... 전설의 바실리스크와 마주쳤다!',
+      combat: 'basilisk',
+    },
+    {
+      id: 'hagrid_favor_herb', once: true, requiresFlag: 'hagrid_favor_active', notFlag: 'hagrid_favor_have_herb',
+      text: '해그리드가 말한 은빛 잎사귀 약초가 나무 아래 자라있다.',
+      choices: [{ label: '조심스레 채집한다', effect: { item: 'rareHerb', flag: 'hagrid_favor_have_herb', exp: 6 }, resultText: '희귀한 약초를 채집했다. 해그리드에게 가져다주자.' }],
+    },
     {
       id: 'forest_centaur',
       text: '켄타우로스 무리가 별을 관찰하고 있다. 그중 하나가 당신을 바라본다.',
@@ -158,6 +268,21 @@ const EVENTS = {
         },
       ],
     },
+    {
+      id: 'luna_chat',
+      text: '루나가 나뭇가지 사이에서 나뭇잎으로 만든 목걸이를 만지작거리며 콧노래를 부르고 있다.',
+      choices: [
+        {
+          label: '무엇을 하는지 물어본다', check: { stat: 'luck', dc: 5 },
+          outcomes: {
+            critical: { effect: { companionAffinity: { id: 'luna', amount: 10 }, luck: 1 }, text: '루나가 신비로운 이야기를 들려준다. 왠지 운이 좋아진 기분이다.' },
+            success: { effect: { companionAffinity: { id: 'luna', amount: 6 } }, text: '알쏭달쏭하지만 즐거운 대화를 나눴다.' },
+            fail: { effect: { companionAffinity: { id: 'luna', amount: 2 } }, text: '무슨 말인지 잘 이해되지 않았지만 웃음이 났다.' },
+            fumble: { effect: {}, text: '루나가 먼 산을 바라보며 대답이 없다.' },
+          },
+        },
+      ],
+    },
   ],
 
   village: [
@@ -167,6 +292,39 @@ const EVENTS = {
       choices: [
         { label: '함께 차를 마신다', effect: { hp: 15, charm: 2, exp: 6 }, resultText: '따뜻한 차와 함께 즐거운 시간을 보냈다. (체력 +15, 매력 +2)' },
         { label: '바쁘다며 사양한다', effect: {}, resultText: '해그리드가 아쉬운 표정을 짓는다.' },
+      ],
+    },
+    {
+      id: 'hagrid_favor_ask', once: true, notFlag: 'hagrid_favor_active',
+      text: '해그리드가 걱정스러운 표정으로 말한다. "부탁 하나만 들어줄 수 있겠니? 금지된 숲 깊은 곳에 은빛 잎사귀 약초가 자란다는데, 다치는 동물이 있어서 말이야..."',
+      choices: [{ label: '부탁을 들어주겠다고 한다', effect: { flag: 'hagrid_favor_active' }, resultText: '금지된 숲에서 약초를 찾아보기로 했다.' }],
+    },
+    {
+      id: 'hagrid_favor_return', once: true, requiresFlag: 'hagrid_favor_have_herb',
+      text: '해그리드에게 채집해 온 약초를 건넨다.',
+      choices: [{ label: '"여기, 부탁하신 약초예요."', effect: { gold: 30, exp: 15, item: 'healPotion' }, resultText: '해그리드가 활짝 웃으며 고마워한다. 답례로 회복 물약을 챙겨준다.' }],
+    },
+    {
+      id: 'hogsmeade_owl_post',
+      text: '부엉이 우체국에서 편지 한 통이 당신 앞으로 배달된다.',
+      choices: [
+        {
+          label: '열어본다', check: { stat: 'luck', dc: 5 },
+          outcomes: {
+            critical: { effect: { gold: 20, exp: 5 }, text: '먼 친척이 용돈을 보내주었다! (갈레온 +20)' },
+            success: { effect: { gold: 8 }, text: '작은 용돈이 들어있었다.' },
+            fail: { effect: {}, text: '광고 전단지였다.' },
+            fumble: { effect: { alignment: -1 }, text: '누군가 보낸 짓궂은 장난 편지였다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'hogsmeade_quidditch',
+      text: '친구가 퀴디치 경기 표를 흔들며 함께 보러 가자고 한다.',
+      choices: [
+        { label: '함께 응원하러 간다', effect: { charm: 1, exp: 6, hp: 10 }, resultText: '신나는 경기를 보며 스트레스를 풀었다. (매력 +1, 체력 +10)' },
+        { label: '다음에 가겠다고 한다', effect: {}, resultText: '아쉽지만 다음을 기약했다.' },
       ],
     },
     {
@@ -194,6 +352,31 @@ const EVENTS = {
             success: { effect: { gold: -5, item: 'magicStone' }, text: '마법석 하나를 건졌다.' },
             fail: { effect: { gold: -5 }, text: '잡동사니뿐이었다.' },
             fumble: { effect: { gold: -5, alignment: -1 }, text: '상자 안에서 고약한 냄새가 나는 물건만 나왔다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'neville_book_request', once: true, notFlag: 'neville_book_active',
+      text: '네빌이 걱정스러운 얼굴로 다가온다. "혹시 내 약초학 교과서 못 봤어? 복도 어딘가에서 잃어버린 것 같은데..."',
+      choices: [{ label: '찾아봐 주겠다고 한다', effect: { flag: 'neville_book_active' }, resultText: '네빌의 교과서를 찾아주기로 했다.' }],
+    },
+    {
+      id: 'return_nevilles_book', once: true, requiresFlag: 'has_nevilles_book',
+      text: '네빌에게 찾아낸 교과서를 건넨다.',
+      choices: [{ label: '"여기, 찾았어."', effect: { companionAffinity: { id: 'neville', amount: 15 }, gold: 10, exp: 8 }, resultText: '네빌이 눈물이 그렁그렁한 채로 고마워한다. (네빌과 더 가까워졌다)' }],
+    },
+    {
+      id: 'neville_chat',
+      text: '네빌이 온실에서 가져온 화분을 조심스레 옮기다 당신을 발견하고 인사한다.',
+      choices: [
+        {
+          label: '함께 화분을 옮겨준다', check: { stat: 'charm', dc: 5 },
+          outcomes: {
+            critical: { effect: { companionAffinity: { id: 'neville', amount: 10 }, charm: 1 }, text: '네빌이 진심으로 고마워하며 마음을 연다.' },
+            success: { effect: { companionAffinity: { id: 'neville', amount: 6 } }, text: '네빌과 도란도란 이야기를 나눴다.' },
+            fail: { effect: { companionAffinity: { id: 'neville', amount: 2 } }, text: '어색했지만 그런대로 도와주었다.' },
+            fumble: { effect: {}, text: '네빌이 수줍어하며 서둘러 자리를 뜬다.' },
           },
         },
       ],

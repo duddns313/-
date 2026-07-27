@@ -25,9 +25,13 @@ const SPELLS = {
     id: 'confringo', name: '콘프린고', line: 'attack', type: 'attack', power: 24, mpCost: 12, tier: 3,
     subject: 'charms', prereq: { spell: 'stupefy', mastery: 50 }, desc: '폭발을 일으키는 고위력 공격 주문.',
   },
+  bombarda: {
+    id: 'bombarda', name: '봄바르다', line: 'attack', type: 'attack', power: 34, mpCost: 16, tier: 4,
+    subject: 'charms', prereq: { spell: 'confringo', mastery: 50 }, desc: '강력한 폭발을 일으키는 최상급 공격 주문.',
+  },
 
   protego: {
-    id: 'protego', name: '프로테고', line: 'defense', type: 'defense', power: 0, mpCost: 5, tier: 1,
+    id: 'protego', name: '프로테고', line: 'defense', type: 'defense', power: 0, mpCost: 5, tier: 1, shieldMult: 0.35,
     subject: 'dada', desc: '방어막을 펼쳐 다음 공격의 피해를 크게 줄인다.',
   },
   expectoPatronum: {
@@ -35,15 +39,27 @@ const SPELLS = {
     subject: 'dada', prereq: { spell: 'protego', mastery: 40 }, bonusVs: ['dementor'], bonusMult: 3,
     desc: '수호신 주문. 디멘터류에게 압도적으로 강력하다.',
   },
+  protegoTotalum: {
+    id: 'protegoTotalum', name: '프로테고 토탈룸', line: 'defense', type: 'defense', power: 0, mpCost: 10, tier: 3, shieldMult: 0.15,
+    subject: 'dada', prereq: { spell: 'expectoPatronum', mastery: 50 }, desc: '한층 강력한 방어 결계. 프로테고보다 훨씬 많은 피해를 막아낸다.',
+  },
 
   avifors: {
     id: 'avifors', name: '아비포스', line: 'transform', type: 'attack', power: 8, mpCost: 5, tier: 1,
     subject: 'transfiguration', desc: '대상을 잠시 새떼로 착각하게 만들어 혼란시킨다.',
   },
+  hardenSkin: {
+    id: 'hardenSkin', name: '피부 경화술', line: 'transform', type: 'defense', power: 0, mpCost: 9, tier: 2, shieldMult: 0.2,
+    subject: 'transfiguration', prereq: { spell: 'avifors', mastery: 40 }, desc: '피부를 순간적으로 단단하게 변화시켜 충격을 흡수한다.',
+  },
 
   episkey: {
     id: 'episkey', name: '에피스키', line: 'support', type: 'heal', power: 0, healAmount: 26, mpCost: 8, tier: 1,
     subject: 'potions', desc: '상처를 치유하는 보조 주문.',
+  },
+  vulneraSanentur: {
+    id: 'vulneraSanentur', name: '불네라 사넨투르', line: 'support', type: 'heal', power: 0, healAmount: 48, mpCost: 15, tier: 2,
+    subject: 'potions', prereq: { spell: 'episkey', mastery: 40 }, desc: '깊은 상처까지 치유하는 고급 치유 주문.',
   },
 
   sectumsempra: {

@@ -30,6 +30,15 @@ function removeItemStack(itemId, qty) {
   return true;
 }
 
+function receiveEquipment(inst) {
+  state.equipment.push(inst);
+  state.seenItemBases[inst.baseId] = true;
+  if ((inst.rarity === 'legendary' || inst.rarity === 'artifact') && typeof toast === 'function') {
+    toast(`✨ ${RARITY_BY_ID[inst.rarity].name} 등급 아이템을 얻었다!`, { duration: 3200 });
+  }
+  return inst;
+}
+
 /* ---------------- 효과 적용 ---------------- */
 function applyEffect(effect) {
   if (!effect) return;
@@ -45,6 +54,55 @@ function applyEffect(effect) {
   if (effect.exp) gainExp(effect.exp);
   if (effect.learnSpell) applyLearnSpellEffect(effect.learnSpell);
   if (effect.equipDrop) applyEquipDropEffect(effect.equipDrop);
+  if (effect.companionAffinity) applyCompanionAffinity(effect.companionAffinity.id, effect.companionAffinity.amount);
+}
+
+/* ---------------- 동료 관계 ---------------- */
+function applyCompanionAffinity(id, amount) {
+  state.companions[id] = clamp((state.companions[id] || 0) + amount, 0, 100);
+  checkCompanionMilestones(id);
+}
+
+function checkCompanionMilestones(id) {
+  const comp = COMPANIONS[id];
+  const aff = state.companions[id];
+  state.companionMilestones = state.companionMilestones || {};
+  state.companionMilestones[id] = state.companionMilestones[id] || {};
+
+  if (aff >= 60 && !state.companionMilestones[id].m60) {
+    state.companionMilestones[id].m60 = true;
+    const inst = createEquipInstance(comp.giftTemplate, 'rare');
+    receiveEquipment(inst);
+    addLog(`${comp.name}가 우정의 증표로 [${getItemDisplayName(inst)}]을(를) 건넨다.`, 'log-win');
+  }
+  if (aff >= 90 && !state.companionMilestones[id].m90) {
+    state.companionMilestones[id].m90 = true;
+    state.companionAssist = state.companionAssist || {};
+    state.companionAssist[id] = true;
+    state.stats[comp.favorStat] += 2;
+    addLog(`${comp.name}와(과) 둘도 없는 친구가 되었다! 결전에서 도움을 요청할 수 있다. (${STAT_META[comp.favorStat].label} +2)`, 'log-win');
+  }
+}
+
+function companionAssist(id) {
+  const c = state.combat;
+  const enemy = c && ENEMIES[c.enemyId];
+  if (!c || !enemy || !enemy.boss || !state.companionAssist || !state.companionAssist[id]) return;
+  state.companionAssist[id] = false;
+  const comp = COMPANIONS[id];
+  state.hp = getMaxHp();
+  const dmg = Math.max(10, Math.round(getAtk() * 1.5));
+  c.enemyHp = Math.max(0, c.enemyHp - dmg);
+  addLog(`${comp.name}가 힘을 보탠다! 체력을 모두 회복하고, ${enemy.name}에게 ${dmg}의 추가 피해를 입혔다.`, 'log-win');
+  if (c.enemyHp <= 0) { winCombat(); return; }
+  enemyTurn();
+}
+
+/* 학년 표시용 — 별도의 학년별 콘텐츠 대신 스토리 진행에 따른 진급으로 표시한다 */
+function getYear() {
+  if (state.flags.ch2_done) return 3;
+  if (state.flags.ch1_done) return 2;
+  return 1;
 }
 
 function applyLearnSpellEffect(spellId) {
@@ -68,7 +126,7 @@ function applyEquipDropEffect(opts) {
   if (!list.length) return;
   const tpl = list[randInt(0, list.length - 1)];
   const inst = createEquipInstance(tpl.id, null, (opts.tier || 1) * 5);
-  state.equipment.push(inst);
+  receiveEquipment(inst);
   addLog(`[${getItemDisplayName(inst)}]을(를) 얻었다.`, 'log-result');
 }
 
@@ -107,6 +165,8 @@ function travelTo(locId) {
 /* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
 function explore() {
   const loc = LOCATIONS[state.location];
+  state.statsTrack.exploreByTag[loc.tag] = (state.statsTrack.exploreByTag[loc.tag] || 0) + 1;
+  trackDaily('explore');
   const pool = EVENTS[loc.tag];
   if (!pool || pool.length === 0) {
     addLog('특별한 일이 일어나지 않았다.', '');
@@ -118,6 +178,7 @@ function explore() {
     if (ev.once && state.flags['event_' + ev.id]) return false;
     if (ev.requiresFlag && !state.flags[ev.requiresFlag]) return false;
     if (ev.notFlag && state.flags[ev.notFlag]) return false;
+    if (ev.requiresFn && !ev.requiresFn(state)) return false;
     return true;
   });
   const chosenPool = eligible.length > 0 ? eligible : pool.filter((ev) => !ev.once);
@@ -188,6 +249,7 @@ function rest() {
 /* ---------------- 수업 (주문 습득 경로 ①) ---------------- */
 function attendClass(subjectId) {
   state.day += 1;
+  trackDaily('classAttend');
   const progress = attendClassProgress(subjectId);
   addLog(`${SUBJECTS[subjectId].name} 수업에 참여했다. (진도 ${progress}/100)`, 'log-result');
   if (progress >= 100) {
@@ -205,6 +267,7 @@ function learnSpellFromClass(subjectId) {
   const result = learnSpell(next.id, 10);
   if (result.ok) {
     state.classProgress[subjectId] = 0;
+    state.statsTrack.classCompletions = (state.statsTrack.classCompletions || 0) + 1;
     addLog(`[${next.name}]을(를) 습득했다!`, 'log-spell');
   } else if (result.reason === 'prereq') {
     addLog('선행 주문의 숙련도가 부족하다.', 'log-warn');
@@ -216,7 +279,10 @@ function learnSpellFromClass(subjectId) {
 
 function forgetSpellAction(spellId) {
   const sp = SPELLS[spellId];
-  if (forgetSpell(spellId)) addLog(`[${sp.name}]을(를) 잊었다. 슬롯이 비었다.`, 'log-result');
+  if (forgetSpell(spellId)) {
+    state.statsTrack.forgetCount = (state.statsTrack.forgetCount || 0) + 1;
+    addLog(`[${sp.name}]을(를) 잊었다. 슬롯이 비었다.`, 'log-result');
+  }
   render();
 }
 
@@ -227,6 +293,7 @@ function buyItem(itemId) {
   if (state.gold < item.price) { addLog('갈레온이 부족하다.', 'log-warn'); render(); return; }
   state.gold -= item.price;
   addItemStack(itemId, 1);
+  trackDaily('shopBuy');
   addLog(`[${item.name}]을(를) 구매했다. (-${item.price} 갈레온)`, 'log-result');
   render();
 }
@@ -246,7 +313,8 @@ function buyEquipment(templateId) {
   if (state.gold < tpl.price) { addLog('갈레온이 부족하다.', 'log-warn'); render(); return; }
   state.gold -= tpl.price;
   const inst = createEquipInstance(templateId, 'common');
-  state.equipment.push(inst);
+  receiveEquipment(inst);
+  trackDaily('shopBuy');
   addLog(`[${getItemDisplayName(inst)}]을(를) 구매했다.`, 'log-result');
   render();
 }
@@ -272,9 +340,13 @@ function doWandGacha(coreId) {
   if (state.gold < WAND_GACHA_COST) { addLog('갈레온이 부족하다.', 'log-warn'); render(); return; }
   state.gold -= WAND_GACHA_COST;
   const result = gachaWand(coreId);
-  state.equipment.push(result.instance);
-  if (result.matched) addLog(result.core.matchText, 'log-win');
-  else addLog(`${result.core.flavor} ...별다른 반응은 없었다.`, '');
+  receiveEquipment(result.instance);
+  if (result.matched) {
+    state.statsTrack.wandMatchCount = (state.statsTrack.wandMatchCount || 0) + 1;
+    addLog(result.core.matchText, 'log-win');
+  } else {
+    addLog(`${result.core.flavor} ...별다른 반응은 없었다.`, '');
+  }
   addLog(`[${getItemDisplayName(result.instance)}]을(를) 얻었다.`, 'log-result');
   render();
 }
@@ -388,6 +460,7 @@ function combatCastSpell(spellId) {
 
   if (cast.mpCost > state.mp) { addLog('마력이 부족하다!', 'log-warn'); render(); return; }
   state.mp -= cast.mpCost;
+  trackDaily('spellCast');
 
   if (cast.failChance > 0 && Math.random() < cast.failChance) {
     gainMastery(spellId, 2);
@@ -398,6 +471,7 @@ function combatCastSpell(spellId) {
 
   if (sp.type === 'defense') {
     c.playerDefending = true;
+    c.playerDefendMult = sp.shieldMult != null ? sp.shieldMult : 0.35;
     gainMastery(spellId, 3);
     addLog(`[${sp.name}]으로 방어 태세를 갖췄다.`, 'log-player');
     enemyTurn();
@@ -453,6 +527,7 @@ function combatDefend() {
   const c = state.combat;
   if (!c) return;
   c.playerDefending = true;
+  c.playerDefendMult = 0.35;
   addLog('방어 자세를 취했다.', 'log-player');
   enemyTurn();
 }
@@ -463,6 +538,7 @@ function combatFlee() {
   const enemy = ENEMIES[c.enemyId];
   const chance = clamp(50 + getStatValue('courage') * 2 - (enemy.boss ? 30 : 0), 10, 90);
   if (randInt(1, 100) <= chance) {
+    state.statsTrack.fleeSuccess = (state.statsTrack.fleeSuccess || 0) + 1;
     addLog('전투에서 무사히 도망쳤다.', 'log-result');
     state.combat = null;
     state.mode = 'explore';
@@ -481,7 +557,7 @@ function enemyTurn() {
   let dmg = Math.round(enemy.atk * variance) - getDef();
   dmg = Math.max(1, dmg);
   if (c.playerDefending) {
-    dmg = Math.max(1, Math.round(dmg * 0.35));
+    dmg = Math.max(1, Math.round(dmg * (c.playerDefendMult != null ? c.playerDefendMult : 0.35)));
     c.playerDefending = false;
   }
   state.hp = clamp(state.hp - dmg, 0, getMaxHp());
@@ -495,6 +571,8 @@ function winCombat() {
   const c = state.combat;
   const enemy = ENEMIES[c.enemyId];
   const loot = rollCombatLoot(c.enemyId, state.location);
+  state.statsTrack.combatWins = (state.statsTrack.combatWins || 0) + 1;
+  trackDaily('combatWin');
 
   addLog(`${enemy.name}을(를) 물리쳤다! (경험치 +${enemy.exp}, 갈레온 +${loot.gold})`, 'log-win');
   state.gold += loot.gold;
@@ -508,7 +586,7 @@ function winCombat() {
     addLog(`[${ITEMS[loot.scroll].name}]을(를) 얻었다.`, 'log-result');
   }
   if (loot.equip) {
-    state.equipment.push(loot.equip);
+    receiveEquipment(loot.equip);
     addLog(`[${getItemDisplayName(loot.equip)}]을(를) 얻었다.`, 'log-result');
   }
 
@@ -592,8 +670,12 @@ function enterChamber() {
 
 /* ---------------- 엔딩 ---------------- */
 function triggerEnding() {
+  const companionValues = Object.values(state.companions || {});
+  const avgAffinity = companionValues.length ? companionValues.reduce((a, b) => a + b, 0) / Object.keys(COMPANIONS).length : 0;
+
   let ending;
-  if (state.alignment >= 25) ending = ENDINGS.light;
+  if (avgAffinity >= 50 && state.alignment >= -10) ending = ENDINGS.together;
+  else if (state.alignment >= 25) ending = ENDINGS.light;
   else if (state.alignment <= -25) ending = ENDINGS.dark;
   else ending = ENDINGS.balanced;
   state.ending = ending;

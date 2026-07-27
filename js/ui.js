@@ -151,9 +151,11 @@ function showSetupScreen() {
     const name = ($('input-name').value || '').trim().slice(0, 16) || '이름 없는 마법사';
     const houseId = houseSelect.dataset.selected;
     if (!houseId) { toast('기숙사를 선택해주세요.', { cls: 'toast-warn' }); return; }
+    const isNgPlus = !!pendingCarryOver;
     state = newState(name, houseId);
     startGameScreen();
     addLog(`${name}, 당신은 ${HOUSES[houseId].name}에 배정되었다.`, 'log-story-title');
+    if (isNgPlus) addLog(`--- 새 게임+ ${state.ngPlusCount}회차 시작! 이전 회차의 업적·도감을 계승했다. ---`, 'log-win');
     addLog('호그와트에서의 새로운 하루가 시작된다.', 'log-story');
     render();
   };
@@ -191,6 +193,8 @@ function switchTab(tabId) {
 
 /* ---------------- 마스터 렌더 ---------------- */
 function render() {
+  refreshDailyQuestsIfNeeded();
+  checkAchievements();
   renderTopbar();
   renderLocationBanner();
   renderStage();
@@ -203,7 +207,7 @@ function render() {
 
 function renderTopbar() {
   $('topbar-name').textContent = `${state.name} · ${HOUSES[state.houseId].name} · Lv.${state.level}`;
-  $('topbar-day').textContent = `${state.day}일차`;
+  $('topbar-day').textContent = `${getYear()}학년 · ${state.day}일차`;
   $('mini-hp-fill').style.width = clamp((state.hp / getMaxHp()) * 100, 0, 100) + '%';
   $('mini-mp-fill').style.width = clamp((state.mp / getMaxMp()) * 100, 0, 100) + '%';
 }
@@ -377,6 +381,11 @@ function renderCombatStage(stage) {
   otherTab.appendChild(el('h4', '', '기타'));
   otherTab.appendChild(button('방어', combatDefend, { cls: 'btn-small' }));
   otherTab.appendChild(button('도망치기', combatFlee, { cls: 'btn-small' }));
+  if (enemy.boss && state.companionAssist) {
+    Object.keys(state.companionAssist).filter((id) => state.companionAssist[id]).forEach((id) => {
+      otherTab.appendChild(button(`${COMPANIONS[id].name}에게 도움 요청`, () => companionAssist(id), { cls: 'btn-small btn-primary' }));
+    });
+  }
   tabs.appendChild(otherTab);
 
   stage.appendChild(tabs);
@@ -386,6 +395,27 @@ function renderEndingStage(stage) {
   const box = el('div', 'ending-box');
   box.appendChild(el('h2', 'ending-title', state.ending.title));
   box.appendChild(el('p', 'ending-text', state.ending.text));
+  const achCount = Object.keys(state.achievements).length;
+  box.appendChild(el('p', 'ending-meta', `달성한 업적: ${achCount} / ${ACHIEVEMENTS.length}`));
+
+  if (state.ending.id !== 'defeat') {
+    box.appendChild(button('새 게임+ 시작하기 (업적·도감 계승)', () => {
+      confirmSheet('새 게임+를 시작하시겠습니까? 캐릭터 진행 상황은 초기화되지만 업적·도감·칭호는 계승되며 약간의 보너스가 주어집니다.', () => {
+        pendingCarryOver = {
+          achievements: { ...state.achievements },
+          titles: { ...state.titles },
+          seenEnemies: { ...state.seenEnemies },
+          seenItemBases: { ...state.seenItemBases },
+          ngPlusCount: (state.ngPlusCount || 0) + 1,
+        };
+        deleteSave();
+        state = null;
+        $('game-shell').classList.add('hidden');
+        showSetupScreen();
+      });
+    }, { cls: 'btn btn-primary' }));
+  }
+
   box.appendChild(button('새로운 이야기 시작하기', () => {
     confirmSheet('정말 새로운 이야기를 시작하시겠습니까? 현재 진행 데이터가 삭제됩니다.', () => {
       deleteSave();
@@ -436,6 +466,17 @@ function renderCharacterTab() {
   vit.appendChild(statBarRow('마력', state.mp, getMaxMp(), 'bar-mp'));
   vit.appendChild(statBarRow(`Lv.${state.level} 경험치`, state.exp, state.expToNext, 'bar-exp'));
   panel.appendChild(vit);
+
+  const dailyBox = el('div', 'panel-box');
+  dailyBox.appendChild(el('h3', 'panel-title', `오늘의 과제 (${state.day}일차)`));
+  (state.dailyQuests || []).forEach((q) => {
+    const progress = Math.min(q.target, state.dailyCounters[q.track] || 0);
+    const row = el('div', 'item-row');
+    row.appendChild(el('span', 'item-name' + (q.claimed ? ' quest-done' : ''), `${q.claimed ? '✅ ' : ''}${q.label}`));
+    row.appendChild(el('span', 'item-desc', `${progress}/${q.target}`));
+    dailyBox.appendChild(row);
+  });
+  panel.appendChild(dailyBox);
 
   const statBox = el('div', 'panel-box');
   statBox.appendChild(el('h3', 'panel-title', '능력치 (장비 보너스 포함)'));
@@ -488,6 +529,38 @@ function renderCharacterTab() {
     spellBox.appendChild(row);
   });
   panel.appendChild(spellBox);
+
+  const titleBox = el('div', 'panel-box');
+  titleBox.appendChild(el('h3', 'panel-title', '칭호'));
+  const unlockedTitles = Object.keys(state.titles || {});
+  if (!unlockedTitles.length) {
+    titleBox.appendChild(el('p', 'empty-note', '(아직 해금한 칭호가 없다. 업적을 달성해보세요)'));
+  } else {
+    const titleList = el('div', 'title-list');
+    titleList.appendChild(button('칭호 없음', () => { equipTitle(null); render(); }, { cls: 'btn-small' + (!state.equippedTitle ? ' btn-primary' : '') }));
+    unlockedTitles.forEach((tid) => {
+      const t = TITLES[tid];
+      titleList.appendChild(button(t.name, () => { equipTitle(tid); render(); }, { cls: 'btn-small' + (state.equippedTitle === tid ? ' btn-primary' : '') }));
+    });
+    titleBox.appendChild(titleList);
+  }
+  panel.appendChild(titleBox);
+
+  const companionBox = el('div', 'panel-box');
+  companionBox.appendChild(el('h3', 'panel-title', '동료'));
+  Object.values(COMPANIONS).forEach((comp) => {
+    const affinity = (state.companions && state.companions[comp.id]) || 0;
+    const row = el('div', 'stat-row');
+    row.appendChild(el('span', 'stat-label', comp.name));
+    const track = el('div', 'bar-track');
+    const fill = el('div', 'bar-fill bar-companion');
+    fill.style.width = affinity + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el('span', 'bar-value-text', companionStatusLabel(affinity)));
+    companionBox.appendChild(row);
+  });
+  panel.appendChild(companionBox);
 }
 
 /* ---------------- 소지품 탭 ---------------- */
@@ -574,6 +647,12 @@ function renderCodexTab() {
   const panel = $('panel-codex');
   panel.innerHTML = '';
 
+  const completion = getCodexCompletion();
+  const summaryBox = el('div', 'panel-box');
+  summaryBox.appendChild(el('h3', 'panel-title', '도감 완성도'));
+  summaryBox.appendChild(el('p', 'codex-summary-line', `주문 ${completion.spell}% · 생물 ${completion.enemy}% · 장비 ${completion.item}%`));
+  panel.appendChild(summaryBox);
+
   const spellBox = el('div', 'panel-box');
   spellBox.appendChild(el('h3', 'panel-title', '주문 도감'));
   const spellList = el('div', 'item-list');
@@ -599,4 +678,30 @@ function renderCodexTab() {
   });
   enemyBox.appendChild(enemyList);
   panel.appendChild(enemyBox);
+
+  const itemBox = el('div', 'panel-box');
+  itemBox.appendChild(el('h3', 'panel-title', '장비 도감'));
+  const itemList = el('div', 'item-list');
+  Object.values(EQUIP_TEMPLATES).filter((t) => !t.starter).forEach((tpl) => {
+    const seen = state.seenItemBases && state.seenItemBases[tpl.id];
+    const row = el('div', 'item-row' + (seen ? '' : ' codex-unknown'));
+    row.appendChild(el('span', 'item-name', seen ? tpl.name : '？？？'));
+    if (seen) row.appendChild(el('span', 'item-desc', `${slotLabel(tpl.slot)}`));
+    itemList.appendChild(row);
+  });
+  itemBox.appendChild(itemList);
+  panel.appendChild(itemBox);
+
+  const achBox = el('div', 'panel-box');
+  achBox.appendChild(el('h3', 'panel-title', `업적 (${Object.keys(state.achievements).length}/${ACHIEVEMENTS.length})`));
+  const achList = el('div', 'item-list');
+  ACHIEVEMENTS.forEach((a) => {
+    const unlocked = !!state.achievements[a.id];
+    const row = el('div', 'item-row' + (unlocked ? '' : ' codex-unknown'));
+    row.appendChild(el('span', 'item-name', unlocked ? `🏆 ${a.name}` : '？？？'));
+    row.appendChild(el('span', 'item-desc', unlocked ? a.desc : '미달성'));
+    achList.appendChild(row);
+  });
+  achBox.appendChild(achList);
+  panel.appendChild(achBox);
 }

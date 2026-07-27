@@ -242,6 +242,7 @@ body {
 .bar-align { background: linear-gradient(90deg, #6d2fa8, var(--gold)); }
 .bar-progress { background: var(--green); }
 .bar-mastery { background: var(--purple); }
+.bar-companion { background: var(--green); }
 .bar-value-text { font-size: 0.75rem; color: var(--text-dim); white-space: nowrap; }
 .align-label-text { margin: 6px 0 0; font-size: 0.8rem; color: var(--text-dim); text-align: center; }
 
@@ -296,6 +297,12 @@ body {
 .ending-box { text-align: center; padding: 20px 10px; }
 .ending-title { color: var(--gold); font-size: 1.5rem; }
 .ending-text { color: var(--text); line-height: 1.6; }
+.ending-meta { color: var(--text-dim); font-size: 0.85rem; margin: 6px 0 16px; }
+
+/* ---------------- 업적 / 칭호 / 일일과제 / 도감 ---------------- */
+.quest-done { color: var(--green); text-decoration: line-through; opacity: 0.8; }
+.title-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.codex-summary-line { color: var(--gold); font-size: 0.9rem; margin: 0; }
 
 /* ---------------- 토스트 ---------------- */
 #toast-container {

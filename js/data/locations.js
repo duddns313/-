@@ -25,7 +25,7 @@ const LOCATIONS = {
   corridors: {
     id: 'corridors', name: '성의 복도',
     desc: '끝없이 이어지는 호그와트의 복도. 계단이 제멋대로 움직인다.',
-    tag: 'corridor', risk: 1, connections: ['greatHall', 'library', 'classroom', 'hogsmeade', 'forbiddenForest', 'headmasterOffice'],
+    tag: 'corridor', risk: 1, connections: ['greatHall', 'library', 'classroom', 'hogsmeade', 'forbiddenForest', 'headmasterOffice', 'chamberOfSecrets'],
   },
   headmasterOffice: {
     id: 'headmasterOffice', name: '교장실',
@@ -66,8 +66,8 @@ const SHOPS = {
   },
   ollivanders: {
     name: '올리밴더 상점',
-    items: ['magicStone', 'scrollStupefy', 'scrollEpiskey', 'scrollAvifors'],
-    equipment: ['rowanWand', 'mahoganyWand', 'ebonyWand', 'travelerRobe', 'dragonhideRobe', 'merpeopleRobe', 'rabbitFoot', 'silverCharm', 'manaRing'],
+    items: ['magicStone', 'scrollStupefy', 'scrollEpiskey', 'scrollAvifors', 'scrollHardenSkin', 'scrollVulneraSanentur'],
+    equipment: ['rowanWand', 'mahoganyWand', 'ebonyWand', 'travelerRobe', 'dragonhideRobe', 'merpeopleRobe', 'rabbitFoot', 'silverCharm', 'manaRing', 'phoenixLocket'],
     gacha: true,
   },
 };

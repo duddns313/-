@@ -80,7 +80,7 @@ function getItemDisplayName(instance) {
 }
 
 function getEquippedTotal(statKey) {
-  let total = 0;
+  let total = getTitleBonusValue(statKey);
   ['wand', 'robe', 'accessory'].forEach((slot) => {
     const uid = state.equipped[slot];
     if (!uid) return;
@@ -89,6 +89,13 @@ function getEquippedTotal(statKey) {
     total += getItemStatBreakdown(inst)[statKey] || 0;
   });
   return total;
+}
+
+function getTitleBonusValue(statKey) {
+  if (!state.equippedTitle) return 0;
+  const title = TITLES[state.equippedTitle];
+  if (!title || !title.bonus) return 0;
+  return title.bonus[statKey] || 0;
 }
 
 function getEquippedInstance(slot) {

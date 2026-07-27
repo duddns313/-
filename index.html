@@ -2,22 +2,17 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>호그와트: 그림자의 잔영</title>
-<link rel="icon" href="data:," />
+<meta name="description" content="해리포터 세계관의 텍스트 RPG — 판정, 성장, 파밍이 있는 모바일 웹 게임" />
+<meta name="theme-color" content="#0e0c1a" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 <div id="app">
-  <header id="header">
-    <h1 id="game-title">호그와트: 그림자의 잔영</h1>
-    <div id="day-counter"></div>
-    <div id="header-buttons">
-      <button id="btn-save" class="btn btn-small">저장</button>
-      <button id="btn-load" class="btn btn-small">불러오기</button>
-      <button id="btn-reset" class="btn btn-small btn-danger">초기화</button>
-    </div>
-  </header>
 
   <section id="setup-screen">
     <h2>당신의 이야기가 시작됩니다</h2>
@@ -32,21 +27,74 @@
     </div>
   </section>
 
-  <section id="game-screen" class="hidden">
-    <div id="location-banner"></div>
-    <div id="main-grid">
-      <div id="log-panel"></div>
-      <div id="sidebar"></div>
+  <div id="game-shell" class="hidden">
+    <header id="topbar">
+      <div id="topbar-main">
+        <span id="topbar-name"></span>
+        <span id="topbar-day"></span>
+      </div>
+      <div id="topbar-vitals">
+        <div class="mini-bar-row"><span class="mini-bar-label">HP</span><div class="mini-bar-track"><div id="mini-hp-fill" class="mini-bar-fill mini-hp"></div></div></div>
+        <div class="mini-bar-row"><span class="mini-bar-label">MP</span><div class="mini-bar-track"><div id="mini-mp-fill" class="mini-bar-fill mini-mp"></div></div></div>
+      </div>
+      <div id="topbar-buttons">
+        <button id="btn-save" class="btn btn-tiny">저장</button>
+        <button id="btn-reset" class="btn btn-tiny btn-danger">초기화</button>
+      </div>
+    </header>
+
+    <main id="tab-panels">
+      <section id="panel-adventure" class="tab-panel">
+        <div id="location-banner"></div>
+        <div id="log-recent"></div>
+        <div id="stage-area"></div>
+        <div id="travel-row"></div>
+      </section>
+
+      <section id="panel-character" class="tab-panel hidden"></section>
+      <section id="panel-inventory" class="tab-panel hidden"></section>
+      <section id="panel-codex" class="tab-panel hidden"></section>
+
+      <section id="panel-log" class="tab-panel hidden">
+        <div id="log-full"></div>
+      </section>
+    </main>
+
+    <nav id="bottom-tabs">
+      <button class="tab-btn" data-tab="adventure"><span class="tab-icon">🗺️</span><span class="tab-label">모험</span></button>
+      <button class="tab-btn" data-tab="character"><span class="tab-icon">🧙</span><span class="tab-label">캐릭터</span></button>
+      <button class="tab-btn" data-tab="inventory"><span class="tab-icon">🎒</span><span class="tab-label">소지품</span></button>
+      <button class="tab-btn" data-tab="codex"><span class="tab-icon">📖</span><span class="tab-label">도감</span></button>
+      <button class="tab-btn" data-tab="log"><span class="tab-icon">📜</span><span class="tab-label">기록</span></button>
+    </nav>
+  </div>
+
+  <div id="toast-container" aria-live="polite"></div>
+  <div id="check-flash-container"></div>
+  <div id="sheet-overlay" class="hidden">
+    <div id="sheet-panel">
+      <div id="sheet-handle"></div>
+      <div id="sheet-content"></div>
     </div>
-    <div id="travel-panel"></div>
-    <div id="action-panel"></div>
-  </section>
+  </div>
 </div>
 
-<script src="js/data.js"></script>
+<script src="js/data/houses.js"></script>
+<script src="js/data/rarity.js"></script>
+<script src="js/data/spells.js"></script>
+<script src="js/data/enemies.js"></script>
+<script src="js/data/locations.js"></script>
+<script src="js/data/events.js"></script>
+<script src="js/data/story.js"></script>
+<script src="js/data/endings.js"></script>
+<script src="js/systems/check.js"></script>
+<script src="js/systems/item.js"></script>
+<script src="js/systems/loot.js"></script>
+<script src="js/systems/spell.js"></script>
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/pwa.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

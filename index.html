@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>호그와트: 그림자의 잔영</title>
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <h1 id="game-title">호그와트: 그림자의 잔영</h1>
+    <div id="day-counter"></div>
+    <div id="header-buttons">
+      <button id="btn-save" class="btn btn-small">저장</button>
+      <button id="btn-load" class="btn btn-small">불러오기</button>
+      <button id="btn-reset" class="btn btn-small btn-danger">초기화</button>
+    </div>
+  </header>
+
+  <section id="setup-screen">
+    <h2>당신의 이야기가 시작됩니다</h2>
+    <p class="setup-desc">호그와트에 입학한 당신. 이름을 정하고, 기숙사를 선택해 여정을 시작하세요.</p>
+    <label class="name-label">이름
+      <input id="input-name" type="text" maxlength="16" placeholder="이름을 입력하세요" />
+    </label>
+    <div id="house-select"></div>
+    <div class="setup-buttons">
+      <button id="btn-start" class="btn btn-primary">여정 시작</button>
+      <button id="btn-continue" class="btn hidden">이어하기</button>
+    </div>
+  </section>
+
+  <section id="game-screen" class="hidden">
+    <div id="location-banner"></div>
+    <div id="main-grid">
+      <div id="log-panel"></div>
+      <div id="sidebar"></div>
+    </div>
+    <div id="travel-panel"></div>
+    <div id="action-panel"></div>
+  </section>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

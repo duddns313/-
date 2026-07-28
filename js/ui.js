@@ -1,6 +1,8 @@
 /* ===================== UI 렌더링 (모바일 셸) ===================== */
 
-let activeTypewriters = [];
+let logQueue = [];
+let typingActive = false;
+let currentTypewriter = null;
 
 function $(id) { return document.getElementById(id); }
 
@@ -76,44 +78,65 @@ function notifyCheck(result) {
 }
 
 /* ---------------- 타이프라이터 로그 ---------------- */
-function typewriterInto(container, text, cls) {
-  const p = el('p', 'log-entry ' + cls);
-  container.appendChild(p);
+/* 로그는 한 줄씩 순서대로 타이핑된다 — 여러 줄이 동시에 나타나 버리면 밋밋해지므로 큐로 직렬화한다 */
+function processLogQueue() {
+  if (typingActive) return;
+  const recent = $('log-recent');
+  if (!recent || logQueue.length === 0) return;
+  const entry = logQueue.shift();
+  typingActive = true;
+  const p = el('p', 'log-entry ' + entry.cls);
+  recent.appendChild(p);
+  while (recent.children.length > 6) recent.removeChild(recent.firstChild);
   let i = 0;
-  const full = text;
+  const full = entry.text;
   const timer = setInterval(() => {
-    i += 2;
+    i += 1;
     p.textContent = full.slice(0, i);
-    container.scrollTop = container.scrollHeight;
+    recent.scrollTop = recent.scrollHeight;
     if (i >= full.length) {
       clearInterval(timer);
-      activeTypewriters = activeTypewriters.filter((t) => t.timer !== timer);
+      currentTypewriter = null;
+      typingActive = false;
+      setTimeout(processLogQueue, 130);
     }
-  }, 14);
-  activeTypewriters.push({ timer, node: p, full });
+  }, 22);
+  currentTypewriter = { timer, node: p, full };
 }
 
 function skipTypewriters() {
-  activeTypewriters.forEach((t) => { clearInterval(t.timer); t.node.textContent = t.full; });
-  activeTypewriters = [];
+  if (currentTypewriter) {
+    clearInterval(currentTypewriter.timer);
+    currentTypewriter.node.textContent = currentTypewriter.full;
+    currentTypewriter = null;
+    typingActive = false;
+  }
+  const recent = $('log-recent');
+  while (logQueue.length) {
+    const entry = logQueue.shift();
+    recent.appendChild(el('p', 'log-entry ' + entry.cls, entry.text));
+    while (recent.children.length > 6) recent.removeChild(recent.firstChild);
+  }
+  if (recent) recent.scrollTop = recent.scrollHeight;
 }
 
 function uiAppendLogEntry(entry) {
-  const recent = $('log-recent');
   const full = $('log-full');
-  if (recent) {
-    typewriterInto(recent, entry.text, entry.cls);
-    while (recent.children.length > 6) recent.removeChild(recent.firstChild);
-  }
   if (full) {
     full.appendChild(el('p', 'log-entry ' + entry.cls, entry.text));
     full.scrollTop = full.scrollHeight;
   }
+  logQueue.push(entry);
+  processLogQueue();
 }
 
 function renderLogFull() {
   const full = $('log-full');
   const recent = $('log-recent');
+  if (currentTypewriter) clearInterval(currentTypewriter.timer);
+  currentTypewriter = null;
+  typingActive = false;
+  logQueue = [];
   full.innerHTML = '';
   recent.innerHTML = '';
   state.log.forEach((entry) => full.appendChild(el('p', 'log-entry ' + entry.cls, entry.text)));
@@ -148,13 +171,13 @@ function showSetupScreen() {
   });
 
   $('btn-start').onclick = () => {
-    const name = ($('input-name').value || '').trim().slice(0, 16) || '이름 없는 마법사';
+    const name = FIXED_PLAYER_NAME;
     const houseId = houseSelect.dataset.selected;
     if (!houseId) { toast('기숙사를 선택해주세요.', { cls: 'toast-warn' }); return; }
     const isNgPlus = !!pendingCarryOver;
     state = newState(name, houseId);
     startGameScreen();
-    addLog(`${name}, 당신은 ${HOUSES[houseId].name}에 배정되었다.`, 'log-story-title');
+    addLog(`영운, 당신은 ${HOUSES[houseId].name}에 배정되었다.`, 'log-story-title');
     if (isNgPlus) addLog(`--- 새 게임+ ${state.ngPlusCount}회차 시작! 이전 회차의 업적·도감을 계승했다. ---`, 'log-win');
     addLog('호그와트에서의 새로운 하루가 시작된다.', 'log-story');
     render();
@@ -210,13 +233,20 @@ function renderTopbar() {
   $('topbar-day').textContent = `${getYear()}학년 · ${state.day}일차`;
   $('mini-hp-fill').style.width = clamp((state.hp / getMaxHp()) * 100, 0, 100) + '%';
   $('mini-mp-fill').style.width = clamp((state.mp / getMaxMp()) * 100, 0, 100) + '%';
+  $('mini-sp-fill').style.width = clamp((state.stamina / state.maxStamina) * 100, 0, 100) + '%';
 }
+
+const RISK_LABELS = ['안전', '주의', '위험', '매우 위험'];
+function riskLabel(risk) { return RISK_LABELS[Math.min(risk || 0, RISK_LABELS.length - 1)]; }
 
 function renderLocationBanner() {
   const loc = LOCATIONS[state.location];
   const banner = $('location-banner');
   banner.innerHTML = '';
-  banner.appendChild(el('h2', 'loc-name', loc.name));
+  const nameRow = el('div', 'loc-name-row');
+  nameRow.appendChild(el('h2', 'loc-name', loc.name));
+  nameRow.appendChild(el('span', 'loc-risk risk-' + (loc.risk || 0), riskLabel(loc.risk)));
+  banner.appendChild(nameRow);
   banner.appendChild(el('p', 'loc-desc', loc.desc));
 }
 
@@ -228,8 +258,9 @@ function renderStage() {
 
   if (state.mode === 'explore') {
     if (loc.tag === 'safe') {
-      stage.appendChild(button('탐험하기', explore));
-      stage.appendChild(button('휴식하기 (체력·마력 회복)', rest));
+      stage.appendChild(button(`탐험하기 (기력 ${EXPLORE_STAMINA_COST})`, explore, { disabled: !canExplore() }));
+      stage.appendChild(button('휴식하기 (체력·마력·기력 회복)', rest));
+      if (!canExplore()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 휴식이 필요하다.'));
     } else if (loc.tag === 'training') {
       renderClassroomStage(stage);
     } else if (loc.tag === 'quest') {
@@ -237,7 +268,8 @@ function renderStage() {
     } else if (loc.tag === 'chamber') {
       stage.appendChild(button('안으로 들어간다', enterChamber));
     } else {
-      stage.appendChild(button('탐험하기', explore));
+      stage.appendChild(button(`탐험하기 (기력 ${EXPLORE_STAMINA_COST})`, explore, { disabled: !canExplore() }));
+      if (!canExplore()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 안전한 곳에서 휴식하세요.'));
     }
   } else if (state.mode === 'shop') {
     renderShopStage(stage, loc);
@@ -253,7 +285,8 @@ function renderStage() {
 }
 
 function renderClassroomStage(stage) {
-  stage.appendChild(el('h4', 'stage-subtitle', '수업 수강 — 진도가 100%가 되면 다음 주문을 습득할 수 있습니다.'));
+  stage.appendChild(el('h4', 'stage-subtitle', `수업 수강 (기력 ${CLASS_STAMINA_COST}) — 진도가 100%가 되면 다음 주문을 습득할 수 있습니다.`));
+  if (!canAttendClass()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 휴게실에서 휴식이 필요하다.'));
   Object.values(SUBJECTS).forEach((subj) => {
     const progress = (state.classProgress && state.classProgress[subj.id]) || 0;
     const row = el('div', 'subject-row');
@@ -264,7 +297,7 @@ function renderClassroomStage(stage) {
     track.appendChild(fill);
     row.appendChild(track);
     const actions = el('div', 'subject-actions');
-    actions.appendChild(button('수업 참여', () => attendClass(subj.id), { cls: 'btn-small' }));
+    actions.appendChild(button('수업 참여', () => attendClass(subj.id), { cls: 'btn-small', disabled: !canAttendClass() }));
     const next = nextSpellForSubject(subj.id);
     if (next && progress >= 100) {
       actions.appendChild(button(`습득: ${next.name}`, () => learnSpellFromClass(subj.id), { cls: 'btn-small btn-primary' }));
@@ -464,6 +497,7 @@ function renderCharacterTab() {
   vit.appendChild(el('h3', 'panel-title', '생명력'));
   vit.appendChild(statBarRow('체력', state.hp, getMaxHp(), 'bar-hp'));
   vit.appendChild(statBarRow('마력', state.mp, getMaxMp(), 'bar-mp'));
+  vit.appendChild(statBarRow('기력', state.stamina, state.maxStamina, 'bar-stamina'));
   vit.appendChild(statBarRow(`Lv.${state.level} 경험치`, state.exp, state.expToNext, 'bar-exp'));
   panel.appendChild(vit);
 

@@ -1,8 +1,9 @@
 /* ===================== 게임 상태 관리 ===================== */
 
+const FIXED_PLAYER_NAME = '윤영운';
 const SAVE_KEY = 'hp_text_game_save_v2';
 const OLD_SAVE_KEYS = ['hp_text_game_save_v1'];
-const CURRENT_SAVE_VERSION = 3;
+const CURRENT_SAVE_VERSION = 4;
 const MIN_COMPATIBLE_VERSION = 2; /* v1은 구조 자체가 달라 이관 불가. v2부터는 점진적 이관 지원. */
 
 let state = null;
@@ -21,6 +22,8 @@ function newState(name, houseId) {
     maxHp: 60,
     mp: 20,
     maxMp: 20,
+    stamina: 100,
+    maxStamina: 100,
     baseAtk: 3,
     baseDef: 2,
     stats: { intelligence: 5, courage: 5, charm: 5, agility: 5, luck: 5 },
@@ -130,6 +133,11 @@ function migrateSave(parsed) {
     parsed.ngPlusCount = parsed.ngPlusCount || 0;
     parsed.companions = parsed.companions || {};
     parsed.saveVersion = 3;
+  }
+  if (parsed.saveVersion === 3) {
+    parsed.stamina = parsed.stamina != null ? parsed.stamina : 100;
+    parsed.maxStamina = parsed.maxStamina || 100;
+    parsed.saveVersion = 4;
   }
   return parsed;
 }

@@ -55,6 +55,7 @@ function applyEffect(effect) {
   if (effect.learnSpell) applyLearnSpellEffect(effect.learnSpell);
   if (effect.equipDrop) applyEquipDropEffect(effect.equipDrop);
   if (effect.companionAffinity) applyCompanionAffinity(effect.companionAffinity.id, effect.companionAffinity.amount);
+  if (effect.companionAffinityAll) Object.keys(COMPANIONS).forEach((id) => applyCompanionAffinity(id, effect.companionAffinityAll));
 }
 
 /* ---------------- 동료 관계 ---------------- */
@@ -163,7 +164,19 @@ function travelTo(locId) {
 }
 
 /* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
+const EXPLORE_STAMINA_COST = 18;
+const CLASS_STAMINA_COST = 15;
+
+function canExplore() { return state.stamina >= EXPLORE_STAMINA_COST; }
+function canAttendClass() { return state.stamina >= CLASS_STAMINA_COST; }
+
 function explore() {
+  if (!canExplore()) {
+    addLog('기력이 부족하다. 휴식을 취해야 할 것 같다.', 'log-warn');
+    render();
+    return;
+  }
+  state.stamina = clamp(state.stamina - EXPLORE_STAMINA_COST, 0, state.maxStamina);
   const loc = LOCATIONS[state.location];
   state.statsTrack.exploreByTag[loc.tag] = (state.statsTrack.exploreByTag[loc.tag] || 0) + 1;
   trackDaily('explore');
@@ -181,7 +194,11 @@ function explore() {
     if (ev.requiresFn && !ev.requiresFn(state)) return false;
     return true;
   });
-  const chosenPool = eligible.length > 0 ? eligible : pool.filter((ev) => !ev.once);
+  // 핵심(퀘스트) 이벤트가 조건을 충족했다면 잡다한 이벤트에 묻히지 않고 최우선으로 등장한다
+  const priorityEligible = eligible.filter((ev) => ev.priority);
+  const chosenPool = priorityEligible.length > 0 ? priorityEligible
+    : eligible.length > 0 ? eligible
+      : pool.filter((ev) => !ev.once);
   if (chosenPool.length === 0) {
     addLog('특별한 일이 일어나지 않았다.', '');
     state.day += 1;
@@ -219,6 +236,7 @@ function resolveEventChoice(choiceIdx) {
     state.mp -= choice.cost.mp;
   }
 
+  let resolved = choice;
   if (choice.check) {
     const result = runCheck(choice.check.stat, choice.check.dc);
     const outcome = choice.outcomes[result.tier]
@@ -227,6 +245,7 @@ function resolveEventChoice(choiceIdx) {
       || choice.outcomes.fail;
     applyEffect(outcome.effect);
     addLog(outcome.text || '', 'log-result');
+    resolved = outcome;
   } else {
     applyEffect(choice.effect);
     addLog(choice.resultText || '', 'log-result');
@@ -234,6 +253,8 @@ function resolveEventChoice(choiceIdx) {
 
   state.pendingEvent = null;
   state.mode = 'explore';
+
+  if (resolved.combat) { startCombat(resolved.combat); return; }
   render();
 }
 
@@ -241,13 +262,20 @@ function resolveEventChoice(choiceIdx) {
 function rest() {
   state.hp = getMaxHp();
   state.mp = getMaxMp();
+  state.stamina = state.maxStamina;
   state.day += 1;
-  addLog('푹 쉬어 체력과 마력을 모두 회복했다.', 'log-result');
+  addLog('푹 쉬어 체력·마력·기력을 모두 회복했다.', 'log-result');
   render();
 }
 
 /* ---------------- 수업 (주문 습득 경로 ①) ---------------- */
 function attendClass(subjectId) {
+  if (!canAttendClass()) {
+    addLog('기력이 부족해 수업에 집중할 수 없다. 휴식이 필요하다.', 'log-warn');
+    render();
+    return;
+  }
+  state.stamina = clamp(state.stamina - CLASS_STAMINA_COST, 0, state.maxStamina);
   state.day += 1;
   trackDaily('classAttend');
   const progress = attendClassProgress(subjectId);

@@ -80,6 +80,7 @@ function applyEffect(effect) {
   if (effect.hp) state.hp = clamp(state.hp + effect.hp, 0, getMaxHp());
   if (effect.mp) state.mp = clamp(state.mp + effect.mp, 0, getMaxMp());
   if (effect.gold) state.gold = Math.max(0, state.gold + effect.gold);
+  if (effect.bonusSlot) { state.bonusSlotsToday = (state.bonusSlotsToday || 0) + effect.bonusSlot; state.timeBonusUsedDay = state.day; }
   ['intelligence', 'courage', 'charm', 'agility', 'luck'].forEach((k) => {
     if (effect[k]) state.stats[k] += effect[k];
   });
@@ -198,27 +199,48 @@ function travelTo(locId) {
   render();
 }
 
-/* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
-const EXPLORE_STAMINA_COST = 18;
-const CLASS_STAMINA_COST = 15;
+/* ---------------- 시간(턴) 시스템 ----------------
+ * 하루 = 3시간대(🌅 아침 · ☀️ 오후 · 🌙 밤). 비용은 행동을 "시작할 때"만 청구되고,
+ * 전투·대화·연속 진행 중에는 소모되지 않는다. 기력처럼 바닥나서 막히는 자원이 아니라
+ * 그냥 하루가 흘러가는 것뿐이므로, "부족해서 못 한다"는 상태 자체가 없다. */
+const TIME_SLOT_ICONS = ['🌅', '☀️', '🌙'];
 
-function canExplore() { return state.stamina >= EXPLORE_STAMINA_COST; }
-function canAttendClass() { return state.stamina >= CLASS_STAMINA_COST; }
-
-function explore() {
-  if (!canExplore()) {
-    addLog('기력이 부족하다. 휴식을 취해야 할 것 같다.', 'log-warn');
-    render();
-    return;
+function advanceTimeSlot() {
+  const total = 3 + (state.bonusSlotsToday || 0);
+  state.timeSlot += 1;
+  if (state.timeSlot >= total) {
+    state.timeSlot = 0;
+    state.bonusSlotsToday = 0;
+    state.day += 1;
+    checkDeadlineStatus();
   }
-  state.stamina = clamp(state.stamina - EXPLORE_STAMINA_COST, 0, state.maxStamina);
+}
+
+function checkDeadlineStatus() {
+  if (!state.deadline) return;
+  if (state.day > state.deadline.dueDay) {
+    state.deadlinePenaltyStacks = (state.deadlinePenaltyStacks || 0) + 1;
+    addLog(`⚠ "${state.deadline.label}"의 기한을 넘겼다. 실종 사태가 더 심각해지고, 어둠이 조금 더 깊어진 듯하다.`, 'log-warn');
+    state.deadline.dueDay += 10;
+  }
+}
+
+function advanceDeadlineChapter(finishedChapterId) {
+  const info = DEADLINE_CHAPTERS[finishedChapterId];
+  if (!info || !info.next) { state.deadline = null; return; }
+  const nextInfo = DEADLINE_CHAPTERS[info.next];
+  state.deadline = { chapterId: info.next, label: nextInfo.label, dueDay: state.day + nextInfo.days };
+}
+
+/* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
+function explore() {
+  advanceTimeSlot();
   const loc = LOCATIONS[state.location];
   state.statsTrack.exploreByTag[loc.tag] = (state.statsTrack.exploreByTag[loc.tag] || 0) + 1;
   trackDaily('explore');
   const pool = EVENTS[loc.tag];
   if (!pool || pool.length === 0) {
     addLog('특별한 일이 일어나지 않았다.', '');
-    state.day += 1;
     render();
     return;
   }
@@ -236,13 +258,11 @@ function explore() {
       : pool.filter((ev) => !ev.once);
   if (chosenPool.length === 0) {
     addLog('특별한 일이 일어나지 않았다.', '');
-    state.day += 1;
     render();
     return;
   }
   const ev = chosenPool[randInt(0, chosenPool.length - 1)];
   if (ev.once) state.flags['event_' + ev.id] = true;
-  state.day += 1;
 
   if (ev.combat) {
     addLogParagraphs(ev.text, 'log-event');
@@ -294,24 +314,36 @@ function resolveEventChoice(choiceIdx) {
 }
 
 /* ---------------- 휴식 ---------------- */
+/* 휴식은 남은 시간대와 상관없이 그날 전체를 소모하고 다음 날 아침으로 넘어간다.
+ * "무료지만 하루를 태운다" — 갈레온으로 시간을 사는 것과 대비되는 선택이 되도록 한다. */
 function rest() {
   state.hp = getMaxHp();
   state.mp = getMaxMp();
-  state.stamina = state.maxStamina;
+  state.timeSlot = 0;
+  state.bonusSlotsToday = 0;
   state.day += 1;
-  addLog('푹 쉬어 체력·마력·기력을 모두 회복했다.', 'log-result');
+  checkDeadlineStatus();
+  addLog('푹 쉬어 체력과 마력을 모두 회복했다. 하루가 저물고 다음 날 아침이 밝았다.', 'log-result');
+  render();
+}
+
+/* ---------------- 아침 식사 (골드로 시간을 산다) ----------------
+ * 하루에 한 번, 갈레온을 내고 그날의 시간대를 하나 늘린다. 페퍼업 포션과 같은 하루 한도를 공유한다. */
+const BREAKFAST_COST = 5;
+function canEatBreakfast() {
+  return state.location === 'greatHall' && state.timeSlot === 0 && state.gold >= BREAKFAST_COST && state.timeBonusUsedDay !== state.day;
+}
+function eatBreakfast() {
+  if (!canEatBreakfast()) return;
+  state.gold -= BREAKFAST_COST;
+  applyEffect({ bonusSlot: 1 });
+  addLog('대연회장에서 든든하게 아침을 먹었다. 오늘 하루를 조금 더 알차게 쓸 수 있을 것 같다.', 'log-result');
   render();
 }
 
 /* ---------------- 수업 (주문 습득 경로 ①) ---------------- */
 function attendClass(subjectId) {
-  if (!canAttendClass()) {
-    addLog('기력이 부족해 수업에 집중할 수 없다. 휴식이 필요하다.', 'log-warn');
-    render();
-    return;
-  }
-  state.stamina = clamp(state.stamina - CLASS_STAMINA_COST, 0, state.maxStamina);
-  state.day += 1;
+  advanceTimeSlot();
   trackDaily('classAttend');
   const progress = attendClassProgress(subjectId);
   addLog(`${SUBJECTS[subjectId].name} 수업에 참여했다. (진도 ${progress}/100)`, 'log-result');
@@ -419,6 +451,11 @@ function useItemOutOfCombat(itemId) {
   const item = ITEMS[itemId];
   if (!item || !state.itemStacks[itemId]) return;
   if (item.type === 'potion') {
+    if (item.effect.bonusSlot && state.timeBonusUsedDay === state.day) {
+      addLog('오늘은 이미 시간을 벌 방법을 써버렸다. 내일 다시 시도해보자.', 'log-warn');
+      render();
+      return;
+    }
     applyEffect(item.effect);
     removeItemStack(itemId, 1);
     addLog(`[${item.name}]을(를) 사용했다.`, 'log-result');
@@ -504,13 +541,21 @@ function enhanceInstance(uid) {
 }
 
 /* ---------------- 전투 ---------------- */
+/* 마감을 넘긴 채로 시간을 끌수록 보스가 강해진다 — "악화"의 실체를 전투로 체감시킨다 */
+function getDeadlinePenaltyMult() {
+  return 1 + Math.min(state.deadlinePenaltyStacks || 0, 3) * 0.08;
+}
+
 function startCombat(enemyId) {
   const enemy = ENEMIES[enemyId];
-  state.combat = { enemyId, enemyHp: enemy.hp, enemyMaxHp: enemy.hp, playerDefending: false };
+  const mult = enemy.boss ? getDeadlinePenaltyMult() : 1;
+  const enemyMaxHp = Math.round(enemy.hp * mult);
+  state.combat = { enemyId, enemyHp: enemyMaxHp, enemyMaxHp, atkMult: mult, playerDefending: false };
   state.mode = 'combat';
   state.seenEnemies = state.seenEnemies || {};
   state.seenEnemies[enemyId] = true;
   addLog(`[${enemy.name}]과(와)의 전투 시작!`, 'log-combat');
+  if (mult > 1) addLog('마감을 넘긴 여파로, 상대가 평소보다 강하게 느껴진다.', 'log-warn');
   render();
 }
 
@@ -617,7 +662,7 @@ function enemyTurn() {
   if (!c) return;
   const enemy = ENEMIES[c.enemyId];
   const variance = 0.85 + Math.random() * 0.3;
-  let dmg = Math.round(enemy.atk * variance) - getDef();
+  let dmg = Math.round(enemy.atk * (c.atkMult || 1) * variance) - getDef();
   dmg = Math.max(1, dmg);
   if (c.playerDefending) {
     dmg = Math.max(1, Math.round(dmg * (c.playerDefendMult != null ? c.playerDefendMult : 0.35)));
@@ -714,6 +759,9 @@ function resolveChapterChoice(idx) {
   state.flags[ch.setFlag] = true;
   state.pendingChapter = null;
   state.mode = 'explore';
+  if (ch.id === 'ch1_report') advanceDeadlineChapter('ch1');
+  else if (ch.id === 'ch2') advanceDeadlineChapter('ch2');
+  else if (ch.id === 'ch3') advanceDeadlineChapter('ch3');
   if (ch.id === 'ch2') addLog('비밀의 방으로 향하는 통로가 열렸다. 도전할 준비가 되면 [비밀의 방]으로 이동하세요.', 'log-story');
   render();
 }
@@ -732,6 +780,9 @@ function enterChamber() {
 }
 
 /* ---------------- 엔딩 ---------------- */
+/* 마감을 거듭 어겼다면 좋은 결말도 한 단계 어두워진다 — "강등"이라는 약속을 지킨다 */
+const ENDING_DOWNGRADE = { together: 'light', light: 'balanced', balanced: 'dark', dark: 'dark' };
+
 function triggerEnding() {
   const companionValues = Object.values(state.companions || {});
   const avgAffinity = companionValues.length ? companionValues.reduce((a, b) => a + b, 0) / Object.keys(COMPANIONS).length : 0;
@@ -741,6 +792,15 @@ function triggerEnding() {
   else if (state.alignment >= 25) ending = ENDINGS.light;
   else if (state.alignment <= -25) ending = ENDINGS.dark;
   else ending = ENDINGS.balanced;
+
+  if ((state.deadlinePenaltyStacks || 0) >= 2) {
+    const downgradedId = ENDING_DOWNGRADE[ending.id] || ending.id;
+    if (downgradedId !== ending.id) {
+      addLog('⚠ 거듭된 지연의 대가로, 상황이 더 나빠진 채로 끝을 맞았다.', 'log-warn');
+      ending = ENDINGS[downgradedId];
+    }
+  }
+
   state.ending = ending;
   state.mode = 'ending';
   render();

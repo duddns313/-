@@ -62,7 +62,7 @@ const LOCATIONS = {
 const SHOPS = {
   honeydukes: {
     name: '허니듀크스',
-    items: ['healPotion', 'manaPotion', 'chocolateFrog', 'elixir'],
+    items: ['healPotion', 'manaPotion', 'chocolateFrog', 'elixir', 'pepperUpPotion'],
   },
   ollivanders: {
     name: '올리밴더 상점',

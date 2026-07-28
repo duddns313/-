@@ -3,8 +3,14 @@
 const FIXED_PLAYER_NAME = '윤영운';
 const SAVE_KEY = 'hp_text_game_save_v2';
 const OLD_SAVE_KEYS = ['hp_text_game_save_v1'];
-const CURRENT_SAVE_VERSION = 4;
+const CURRENT_SAVE_VERSION = 5;
 const MIN_COMPATIBLE_VERSION = 2; /* v1은 구조 자체가 달라 이관 불가. v2부터는 점진적 이관 지원. */
+
+const DEADLINE_CHAPTERS = {
+  ch1: { label: '1장 · 이상한 소문', days: 30, next: 'ch2' },
+  ch2: { label: '2장 · 금지된 숲의 흔적', days: 40, next: 'ch3' },
+  ch3: { label: '3장 · 그림자의 정체', days: 50, next: null },
+};
 
 let state = null;
 let pendingCarryOver = null; /* 새 게임+ 승계 데이터 (일시적, 저장되지 않음) */
@@ -22,8 +28,6 @@ function newState(name, houseId) {
     maxHp: 60,
     mp: 20,
     maxMp: 20,
-    stamina: 100,
-    maxStamina: 100,
     baseAtk: 3,
     baseDef: 2,
     stats: { intelligence: 5, courage: 5, charm: 5, agility: 5, luck: 5 },
@@ -31,6 +35,11 @@ function newState(name, houseId) {
     alignment: 0,
     location: 'commonRoom',
     day: 1,
+    timeSlot: 0,
+    bonusSlotsToday: 0,
+    timeBonusUsedDay: 0,
+    deadline: { chapterId: 'ch1', label: DEADLINE_CHAPTERS.ch1.label, dueDay: 1 + DEADLINE_CHAPTERS.ch1.days },
+    deadlinePenaltyStacks: 0,
     itemStacks: { healPotion: 2 },
     equipment: [],
     equipped: { wand: null, robe: null, accessory: null },
@@ -138,6 +147,25 @@ function migrateSave(parsed) {
     parsed.stamina = parsed.stamina != null ? parsed.stamina : 100;
     parsed.maxStamina = parsed.maxStamina || 100;
     parsed.saveVersion = 4;
+  }
+  if (parsed.saveVersion === 4) {
+    /* 기력 시스템을 턴(시간대) 시스템으로 교체 — 기력 필드는 더 이상 쓰지 않는다 */
+    delete parsed.stamina;
+    delete parsed.maxStamina;
+    parsed.timeSlot = 0;
+    parsed.bonusSlotsToday = 0;
+    parsed.timeBonusUsedDay = 0;
+    parsed.deadlinePenaltyStacks = 0;
+    let chapterId = 'ch1';
+    if (parsed.flags && parsed.flags.ch2_done) chapterId = 'ch3';
+    else if (parsed.flags && parsed.flags.ch1_done) chapterId = 'ch2';
+    if (parsed.flags && parsed.flags.ch3_done) {
+      parsed.deadline = null;
+    } else {
+      const info = DEADLINE_CHAPTERS[chapterId];
+      parsed.deadline = { chapterId, label: info.label, dueDay: parsed.day + info.days };
+    }
+    parsed.saveVersion = 5;
   }
   return parsed;
 }

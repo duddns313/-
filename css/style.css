@@ -132,8 +132,17 @@ body {
 .mini-bar-fill { height: 100%; transition: width 0.25s; }
 .mini-hp { background: var(--red); }
 .mini-mp { background: var(--blue); }
-.mini-sp { background: var(--green); }
 #topbar-buttons { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+
+#topbar-deadline { font-size: 0.8rem; }
+.deadline-close { color: var(--gold); }
+.deadline-overdue { color: var(--red); }
+.deadline-note { color: var(--text-dim); font-size: 0.9rem; }
+
+.time-slot-icons { display: flex; align-items: center; gap: 4px; }
+.time-slot { font-size: 0.9rem; opacity: 0.35; filter: grayscale(1); }
+.time-slot.current { opacity: 1; filter: none; }
+.time-slot.done { opacity: 0.6; filter: none; }
 
 /* ---------------- 탭 패널 ---------------- */
 #tab-panels { padding: 10px 10px calc(90px + var(--safe-bottom)); min-height: 60vh; }
@@ -155,7 +164,6 @@ body {
 .loc-risk.risk-1 { color: #d8c66a; border-color: #d8c66a; }
 .loc-risk.risk-2 { color: #e08a2b; border-color: #e08a2b; }
 .loc-risk.risk-3 { color: var(--red); border-color: var(--red); }
-.stamina-warn { color: var(--red); font-size: 0.85rem; margin: 6px 0; }
 
 #log-recent {
   background: var(--bg-panel);

@@ -267,7 +267,25 @@ function renderTopbar() {
   $('topbar-day').textContent = `${getYear()}학년 · ${state.day}일차`;
   $('mini-hp-fill').style.width = clamp((state.hp / getMaxHp()) * 100, 0, 100) + '%';
   $('mini-mp-fill').style.width = clamp((state.mp / getMaxMp()) * 100, 0, 100) + '%';
-  $('mini-sp-fill').style.width = clamp((state.stamina / state.maxStamina) * 100, 0, 100) + '%';
+
+  const deadlineEl = $('topbar-deadline');
+  if (state.deadline) {
+    const remain = state.deadline.dueDay - state.day;
+    deadlineEl.textContent = remain >= 0 ? `D-${remain}` : `기한 초과 +${-remain}`;
+    deadlineEl.className = remain < 0 ? 'deadline-overdue' : remain <= 5 ? 'deadline-close' : '';
+  } else {
+    deadlineEl.textContent = '';
+    deadlineEl.className = '';
+  }
+
+  const slotBox = $('time-slot-icons');
+  slotBox.innerHTML = '';
+  const totalSlots = 3 + (state.bonusSlotsToday || 0);
+  for (let i = 0; i < totalSlots; i += 1) {
+    const icon = TIME_SLOT_ICONS[i] || '✨';
+    const cls = i < state.timeSlot ? 'time-slot done' : i === state.timeSlot ? 'time-slot current' : 'time-slot upcoming';
+    slotBox.appendChild(el('span', cls, icon));
+  }
 }
 
 const RISK_LABELS = ['안전', '주의', '위험', '매우 위험'];
@@ -292,9 +310,11 @@ function renderStage() {
 
   if (state.mode === 'explore') {
     if (loc.tag === 'safe') {
-      stage.appendChild(button(`탐험하기 (기력 ${EXPLORE_STAMINA_COST})`, explore, { disabled: !canExplore() }));
-      stage.appendChild(button('휴식하기 (체력·마력·기력 회복)', rest));
-      if (!canExplore()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 휴식이 필요하다.'));
+      stage.appendChild(button('탐험하기 (시간대 1)', explore));
+      stage.appendChild(button('휴식하기 (하루 소모 · 체력·마력 전부 회복)', rest));
+      if (loc.id === 'greatHall') {
+        stage.appendChild(button(`아침 식사 (${BREAKFAST_COST}G · 시간대 +1)`, eatBreakfast, { cls: 'btn-small', disabled: !canEatBreakfast() }));
+      }
     } else if (loc.tag === 'training') {
       renderClassroomStage(stage);
     } else if (loc.tag === 'quest') {
@@ -302,8 +322,7 @@ function renderStage() {
     } else if (loc.tag === 'chamber') {
       stage.appendChild(button('안으로 들어간다', enterChamber));
     } else {
-      stage.appendChild(button(`탐험하기 (기력 ${EXPLORE_STAMINA_COST})`, explore, { disabled: !canExplore() }));
-      if (!canExplore()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 안전한 곳에서 휴식하세요.'));
+      stage.appendChild(button('탐험하기 (시간대 1)', explore));
     }
   } else if (state.mode === 'shop') {
     renderShopStage(stage, loc);
@@ -319,8 +338,7 @@ function renderStage() {
 }
 
 function renderClassroomStage(stage) {
-  stage.appendChild(el('h4', 'stage-subtitle', `수업 수강 (기력 ${CLASS_STAMINA_COST}) — 진도가 100%가 되면 다음 주문을 습득할 수 있습니다.`));
-  if (!canAttendClass()) stage.appendChild(el('p', 'stamina-warn', '기력이 부족하다. 휴게실에서 휴식이 필요하다.'));
+  stage.appendChild(el('h4', 'stage-subtitle', '수업 수강 (시간대 1) — 진도가 100%가 되면 다음 주문을 습득할 수 있습니다.'));
   Object.values(SUBJECTS).forEach((subj) => {
     const progress = (state.classProgress && state.classProgress[subj.id]) || 0;
     const row = el('div', 'subject-row');
@@ -331,7 +349,7 @@ function renderClassroomStage(stage) {
     track.appendChild(fill);
     row.appendChild(track);
     const actions = el('div', 'subject-actions');
-    actions.appendChild(button('수업 참여', () => attendClass(subj.id), { cls: 'btn-small', disabled: !canAttendClass() }));
+    actions.appendChild(button('수업 참여', () => attendClass(subj.id), { cls: 'btn-small' }));
     const next = nextSpellForSubject(subj.id);
     if (next && progress >= 100) {
       actions.appendChild(button(`습득: ${next.name}`, () => learnSpellFromClass(subj.id), { cls: 'btn-small btn-primary' }));
@@ -531,9 +549,17 @@ function renderCharacterTab() {
   vit.appendChild(el('h3', 'panel-title', '생명력'));
   vit.appendChild(statBarRow('체력', state.hp, getMaxHp(), 'bar-hp'));
   vit.appendChild(statBarRow('마력', state.mp, getMaxMp(), 'bar-mp'));
-  vit.appendChild(statBarRow('기력', state.stamina, state.maxStamina, 'bar-stamina'));
   vit.appendChild(statBarRow(`Lv.${state.level} 경험치`, state.exp, state.expToNext, 'bar-exp'));
   panel.appendChild(vit);
+
+  if (state.deadline) {
+    const remain = state.deadline.dueDay - state.day;
+    const dBox = el('div', 'panel-box');
+    dBox.appendChild(el('h3', 'panel-title', '마감'));
+    dBox.appendChild(el('p', remain < 0 ? 'deadline-overdue' : remain <= 5 ? 'deadline-close' : 'deadline-note',
+      `${state.deadline.label} — ${remain >= 0 ? `D-${remain}` : `기한 초과 (+${-remain}일)`}`));
+    panel.appendChild(dBox);
+  }
 
   const dailyBox = el('div', 'panel-box');
   dailyBox.appendChild(el('h3', 'panel-title', `오늘의 과제 (${state.day}일차)`));

@@ -90,6 +90,7 @@ const ITEMS = {
   manaPotion: { id: 'manaPotion', name: '마나 물약', type: 'potion', effect: { mp: 20 }, price: 18, sell: 6, desc: '마력을 20 회복한다.' },
   elixir: { id: 'elixir', name: '펠릭스 펠리시스(모조품)', type: 'potion', effect: { hp: 9999, mp: 9999 }, price: 80, sell: 25, desc: '체력과 마력을 완전히 회복한다.' },
   chocolateFrog: { id: 'chocolateFrog', name: '초콜릿 개구리', type: 'potion', effect: { hp: 15, mp: 5 }, price: 6, sell: 2, desc: '디멘터를 만난 후 원기 회복에 좋다.' },
+  pepperUpPotion: { id: 'pepperUpPotion', name: '페퍼업 포션', type: 'potion', effect: { bonusSlot: 1 }, price: 25, sell: 8, desc: '마시면 귀에서 김이 난다. 그날의 시간대가 하나 늘어난다. (하루 한 번, 아침 식사와 한도 공유)' },
 
   magicStone: { id: 'magicStone', name: '마법석', type: 'material', price: 20, sell: 7, desc: '장비 강화에 사용하는 결정석.' },
 

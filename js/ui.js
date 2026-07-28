@@ -253,6 +253,7 @@ function render() {
   refreshDailyQuestsIfNeeded();
   checkAchievements();
   renderTopbar();
+  renderQuestLog();
   renderLocationBanner();
   renderStage();
   renderTravel();
@@ -290,6 +291,22 @@ function renderTopbar() {
 
 const RISK_LABELS = ['안전', '주의', '위험', '매우 위험'];
 function riskLabel(risk) { return RISK_LABELS[Math.min(risk || 0, RISK_LABELS.length - 1)]; }
+
+/* ---------------- 퀘스트 로그 (모험 탭 상단 상시 표시) ---------------- */
+function renderQuestLog() {
+  const box = $('quest-log');
+  box.innerHTML = '';
+  const quests = getActiveQuestLog();
+  if (!quests.length) return;
+  box.appendChild(el('h4', 'quest-log-title', '📜 진행 중'));
+  quests.forEach((q) => {
+    const row = el('div', 'quest-log-row');
+    row.appendChild(el('span', 'quest-log-tag', q.tag));
+    row.appendChild(el('span', 'quest-log-label', q.label));
+    if (q.detail) row.appendChild(el('span', 'quest-log-detail', q.detail));
+    box.appendChild(row);
+  });
+}
 
 function renderLocationBanner() {
   const loc = LOCATIONS[state.location];

@@ -216,6 +216,20 @@ body {
 }
 
 #stage-area, #travel-row { margin-bottom: 10px; }
+#quest-log:empty { display: none; }
+#quest-log {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+.quest-log-title { margin: 0 0 4px; font-size: 0.85rem; color: var(--gold); }
+.quest-log-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 0.85rem; padding: 2px 0; }
+.quest-log-tag { color: var(--gold); font-size: 0.72rem; border: 1px solid var(--gold); border-radius: 4px; padding: 0 4px; }
+.quest-log-label { color: var(--text); }
+.quest-log-detail { color: var(--text-dim); font-size: 0.78rem; }
 .stage-subtitle { color: var(--text-dim); font-size: 0.85rem; margin: 10px 0 6px; }
 .choice-wrap, .travel-buttons { display: flex; flex-direction: column; gap: 6px; }
 .travel-buttons { flex-direction: row; flex-wrap: wrap; }

@@ -96,6 +96,29 @@ function applyEffect(effect) {
   if (effect.companionAffinityAll) Object.keys(COMPANIONS).forEach((id) => applyCompanionAffinity(id, effect.companionAffinityAll));
 }
 
+/* ---------------- 연속 도전형 퀘스트 (다단계 퀘스트) ----------------
+ * 실패하면 진행도가 리셋된다 — "두 번 성공했는데 세 번째에 실패"라는
+ * 텍스트 게임에서 가장 값싸게 만들 수 있는 긴장감. */
+function advanceStreak(choice, success) {
+  state.streaks = state.streaks || {};
+  const id = choice.streakId;
+  if (state.flags[id + '_done']) return;
+  if (success) {
+    state.streaks[id] = (state.streaks[id] || 0) + 1;
+    if (state.streaks[id] >= choice.streakTarget) {
+      state.flags[id + '_done'] = true;
+      state.streaks[id] = 0;
+      addLog(`🎯 연속 ${choice.streakTarget}회 성공! ${choice.streakRewardText || '훈련을 완전히 익혔다.'}`, 'log-win');
+      if (choice.streakReward) applyEffect(choice.streakReward);
+    } else {
+      addLog(`연속 ${state.streaks[id]}/${choice.streakTarget} 성공.`, 'log-result');
+    }
+  } else {
+    if (state.streaks[id] > 0) addLog('연속 기록이 끊겼다. 처음부터 다시 도전해야 한다.', 'log-warn');
+    state.streaks[id] = 0;
+  }
+}
+
 /* ---------------- 동료 관계 ---------------- */
 function applyCompanionAffinity(id, amount) {
   state.companions[id] = clamp((state.companions[id] || 0) + amount, 0, 100);
@@ -334,6 +357,7 @@ function resolveEventChoice(choiceIdx) {
       || choice.outcomes.fail;
     applyEffect(outcome.effect);
     logResultWithEffect(outcome.text, outcome.effect);
+    if (choice.streakId) advanceStreak(choice, result.tier === 'critical' || result.tier === 'success');
     resolved = outcome;
   } else {
     applyEffect(choice.effect);
@@ -768,6 +792,39 @@ function loseCombat() {
 /* ---------------- 스토리 진행 (교장실) ---------------- */
 function getAvailableChapter() {
   return STORY.chapters.find((ch) => !state.flags[ch.setFlag] && ch.requiresFlags.every((f) => state.flags[f]));
+}
+
+/* ---------------- 퀘스트 로그 ----------------
+ * 별도의 퀘스트 데이터 없이, 이미 있는 flags/streaks를 읽어 "지금 뭘 해야 하는지"를
+ * 상시 보여준다. 진행 중인 목표가 안 보이는 문제를 해결한다. */
+function getActiveQuestLog() {
+  const list = [];
+  const f = state.flags;
+
+  if (!f.ch1_started) list.push({ tag: '메인', label: '교장실에서 이야기를 들어보자', detail: '' });
+  else if (!f.has_diary) list.push({ tag: '메인', label: '단서를 찾아라', detail: '도서관·복도를 탐험해 일기장을 찾자' });
+  else if (!f.ch1_done) list.push({ tag: '메인', label: '단서를 보고하자', detail: '교장실로 돌아가 일기장을 보여주자' });
+  else if (!f.has_key) list.push({ tag: '메인', label: '금지된 숲의 흔적', detail: '금지된 숲을 탐험해 열쇠를 찾자' });
+  else if (!f.ch2_done) list.push({ tag: '메인', label: '열쇠를 보고하자', detail: '교장실로 돌아가 열쇠를 보여주자' });
+  else if (f.chamber_unlocked && !f.riddle_defeated) list.push({ tag: '메인', label: '비밀의 방 도전', detail: '비밀의 방으로 이동해 환영에 맞서자' });
+  else if (f.riddle_defeated && !f.ch3_done) list.push({ tag: '메인', label: '교장에게 보고', detail: '교장실로 돌아가 보고하자' });
+  else if (f.ch3_done && !f.voldemort_defeated) list.push({ tag: '메인', label: '최후의 결전', detail: '비밀의 방에서 볼드모트의 잔영과 맞서자' });
+
+  if (state.deadline) {
+    const remain = state.deadline.dueDay - state.day;
+    list.push({ tag: '마감', label: state.deadline.label, detail: remain >= 0 ? `D-${remain}` : `기한 초과 +${-remain}일` });
+  }
+
+  if (f.neville_book_active && !f.has_nevilles_book) list.push({ tag: '사이드', label: '네빌의 책 찾기', detail: '복도를 탐험해 책을 찾자' });
+  else if (f.has_nevilles_book) list.push({ tag: '사이드', label: '네빌에게 책 돌려주기', detail: '복도에서 네빌을 만나자' });
+
+  if (f.hagrid_favor_active && !f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드의 부탁: 약초 채집', detail: '금지된 숲에서 약초를 찾자' });
+  else if (f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드에게 약초 전달', detail: '금지된 숲 근처에서 해그리드를 만나자' });
+
+  const streak = (state.streaks || {}).broomBalance || 0;
+  if (!f.broomBalance_done && streak > 0) list.push({ tag: '도전', label: `빗자루 균형 훈련 (연속 ${streak}/3)`, detail: '복도 쪽에서 도전할 수 있다' });
+
+  return list;
 }
 
 function enterHeadmasterOffice() {

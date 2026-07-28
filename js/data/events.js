@@ -139,6 +139,25 @@ const EVENTS = {
         { label: '얼버무리며 지나간다', effect: {}, resultText: '교수는 더 묻지 않지만, 시선이 오래도록 등 뒤에 머무는 게 느껴진다.' },
       ],
     },
+    {
+      id: 'broom_balance_training',
+      requiresFn: (s) => !s.flags.broomBalance_done,
+      text: '창밖으로 마당에서 빗자루 비행 연습이 한창인 게 보인다.\n\n아직도 이륙하는 순간의 균형이 영 서투르다. 오늘도 한 번 더 시도해볼까.',
+      choices: [
+        {
+          label: '빗자루에 올라 균형을 잡아본다', check: { stat: 'agility', dc: 7 },
+          streakId: 'broomBalance', streakTarget: 3,
+          streakReward: { agility: 2, exp: 20 },
+          streakRewardText: '이제 빗자루 위에서 흔들림 없이 균형을 잡을 수 있게 되었다!',
+          outcomes: {
+            critical: { effect: { exp: 8 }, text: '깃털처럼 가볍게 떠올라 완벽하게 균형을 잡았다!' },
+            success: { effect: { exp: 5 }, text: '비틀거렸지만 넘어지지 않고 버텨냈다.' },
+            fail: { effect: {}, text: '균형을 잃고 풀밭에 쿵 떨어졌다. 처음부터 다시 해야 할 것 같다.' },
+            fumble: { effect: { hp: -4 }, text: '빗자루가 제멋대로 날뛰며 바닥에 내동댕이쳐졌다.' },
+          },
+        },
+      ],
+    },
   ],
 
   library: [

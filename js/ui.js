@@ -101,23 +101,36 @@ function notifyCheck(result) {
   }
 }
 
-/* ---------------- 타이프라이터 로그 ---------------- */
-/* 로그는 한 줄씩 순서대로 타이핑된다 — 여러 줄이 동시에 나타나 버리면 밋밋해지므로 큐로 직렬화한다 */
+/* ---------------- 장면 페이지 출력 ---------------- */
+/* 본문은 문단 단위로 한 번씩 타이핑되어 #scene-body에 쌓인다. */
+function sceneTarget() { return $('scene-body'); }
+
+function sceneEmit(text, cls) {
+  if (!text) return;
+  const paras = veilText(text).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  paras.forEach((p) => {
+    state.log.push({ text: p, cls: cls || 'scene-para' });
+    if (state.log.length > 400) state.log.shift();
+    logQueue.push({ text: p, cls: cls || 'scene-para' });
+    const full = $('log-full');
+    if (full) { full.appendChild(el('p', 'log-entry ' + (cls || '')), full.scrollTop = full.scrollHeight); }
+  });
+  processLogQueue();
+}
+
 function processLogQueue() {
   if (typingActive) return;
-  const recent = $('log-recent');
-  if (!recent || logQueue.length === 0) return;
+  const box = sceneTarget();
+  if (!box || logQueue.length === 0) { uiQueueDrained(); return; }
   const entry = logQueue.shift();
-  const p = el('p', 'log-entry ' + entry.cls);
-  recent.appendChild(p);
-  while (recent.children.length > 6) recent.removeChild(recent.firstChild);
+  const p = el('p', paraClass(entry));
+  box.appendChild(p);
   const full = entry.text;
   const speed = getTypeSpeedMs();
 
-  /* 효과 요약 칩은 서사가 아닌 시스템 표시이므로 타자 없이 즉시 보여준다 */
-  if (speed <= 0 || entry.cls === 'log-effect-chip') {
+  /* 시스템 표시(칩·판정)는 타자 없이 즉시 */
+  if (speed <= 0 || entry.cls === 'log-effect-chip' || (entry.cls || '').indexOf('log-check') === 0) {
     p.textContent = full;
-    recent.scrollTop = recent.scrollHeight;
     setTimeout(processLogQueue, 0);
     return;
   }
@@ -127,15 +140,22 @@ function processLogQueue() {
   const timer = setInterval(() => {
     i += 1;
     p.textContent = full.slice(0, i);
-    recent.scrollTop = recent.scrollHeight;
     if (i >= full.length) {
       clearInterval(timer);
       currentTypewriter = null;
       typingActive = false;
-      setTimeout(processLogQueue, 130);
+      setTimeout(processLogQueue, 120);
     }
   }, speed);
   currentTypewriter = { timer, node: p, full };
+}
+
+function paraClass(entry) {
+  const c = entry.cls || '';
+  if (c.indexOf('scene-para') === 0) return c;
+  if (c === 'log-effect-chip') return 'log-entry log-effect-chip';
+  if (c === 'log-memory') return 'scene-recall';
+  return 'log-entry ' + c;
 }
 
 function skipTypewriters() {
@@ -145,13 +165,43 @@ function skipTypewriters() {
     currentTypewriter = null;
     typingActive = false;
   }
-  const recent = $('log-recent');
+  const box = sceneTarget();
   while (logQueue.length) {
     const entry = logQueue.shift();
-    recent.appendChild(el('p', 'log-entry ' + entry.cls, entry.text));
-    while (recent.children.length > 6) recent.removeChild(recent.firstChild);
+    if (box) box.appendChild(el(paraClass(entry).indexOf('scene-para') === 0 ? 'p' : 'p', paraClass(entry), entry.text));
   }
-  if (recent) recent.scrollTop = recent.scrollHeight;
+  uiQueueDrained();
+}
+
+/* 타이핑이 끝나야 선택지가 나온다 (읽기 전에 누르지 않도록) */
+function uiQueueDrained() {
+  const box = $('scene-choices');
+  if (box) box.classList.remove('hidden');
+}
+
+function uiStartScene(sc) {
+  const body = sceneTarget();
+  if (body) body.innerHTML = '';
+  const choices = $('scene-choices');
+  if (choices) { choices.innerHTML = ''; choices.classList.add('hidden'); }
+  const chapEl = $('scene-chapter');
+  if (chapEl) {
+    if (sc.chapter && sc.chapter !== state.lastChapter) {
+      chapEl.textContent = sc.chapter;
+      chapEl.classList.remove('hidden');
+      state.lastChapter = sc.chapter;
+    } else {
+      chapEl.classList.add('hidden');
+    }
+  }
+  const placeEl = $('scene-place');
+  if (placeEl) {
+    const t = { morning: '🌅 아침', noon: '☀️ 낮', evening: '🌙 저녁' }[sc.time];
+    const bits = [sc.place, t].filter(Boolean);
+    placeEl.textContent = bits.join(' · ');
+    placeEl.classList.toggle('hidden', !bits.length);
+  }
+  window.scrollTo(0, 0);
 }
 
 function uiAppendLogEntry(entry) {
@@ -166,15 +216,9 @@ function uiAppendLogEntry(entry) {
 
 function renderLogFull() {
   const full = $('log-full');
-  const recent = $('log-recent');
-  if (currentTypewriter) clearInterval(currentTypewriter.timer);
-  currentTypewriter = null;
-  typingActive = false;
-  logQueue = [];
+  if (!full) return;
   full.innerHTML = '';
-  recent.innerHTML = '';
   state.log.forEach((entry) => full.appendChild(el('p', 'log-entry ' + entry.cls, entry.text)));
-  state.log.slice(-6).forEach((entry) => recent.appendChild(el('p', 'log-entry ' + entry.cls, entry.text)));
   full.scrollTop = full.scrollHeight;
 }
 
@@ -208,13 +252,9 @@ function showSetupScreen() {
     const name = FIXED_PLAYER_NAME;
     const houseId = houseSelect.dataset.selected;
     if (!houseId) { toast('기숙사를 선택해주세요.', { cls: 'toast-warn' }); return; }
-    const isNgPlus = !!pendingCarryOver;
     state = newState(name, houseId);
     startGameScreen();
-    addLog(`영운, 당신은 ${HOUSES[houseId].name}에 배정되었다.`, 'log-story-title');
-    if (isNgPlus) addLog(`--- 새 게임+ ${state.ngPlusCount}회차 시작! 이전 회차의 업적·도감을 계승했다. ---`, 'log-win');
-    addLog('호그와트에서의 새로운 하루가 시작된다.', 'log-story');
-    render();
+    goToScene('p_arrival');
   };
 
   $('btn-continue').onclick = () => {
@@ -222,8 +262,7 @@ function showSetupScreen() {
     if (result.ok) {
       startGameScreen();
       renderLogFull();
-      addLog('--- 이어하기 ---', 'log-move');
-      render();
+      goToScene(state.sceneId || 'p_arrival');
     } else if (result.incompatible) {
       toast('이전 버전의 저장 데이터라 불러올 수 없습니다.', { cls: 'toast-warn' });
       deleteSave();
@@ -250,136 +289,149 @@ function switchTab(tabId) {
 
 /* ---------------- 마스터 렌더 ---------------- */
 function render() {
-  refreshDailyQuestsIfNeeded();
   checkAchievements();
   renderTopbar();
-  renderQuestLog();
-  renderLocationBanner();
   renderStage();
-  renderTravel();
   renderCharacterTab();
   renderInventoryTab();
+  renderRegisterTab();
   renderCodexTab();
   if (state) saveGame();
 }
 
 function renderTopbar() {
   $('topbar-name').textContent = `${state.name} · ${HOUSES[state.houseId].name} · Lv.${state.level}`;
-  $('topbar-day').textContent = `${getYear()}학년 · ${state.day}일차`;
-  $('mini-hp-fill').style.width = clamp((state.hp / getMaxHp()) * 100, 0, 100) + '%';
-  $('mini-mp-fill').style.width = clamp((state.mp / getMaxMp()) * 100, 0, 100) + '%';
+  $('topbar-day').textContent = `${state.day}일차`;
 
   const deadlineEl = $('topbar-deadline');
   if (state.deadline) {
     const remain = state.deadline.dueDay - state.day;
     deadlineEl.textContent = remain >= 0 ? `D-${remain}` : `기한 초과 +${-remain}`;
-    deadlineEl.className = remain < 0 ? 'deadline-overdue' : remain <= 5 ? 'deadline-close' : '';
+    deadlineEl.className = remain < 0 ? 'deadline-overdue' : remain <= 7 ? 'deadline-close' : '';
   } else {
     deadlineEl.textContent = '';
     deadlineEl.className = '';
   }
 
-  const slotBox = $('time-slot-icons');
-  slotBox.innerHTML = '';
-  const totalSlots = 3 + (state.bonusSlotsToday || 0);
-  for (let i = 0; i < totalSlots; i += 1) {
-    const icon = TIME_SLOT_ICONS[i] || '✨';
-    const cls = i < state.timeSlot ? 'time-slot done' : i === state.timeSlot ? 'time-slot current' : 'time-slot upcoming';
-    slotBox.appendChild(el('span', cls, icon));
+  const vitals = $('topbar-vitals');
+  if (vitals) {
+    vitals.classList.toggle('hidden', state.mode !== 'combat');
+    if (state.mode === 'combat') {
+      $('mini-hp-fill').style.width = clamp((state.hp / getMaxHp()) * 100, 0, 100) + '%';
+      $('mini-mp-fill').style.width = clamp((state.mp / getMaxMp()) * 100, 0, 100) + '%';
+    }
   }
 }
 
 const RISK_LABELS = ['안전', '주의', '위험', '매우 위험'];
 function riskLabel(risk) { return RISK_LABELS[Math.min(risk || 0, RISK_LABELS.length - 1)]; }
 
-/* ---------------- 퀘스트 로그 (모험 탭 상단 상시 표시) ---------------- */
-function renderQuestLog() {
-  const box = $('quest-log');
-  box.innerHTML = '';
-  const quests = getActiveQuestLog();
-  if (!quests.length) return;
-  box.appendChild(el('h4', 'quest-log-title', '📜 진행 중'));
-  quests.forEach((q) => {
-    const row = el('div', 'quest-log-row');
-    row.appendChild(el('span', 'quest-log-tag', q.tag));
-    row.appendChild(el('span', 'quest-log-label', q.label));
-    if (q.detail) row.appendChild(el('span', 'quest-log-detail', q.detail));
-    box.appendChild(row);
+function rateClass(rate) { return rate >= 65 ? 'rate-high' : rate >= 40 ? 'rate-mid' : 'rate-low'; }
+
+/* ---------------- 모험 탭: 장면 ---------------- */
+function renderStage() {
+  const stage = $('scene-choices');
+  if (!stage) return;
+  stage.innerHTML = '';
+
+  if (state.mode === 'combat') { renderCombatStage(stage); stage.classList.remove('hidden'); return; }
+  if (state.mode === 'ending') { renderEndingStage(stage); stage.classList.remove('hidden'); return; }
+  if (state.mode === 'shop') { renderShopStage(stage, null); stage.classList.remove('hidden'); return; }
+
+  const sc = currentScene();
+  if (!sc) return;
+
+  if (state.scenePhase === 'result') {
+    stage.appendChild(button('계속 ▸', continueScene, { cls: 'btn btn-primary btn-continue' }));
+    return;
+  }
+  if (sc.hub) { renderHubStage(stage, sc); return; }
+  if (sc.registerAction) { renderRegisterActionStage(stage); return; }
+
+  const list = visibleChoices(sc);
+  if (!list.length) {
+    stage.appendChild(button('계속 ▸', continueScene, { cls: 'btn btn-primary btn-continue' }));
+    return;
+  }
+  list.forEach(({ c, i }) => stage.appendChild(choiceCard(c, i)));
+}
+
+function choiceCard(c, idx) {
+  const card = document.createElement('button');
+  card.className = 'btn choice-card';
+  card.appendChild(el('span', 'choice-label', veilText(c.label)));
+  if (c.check) {
+    const rate = getCheckRate(c.check.stat, c.check.dc, c.check.bonusPercent);
+    const meta = el('span', 'choice-meta');
+    meta.appendChild(el('span', '', STAT_META[c.check.stat].label + ' · '));
+    meta.appendChild(el('span', rateClass(rate), `성공률 ${rate}%`));
+    if (c.check.bonusPercent) meta.appendChild(el('span', 'choice-bonus', `  💭 기억 보정 +${c.check.bonusPercent}%`));
+    card.appendChild(meta);
+  } else if (c.costDay) {
+    card.appendChild(el('span', 'choice-meta', '하루 소모'));
+  }
+  card.addEventListener('click', () => resolveSceneChoice(idx));
+  return card;
+}
+
+function renderHubStage(stage, sc) {
+  const opts = hubOptions();
+  opts.forEach((o) => {
+    const target = SCENES[o.id];
+    const card = document.createElement('button');
+    card.className = 'btn choice-card' + (o.main ? ' choice-main' : '');
+    card.appendChild(el('span', 'choice-label', veilText(o.label)));
+    const bits = [];
+    if (o.desc) bits.push(veilText(o.desc));
+    if (target && target.costDay && !o.desc) bits.push('하루 소모');
+    if (bits.length) card.appendChild(el('span', 'choice-meta', bits.join(' · ')));
+    card.addEventListener('click', () => goToScene(o.id));
+    stage.appendChild(card);
   });
 }
 
-function renderLocationBanner() {
-  const loc = LOCATIONS[state.location];
-  const banner = $('location-banner');
-  banner.innerHTML = '';
-  const nameRow = el('div', 'loc-name-row');
-  nameRow.appendChild(el('h2', 'loc-name', loc.name));
-  nameRow.appendChild(el('span', 'loc-risk risk-' + (loc.risk || 0), riskLabel(loc.risk)));
-  banner.appendChild(nameRow);
-  banner.appendChild(el('p', 'loc-desc', loc.desc));
-}
+function renderRegisterActionStage(stage) {
+  const faded = Object.keys(state.register).filter((id) => erosionOf(id) > 0 && erosionOf(id) < 3);
+  const lost = Object.keys(state.register).filter((id) => erosionOf(id) >= 3);
 
-/* ---------------- 모험 탭: 상황별 행동 ---------------- */
-function renderStage() {
-  const stage = $('stage-area');
-  stage.innerHTML = '';
-  const loc = LOCATIONS[state.location];
-
-  if (state.mode === 'explore') {
-    if (loc.tag === 'safe') {
-      stage.appendChild(button('탐험하기 (시간대 1)', explore));
-      stage.appendChild(button('휴식하기 (하루 소모 · 체력·마력 전부 회복)', rest));
-      if (loc.id === 'greatHall') {
-        stage.appendChild(button(`아침 식사 (${BREAKFAST_COST}G · 시간대 +1)`, eatBreakfast, { cls: 'btn-small', disabled: !canEatBreakfast() }));
-      }
-    } else if (loc.tag === 'training') {
-      renderClassroomStage(stage);
-    } else if (loc.tag === 'quest') {
-      stage.appendChild(button('교장과 대화하기', enterHeadmasterOffice));
-    } else if (loc.tag === 'chamber') {
-      stage.appendChild(button('안으로 들어간다', enterChamber));
-    } else {
-      stage.appendChild(button('탐험하기 (시간대 1)', explore));
-    }
-  } else if (state.mode === 'shop') {
-    renderShopStage(stage, loc);
-  } else if (state.mode === 'event') {
-    renderEventStage(stage);
-  } else if (state.mode === 'story') {
-    renderStoryStage(stage);
-  } else if (state.mode === 'combat') {
-    renderCombatStage(stage);
-  } else if (state.mode === 'ending') {
-    renderEndingStage(stage);
+  if (!faded.length && !lost.length) {
+    stage.appendChild(el('p', 'choice-meta', '아직 흐려진 이름은 없다.'));
   }
-}
-
-function renderClassroomStage(stage) {
-  stage.appendChild(el('h4', 'stage-subtitle', '수업 수강 (시간대 1) — 진도가 100%가 되면 다음 주문을 습득할 수 있습니다.'));
-  Object.values(SUBJECTS).forEach((subj) => {
-    const progress = (state.classProgress && state.classProgress[subj.id]) || 0;
-    const row = el('div', 'subject-row');
-    row.appendChild(el('div', 'subject-name', subj.name));
-    const track = el('div', 'bar-track');
-    const fill = el('div', 'bar-fill bar-progress');
-    fill.style.width = progress + '%';
-    track.appendChild(fill);
-    row.appendChild(track);
-    const actions = el('div', 'subject-actions');
-    actions.appendChild(button('수업 참여', () => attendClass(subj.id), { cls: 'btn-small' }));
-    const next = nextSpellForSubject(subj.id);
-    if (next && progress >= 100) {
-      actions.appendChild(button(`습득: ${next.name}`, () => learnSpellFromClass(subj.id), { cls: 'btn-small btn-primary' }));
-    } else if (!next) {
-      actions.appendChild(el('span', 'subject-done', '계열 완료'));
-    }
-    row.appendChild(actions);
+  faded.forEach((id) => {
+    const p = PEOPLE[id];
+    const e = erosionOf(id);
+    const row = el('div', 'hold-row');
+    row.appendChild(el('div', 'hold-name', veilName(id) + `  — ${EROSION_LABEL[e]}`));
+    const btns = el('div', 'hold-actions');
+    [['intelligence', '기록을 대조한다'], ['charm', '남에게 물어본다'], ['courage', '버틴다']].forEach(([stat, label]) => {
+      const dc = holdDifficulty(id, stat);
+      const rate = getCheckRate(stat, dc);
+      const b = button(`${label} (${STAT_META[stat].label} ${rate}%)`, () => holdName(id, stat), { cls: 'btn btn-small' });
+      btns.appendChild(b);
+    });
+    row.appendChild(btns);
+    if (e >= 2) row.appendChild(el('div', 'choice-meta', '하루가 소모된다'));
+    else if (!canHoldFree()) row.appendChild(el('div', 'choice-meta', '오늘은 이미 한 번 붙들었다'));
     stage.appendChild(row);
   });
+  lost.forEach((id) => {
+    const row = el('div', 'hold-row');
+    row.appendChild(el('div', 'hold-name lost', veilName(id) + '  — 잃음'));
+    if (canUseNotebook()) {
+      row.appendChild(button('이디스의 수첩을 펼친다', () => recoverWithNotebook(id), { cls: 'btn btn-small btn-primary' }));
+    } else if (state.flags.edith_notebook) {
+      row.appendChild(el('div', 'choice-meta', '수첩은 오늘 이미 썼다'));
+    } else {
+      row.appendChild(el('div', 'choice-meta', '되살릴 방법이 없다'));
+    }
+    stage.appendChild(row);
+  });
+
+  stage.appendChild(button('덮는다 ▸', () => goToScene('HUB'), { cls: 'btn btn-continue' }));
 }
 
 function renderShopStage(stage, loc) {
-  const shop = SHOPS[loc.shop];
+  const shop = SHOPS[(loc && loc.shop) || state.shopId || 'honeydukes'];
   stage.appendChild(el('h4', 'stage-subtitle', shop.name));
 
   const grid = el('div', 'shop-grid');
@@ -820,6 +872,58 @@ function openItemSheet(uid) {
     }
     content.appendChild(actions);
   });
+}
+
+/* ---------------- 명부 탭 ---------------- */
+function renderRegisterTab() {
+  const panel = $('panel-register');
+  if (!panel || !state) return;
+  panel.innerHTML = '';
+
+  const ids = Object.keys(state.register);
+  const people = ids.filter((id) => PEOPLE[id] && !PEOPLE[id].memorial);
+  const memorial = ids.filter((id) => PEOPLE[id] && PEOPLE[id].memorial);
+
+  const box = el('div', 'panel-box');
+  box.appendChild(el('h3', 'panel-title', '📖 명부'));
+  if (!ids.length) box.appendChild(el('p', 'choice-meta', '아직 적어둔 이름이 없다.'));
+  people.forEach((id) => box.appendChild(registerRow(id)));
+  panel.appendChild(box);
+
+  if (memorial.length) {
+    const mbox = el('div', 'panel-box');
+    mbox.appendChild(el('h3', 'panel-title', '전사자 명부 · 기념비'));
+    memorial.forEach((id) => mbox.appendChild(registerRow(id)));
+    panel.appendChild(mbox);
+  }
+
+  const sum = el('div', 'panel-box');
+  sum.appendChild(el('p', 'register-count', `붙들고 있는 이름  ${heldCount()} / ${ids.length}`));
+  panel.appendChild(sum);
+
+  const frags = Object.keys(state.fragments || {});
+  if (frags.length) {
+    const fbox = el('div', 'panel-box');
+    fbox.appendChild(el('h3', 'panel-title', '✨ 기억 조각'));
+    frags.forEach((f) => fbox.appendChild(el('p', 'fragment-row', state.fragments[f])));
+    panel.appendChild(fbox);
+  }
+}
+
+function registerRow(id) {
+  const p = PEOPLE[id];
+  const e = erosionOf(id);
+  const row = el('div', 'register-row erosion-' + e);
+  const mark = e === 0 ? '✓' : e >= 3 ? '✗' : '⚠';
+  row.appendChild(el('span', 'register-mark', mark));
+  const nameEl = el('span', 'register-name', veilName(id));
+  if (e > 0) nameEl.setAttribute('aria-label', '지워진 이름');
+  row.appendChild(nameEl);
+  const meta = [];
+  if (p.houseId && HOUSES[p.houseId] && e < 2) meta.push(HOUSES[p.houseId].name);
+  if (e > 0) meta.push(EROSION_LABEL[e]);
+  row.appendChild(el('span', 'register-meta', meta.join(' · ')));
+  return row;
 }
 
 /* ---------------- 도감 탭 ---------------- */

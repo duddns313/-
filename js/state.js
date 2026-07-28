@@ -3,13 +3,15 @@
 const FIXED_PLAYER_NAME = '윤영운';
 const SAVE_KEY = 'hp_text_game_save_v2';
 const OLD_SAVE_KEYS = ['hp_text_game_save_v1'];
-const CURRENT_SAVE_VERSION = 8;
-const MIN_COMPATIBLE_VERSION = 2; /* v1은 구조 자체가 달라 이관 불가. v2부터는 점진적 이관 지원. */
+/* v9: 탐험/맵 구조를 장면(Scene) 기반 선형 구조로 전면 교체했다.
+ * 구조가 근본적으로 달라 이관이 불가능하므로 하위 호환을 끊는다. */
+const CURRENT_SAVE_VERSION = 9;
+const MIN_COMPATIBLE_VERSION = 9;
 
 const DEADLINE_CHAPTERS = {
-  ch1: { label: '1장 · 이상한 소문', days: 30, next: 'ch2' },
-  ch2: { label: '2장 · 금지된 숲의 흔적', days: 40, next: 'ch3' },
-  ch3: { label: '3장 · 그림자의 정체', days: 50, next: null },
+  ch1: { label: '1막 · 빈자리', days: 40, next: 'ch2' },
+  ch2: { label: '2막 · 이름을 먹는 것', days: 50, next: 'ch3' },
+  ch3: { label: '3막 · 잊힌 자들의 방', days: 60, next: null },
 };
 
 let state = null;
@@ -33,14 +35,25 @@ function newState(name, houseId) {
     stats: { intelligence: 5, courage: 5, charm: 5, agility: 5, luck: 5 },
     gold: 30,
     alignment: 0,
-    location: 'commonRoom',
-    visitedLocations: { commonRoom: true, greatHall: true, library: true, corridors: true },
     day: 1,
-    timeSlot: 0,
-    bonusSlotsToday: 0,
-    timeBonusUsedDay: 0,
     deadline: { chapterId: 'ch1', label: DEADLINE_CHAPTERS.ch1.label, dueDay: 1 + DEADLINE_CHAPTERS.ch1.days },
     deadlinePenaltyStacks: 0,
+
+    /* ── 장면 ── */
+    sceneId: null,
+    currentHub: 'hub1',
+    scenePhase: 'body',
+    sceneNext: null,
+    seenScenes: {},
+    lastChapter: null,
+
+    /* ── 명부 ── */
+    register: {},
+    lastSeen: {},
+    fragments: {},
+    holdUsedDay: 0,
+    notebookUsedDay: 0,
+
     itemStacks: { healPotion: 2 },
     equipment: [],
     equipped: { wand: null, robe: null, accessory: null },
@@ -62,10 +75,10 @@ function newState(name, houseId) {
     memories: {},
     streaks: {},
     log: [],
-    mode: 'explore',
+    mode: 'scene',
     combat: null,
-    pendingEvent: null,
-    pendingChapter: null,
+    pendingCombatNext: null,
+    pendingCombatLose: null,
     ending: null,
     activeTab: 'adventure',
   };
@@ -130,75 +143,14 @@ function saveGame() {
   }
 }
 
-/* v1(구버전) 세이브는 인벤토리·주문·능력치 구조가 근본적으로 달라 안전한 자동 이관이 불가능해 호환 불가 처리한다.
- * v2 이후부터는 saveVersion을 비교해 누락된 필드를 기본값으로 채우는 점진적 이관을 지원한다. */
-function migrateSave(parsed) {
-  if (parsed.saveVersion === 2) {
-    parsed.statsTrack = parsed.statsTrack || { combatWins: 0, fleeSuccess: 0, exploreByTag: {}, classCompletions: 0, forgetCount: 0, wandMatchCount: 0 };
-    parsed.achievements = parsed.achievements || {};
-    parsed.titles = parsed.titles || {};
-    parsed.equippedTitle = parsed.equippedTitle || null;
-    parsed.seenItemBases = parsed.seenItemBases || {};
-    parsed.dailyCounters = parsed.dailyCounters || {};
-    parsed.dailyQuests = parsed.dailyQuests || [];
-    parsed.dailyQuestDay = parsed.dailyQuestDay || 0;
-    parsed.ngPlusCount = parsed.ngPlusCount || 0;
-    parsed.companions = parsed.companions || {};
-    parsed.saveVersion = 3;
-  }
-  if (parsed.saveVersion === 3) {
-    parsed.stamina = parsed.stamina != null ? parsed.stamina : 100;
-    parsed.maxStamina = parsed.maxStamina || 100;
-    parsed.saveVersion = 4;
-  }
-  if (parsed.saveVersion === 4) {
-    /* 기력 시스템을 턴(시간대) 시스템으로 교체 — 기력 필드는 더 이상 쓰지 않는다 */
-    delete parsed.stamina;
-    delete parsed.maxStamina;
-    parsed.timeSlot = 0;
-    parsed.bonusSlotsToday = 0;
-    parsed.timeBonusUsedDay = 0;
-    parsed.deadlinePenaltyStacks = 0;
-    let chapterId = 'ch1';
-    if (parsed.flags && parsed.flags.ch2_done) chapterId = 'ch3';
-    else if (parsed.flags && parsed.flags.ch1_done) chapterId = 'ch2';
-    if (parsed.flags && parsed.flags.ch3_done) {
-      parsed.deadline = null;
-    } else {
-      const info = DEADLINE_CHAPTERS[chapterId];
-      parsed.deadline = { chapterId, label: info.label, dueDay: parsed.day + info.days };
-    }
-    parsed.saveVersion = 5;
-  }
-  if (parsed.saveVersion === 5) {
-    /* 이동 개편: 구역(zone) 기반 비용 + 미니맵을 위한 방문 기록 도입.
-     * 이미 이동 버튼으로 이름이 노출돼 있던 인접 지역까지는 "이미 알던 곳"으로 취급한다. */
-    const visited = { [parsed.location]: true };
-    const here = LOCATIONS[parsed.location];
-    if (here) here.connections.forEach((cid) => { visited[cid] = true; });
-    parsed.visitedLocations = visited;
-    parsed.saveVersion = 6;
-  }
-  if (parsed.saveVersion === 6) {
-    parsed.memories = parsed.memories || {};
-    parsed.saveVersion = 7;
-  }
-  if (parsed.saveVersion === 7) {
-    parsed.streaks = parsed.streaks || {};
-    parsed.saveVersion = 8;
-  }
-  return parsed;
-}
-
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return { ok: false, incompatible: false };
-    let parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
     if (!parsed.saveVersion || parsed.saveVersion < MIN_COMPATIBLE_VERSION) {
       return { ok: false, incompatible: true };
     }
-    if (parsed.saveVersion < CURRENT_SAVE_VERSION) parsed = migrateSave(parsed);
     state = parsed;
     return { ok: true };
   } catch (e) {

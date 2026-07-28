@@ -1,10 +1,11 @@
 /* ===================== 동료 데이터 ===================== */
+/* 2022년 기준 6학년. 상세는 docs/STORY_PLOT.md §2-1 */
 
 const COMPANIONS = {
-  hermione: { id: 'hermione', name: '헤르미온느', desc: '지식을 사랑하는 친구', favorStat: 'intelligence', giftSlot: 'accessory', giftTemplate: 'manaRing' },
-  ron: { id: 'ron', name: '론', desc: '의리 있는 친구', favorStat: 'courage', giftSlot: 'accessory', giftTemplate: 'silverCharm' },
-  luna: { id: 'luna', name: '루나', desc: '남다른 시선을 가진 친구', favorStat: 'luck', giftSlot: 'accessory', giftTemplate: 'rabbitFoot' },
-  neville: { id: 'neville', name: '네빌', desc: '성실하고 다정한 친구', favorStat: 'charm', giftSlot: 'accessory', giftTemplate: 'rabbitFoot' },
+  albus:    { id: 'albus',    name: '알버스',   desc: '조용하고 생각이 많은 친구', favorStat: 'courage',      giftSlot: 'accessory', giftTemplate: 'silverCharm' },
+  rose:     { id: 'rose',     name: '로즈',     desc: '빠르고 정확한 친구',       favorStat: 'intelligence', giftSlot: 'accessory', giftTemplate: 'manaRing' },
+  scorpius: { id: 'scorpius', name: '스콜피우스', desc: '지나치게 다정한 친구',    favorStat: 'charm',        giftSlot: 'accessory', giftTemplate: 'rabbitFoot' },
+  edith:    { id: 'edith',    name: '이디스',   desc: '모든 것을 적어두는 친구',   favorStat: 'luck',         giftSlot: 'accessory', giftTemplate: 'rabbitFoot' },
 };
 
 function companionStatusLabel(affinity) {

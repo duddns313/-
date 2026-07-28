@@ -1,14 +1,16 @@
 /* ===================== 서비스 워커 (오프라인 캐시) ===================== */
 
-const CACHE_NAME = 'hogwarts-shadow-v3';
+const CACHE_NAME = 'hogwarts-shadow-v4';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/style.css',
   './js/data/houses.js', './js/data/rarity.js', './js/data/spells.js', './js/data/enemies.js',
-  './js/data/locations.js', './js/data/events.js', './js/data/story.js', './js/data/endings.js',
+  './js/data/locations.js', './js/data/endings.js',
   './js/data/achievements.js', './js/data/companions.js', './js/data/memories.js',
+  './js/data/people.js', './js/data/scenes.js',
   './js/systems/check.js', './js/systems/item.js', './js/systems/loot.js', './js/systems/spell.js',
   './js/systems/achievement.js', './js/systems/settings.js',
+  './js/systems/register.js', './js/systems/scene.js',
   './js/state.js', './js/engine.js', './js/ui.js', './js/pwa.js', './js/main.js',
   './icons/icon-192.png', './icons/icon-512.png',
 ];

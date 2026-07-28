@@ -42,6 +42,12 @@ function logResultWithEffect(text, effect, cls) {
   if (summary) addLog(summary, 'log-effect-chip');
 }
 
+/* 장면 페이지에 효과 요약 칩을 붙인다 (본문에 수치를 쓰지 않기 위함) */
+function emitEffectChip(effect) {
+  const summary = formatEffectSummary(effect);
+  if (summary) sceneEmit(summary, 'log-effect-chip');
+}
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
@@ -81,7 +87,6 @@ function applyEffect(effect) {
   if (effect.hp) state.hp = clamp(state.hp + effect.hp, 0, getMaxHp());
   if (effect.mp) state.mp = clamp(state.mp + effect.mp, 0, getMaxMp());
   if (effect.gold) state.gold = Math.max(0, state.gold + effect.gold);
-  if (effect.bonusSlot) { state.bonusSlotsToday = (state.bonusSlotsToday || 0) + effect.bonusSlot; state.timeBonusUsedDay = state.day; }
   ['intelligence', 'courage', 'charm', 'agility', 'luck'].forEach((k) => {
     if (effect[k]) state.stats[k] += effect[k];
   });
@@ -227,46 +232,7 @@ function gainExp(amount) {
   }
 }
 
-/* ---------------- 이동 ---------------- */
-function hasMarauderMap() { return (state.itemStacks.marauderMap || 0) > 0; }
-
-/* 같은 구역 안에서는 무료, 구역을 넘을 때만 시간대가 든다 — 도둑 지도가 있으면 그마저 무료 */
-function travelTo(locId) {
-  const loc = LOCATIONS[locId];
-  if (!loc) return;
-  if (loc.locked && !state.flags.chamber_unlocked) {
-    addLog('그곳은 아직 갈 수 없다. 봉인되어 있는 듯하다.', 'log-warn');
-    render();
-    return;
-  }
-  const fromLoc = LOCATIONS[state.location];
-  const crossesZone = fromLoc.zone !== loc.zone;
-  if (crossesZone && !hasMarauderMap()) advanceTimeSlot();
-  state.location = locId;
-  state.visitedLocations = state.visitedLocations || {};
-  state.visitedLocations[locId] = true;
-  addLog(`--- ${loc.name}(으)로 이동했다 ---`, 'log-move');
-  state.mode = loc.shop ? 'shop' : 'explore';
-  render();
-}
-
-/* ---------------- 시간(턴) 시스템 ----------------
- * 하루 = 3시간대(🌅 아침 · ☀️ 오후 · 🌙 밤). 비용은 행동을 "시작할 때"만 청구되고,
- * 전투·대화·연속 진행 중에는 소모되지 않는다. 기력처럼 바닥나서 막히는 자원이 아니라
- * 그냥 하루가 흘러가는 것뿐이므로, "부족해서 못 한다"는 상태 자체가 없다. */
-const TIME_SLOT_ICONS = ['🌅', '☀️', '🌙'];
-
-function advanceTimeSlot() {
-  const total = 3 + (state.bonusSlotsToday || 0);
-  state.timeSlot += 1;
-  if (state.timeSlot >= total) {
-    state.timeSlot = 0;
-    state.bonusSlotsToday = 0;
-    state.day += 1;
-    checkDeadlineStatus();
-  }
-}
-
+/* ---------------- 마감 ---------------- */
 function checkDeadlineStatus() {
   if (!state.deadline) return;
   if (state.day > state.deadline.dueDay) {
@@ -281,158 +247,6 @@ function advanceDeadlineChapter(finishedChapterId) {
   if (!info || !info.next) { state.deadline = null; return; }
   const nextInfo = DEADLINE_CHAPTERS[info.next];
   state.deadline = { chapterId: info.next, label: nextInfo.label, dueDay: state.day + nextInfo.days };
-}
-
-/* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
-function eligibleEventsFor(loc) {
-  const pool = EVENTS[loc.tag];
-  if (!pool) return [];
-  return pool.filter((ev) => {
-    if (ev.once && state.flags['event_' + ev.id]) return false;
-    if (ev.requiresFlag && !state.flags[ev.requiresFlag]) return false;
-    if (ev.notFlag && state.flags[ev.notFlag]) return false;
-    if (ev.requiresFn && !ev.requiresFn(state)) return false;
-    return true;
-  });
-}
-
-/* 이동 버튼에 붙는 목적지 힌트 — "어디를 가야 할지" 미리 보여줘서 이동을 방황이 아닌 항해로 만든다 */
-function getLocationHint(locId) {
-  const loc = LOCATIONS[locId];
-  if (loc.shop) return '🏪';
-  if (loc.tag === 'training') return '🪄';
-  if (loc.tag === 'quest') return getAvailableChapter() ? '⭐' : '';
-  if (loc.tag === 'safe') return '🛏️';
-  if (loc.tag === 'chamber') return state.flags.chamber_unlocked && !state.flags.voldemort_defeated ? '⚔️' : '';
-  const eligible = eligibleEventsFor(loc);
-  const maxPriority = eligible.reduce((max, ev) => Math.max(max, ev.priority || 0), 0);
-  if (maxPriority >= 3) return '⭐';
-  if (maxPriority >= 1) return '❗';
-  return '';
-}
-
-function explore() {
-  advanceTimeSlot();
-  const loc = LOCATIONS[state.location];
-  state.statsTrack.exploreByTag[loc.tag] = (state.statsTrack.exploreByTag[loc.tag] || 0) + 1;
-  trackDaily('explore');
-  const pool = EVENTS[loc.tag];
-  if (!pool || pool.length === 0) {
-    addLog('특별한 일이 일어나지 않았다.', '');
-    render();
-    return;
-  }
-  const eligible = eligibleEventsFor(loc);
-  // 우선순위 3단계: 3=메인 퀘스트 > 2=대형 이벤트 > 1=사이드 퀘스트 > 0=잡 이벤트.
-  // 조건을 충족한 이벤트 중 가장 높은 등급만 후보로 남겨, 메인 퀘스트가 잡다한 이벤트에 묻히지 않게 한다.
-  const maxPriority = eligible.reduce((max, ev) => Math.max(max, ev.priority || 0), 0);
-  const priorityEligible = maxPriority > 0 ? eligible.filter((ev) => (ev.priority || 0) === maxPriority) : [];
-  const chosenPool = priorityEligible.length > 0 ? priorityEligible
-    : eligible.length > 0 ? eligible
-      : pool.filter((ev) => !ev.once);
-  if (chosenPool.length === 0) {
-    addLog('특별한 일이 일어나지 않았다.', '');
-    render();
-    return;
-  }
-  const ev = chosenPool[randInt(0, chosenPool.length - 1)];
-  if (ev.once) state.flags['event_' + ev.id] = true;
-  if (ev.recall && state.memories[ev.recall]) addLog(`💭 ${ev.recallText}`, 'log-memory');
-  else if (ev.recallOptions) {
-    const matchedId = Object.keys(ev.recallOptions).find((mid) => state.memories[mid]);
-    if (matchedId) addLog(`💭 ${ev.recallOptions[matchedId]}`, 'log-memory');
-  }
-
-  if (ev.combat) {
-    addLogParagraphs(ev.text, 'log-event');
-    startCombat(ev.combat);
-    return;
-  }
-
-  state.pendingEvent = ev;
-  state.mode = 'event';
-  addLogParagraphs(ev.text, 'log-event');
-  render();
-}
-
-function resolveEventChoice(choiceIdx) {
-  const ev = state.pendingEvent;
-  if (!ev) return;
-  const choice = ev.choices[choiceIdx];
-  if (!choice) return;
-  if (choice.requiresGold && state.gold < choice.requiresGold) {
-    addLog('갈레온이 부족하다.', 'log-warn');
-    render();
-    return;
-  }
-  if (choice.cost && choice.cost.mp) {
-    if (state.mp < choice.cost.mp) { addLog('마력이 부족하다.', 'log-warn'); render(); return; }
-    state.mp -= choice.cost.mp;
-  }
-
-  let resolved = choice;
-  if (choice.check) {
-    const result = runCheck(choice.check.stat, choice.check.dc, choice.check.bonusPercent);
-    const outcome = choice.outcomes[result.tier]
-      || (result.tier === 'critical' ? choice.outcomes.success : null)
-      || (result.tier === 'fumble' ? choice.outcomes.fail : null)
-      || choice.outcomes.fail;
-    applyEffect(outcome.effect);
-    logResultWithEffect(outcome.text, outcome.effect);
-    if (choice.streakId) advanceStreak(choice, result.tier === 'critical' || result.tier === 'success');
-    resolved = outcome;
-  } else {
-    applyEffect(choice.effect);
-    logResultWithEffect(choice.resultText, choice.effect);
-  }
-
-  state.pendingEvent = null;
-  state.mode = 'explore';
-
-  if (resolved.combat) { startCombat(resolved.combat); return; }
-  render();
-}
-
-/* ---------------- 휴식 ---------------- */
-/* 휴식은 남은 시간대와 상관없이 그날 전체를 소모하고 다음 날 아침으로 넘어간다.
- * "무료지만 하루를 태운다" — 갈레온으로 시간을 사는 것과 대비되는 선택이 되도록 한다. */
-function rest() {
-  state.hp = getMaxHp();
-  state.mp = getMaxMp();
-  state.timeSlot = 0;
-  state.bonusSlotsToday = 0;
-  state.day += 1;
-  checkDeadlineStatus();
-  addLog('푹 쉬어 체력과 마력을 모두 회복했다. 하루가 저물고 다음 날 아침이 밝았다.', 'log-result');
-  render();
-}
-
-/* ---------------- 아침 식사 (골드로 시간을 산다) ----------------
- * 하루에 한 번, 갈레온을 내고 그날의 시간대를 하나 늘린다. 페퍼업 포션과 같은 하루 한도를 공유한다. */
-const BREAKFAST_COST = 5;
-function canEatBreakfast() {
-  return state.location === 'greatHall' && state.timeSlot === 0 && state.gold >= BREAKFAST_COST && state.timeBonusUsedDay !== state.day;
-}
-function eatBreakfast() {
-  if (!canEatBreakfast()) return;
-  state.gold -= BREAKFAST_COST;
-  applyEffect({ bonusSlot: 1 });
-  addLog('대연회장에서 든든하게 아침을 먹었다. 오늘 하루를 조금 더 알차게 쓸 수 있을 것 같다.', 'log-result');
-  render();
-}
-
-/* ---------------- 수업 (주문 습득 경로 ①) ---------------- */
-function attendClass(subjectId) {
-  advanceTimeSlot();
-  trackDaily('classAttend');
-  const progress = attendClassProgress(subjectId);
-  addLog(`${SUBJECTS[subjectId].name} 수업에 참여했다. (진도 ${progress}/100)`, 'log-result');
-  if (progress >= 100) {
-    const next = nextSpellForSubject(subjectId);
-    if (next) addLog(`[${next.name}]을(를) 습득할 준비가 되었다!`, 'log-spell');
-    else addLog('이 과목에서 더 배울 주문이 없다.', '');
-  }
-  render();
 }
 
 function learnSpellFromClass(subjectId) {
@@ -531,11 +345,6 @@ function useItemOutOfCombat(itemId) {
   const item = ITEMS[itemId];
   if (!item || !state.itemStacks[itemId]) return;
   if (item.type === 'potion') {
-    if (item.effect.bonusSlot && state.timeBonusUsedDay === state.day) {
-      addLog('오늘은 이미 시간을 벌 방법을 써버렸다. 내일 다시 시도해보자.', 'log-warn');
-      render();
-      return;
-    }
     applyEffect(item.effect);
     removeItemStack(itemId, 1);
     addLog(`[${item.name}]을(를) 사용했다.`, 'log-result');
@@ -765,7 +574,7 @@ function enemyTurn() {
 function winCombat() {
   const c = state.combat;
   const enemy = ENEMIES[c.enemyId];
-  const loot = rollCombatLoot(c.enemyId, state.location);
+  const loot = rollCombatLoot(c.enemyId, null);
   state.statsTrack.combatWins = (state.statsTrack.combatWins || 0) + 1;
   trackDaily('combatWin');
 
@@ -794,9 +603,10 @@ function winCombat() {
   if (c.enemyId === 'dementor') state.flags.dementor_faced = true;
 
   state.combat = null;
-  state.mode = 'explore';
-
-  if (state.flags.voldemort_defeated) { triggerEnding(); return; }
+  const next = state.pendingCombatNext;
+  state.pendingCombatNext = null;
+  if (next) { goToScene(next); return; }
+  state.mode = 'scene';
   render();
 }
 
@@ -810,107 +620,17 @@ function loseCombat() {
     render();
     return;
   }
-  addLog('쓰러졌다... 정신을 차려보니 기숙사 휴게실이다.', 'log-warn');
+  addLog('쓰러졌다... 정신을 차려보니 병동 침대다.', 'log-warn');
   state.combat = null;
-  state.mode = 'explore';
-  state.location = 'commonRoom';
   state.hp = Math.max(1, Math.floor(getMaxHp() * 0.5));
   state.gold = Math.max(0, state.gold - Math.floor(state.gold * 0.2));
-  render();
+  const lose = state.pendingCombatLose;
+  state.pendingCombatNext = null;
+  state.pendingCombatLose = null;
+  advanceDay();
+  goToScene(lose || 'HUB');
 }
 
-/* ---------------- 스토리 진행 (교장실) ---------------- */
-function getAvailableChapter() {
-  return STORY.chapters.find((ch) => !state.flags[ch.setFlag] && ch.requiresFlags.every((f) => state.flags[f]));
-}
-
-/* ---------------- 퀘스트 로그 ----------------
- * 별도의 퀘스트 데이터 없이, 이미 있는 flags/streaks를 읽어 "지금 뭘 해야 하는지"를
- * 상시 보여준다. 진행 중인 목표가 안 보이는 문제를 해결한다. */
-function getActiveQuestLog() {
-  const list = [];
-  const f = state.flags;
-
-  if (!f.ch1_started) list.push({ tag: '메인', label: '교장실에서 이야기를 들어보자', detail: '' });
-  else if (!f.has_diary) list.push({ tag: '메인', label: '단서를 찾아라', detail: '도서관·복도를 탐험해 일기장을 찾자' });
-  else if (!f.ch1_done) list.push({ tag: '메인', label: '단서를 보고하자', detail: '교장실로 돌아가 일기장을 보여주자' });
-  else if (!f.has_key) list.push({ tag: '메인', label: '금지된 숲의 흔적', detail: '금지된 숲을 탐험해 열쇠를 찾자' });
-  else if (!f.ch2_done) list.push({ tag: '메인', label: '열쇠를 보고하자', detail: '교장실로 돌아가 열쇠를 보여주자' });
-  else if (f.chamber_unlocked && !f.riddle_defeated) list.push({ tag: '메인', label: '비밀의 방 도전', detail: '비밀의 방으로 이동해 환영에 맞서자' });
-  else if (f.riddle_defeated && !f.ch3_done) list.push({ tag: '메인', label: '교장에게 보고', detail: '교장실로 돌아가 보고하자' });
-  else if (f.ch3_done && !f.voldemort_defeated) list.push({ tag: '메인', label: '최후의 결전', detail: '비밀의 방에서 볼드모트의 잔영과 맞서자' });
-
-  if (state.deadline) {
-    const remain = state.deadline.dueDay - state.day;
-    list.push({ tag: '마감', label: state.deadline.label, detail: remain >= 0 ? `D-${remain}` : `기한 초과 +${-remain}일` });
-  }
-
-  if (f.neville_book_active && !f.has_nevilles_book) list.push({ tag: '사이드', label: '네빌의 책 찾기', detail: '복도를 탐험해 책을 찾자' });
-  else if (f.has_nevilles_book) list.push({ tag: '사이드', label: '네빌에게 책 돌려주기', detail: '복도에서 네빌을 만나자' });
-
-  if (f.hagrid_favor_active && !f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드의 부탁: 약초 채집', detail: '금지된 숲에서 약초를 찾자' });
-  else if (f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드에게 약초 전달', detail: '금지된 숲 근처에서 해그리드를 만나자' });
-
-  const broomStreak = (state.streaks || {}).broomBalance || 0;
-  if (!f.broomBalance_done && broomStreak > 0) list.push({ tag: '도전', label: `빗자루 균형 훈련 (연속 ${broomStreak}/3)`, detail: '복도 쪽에서 도전할 수 있다' });
-
-  if (f.boggart_faced && !f.dementor_faced) {
-    list.push({ tag: '체인', label: '보가트를 물리쳤다', detail: '금지된 숲 어딘가에 디멘터가 나타난다' });
-  } else if (f.dementor_faced && !f.patronusPractice_done) {
-    const streak = (state.streaks || {}).patronusPractice || 0;
-    list.push({ tag: '체인', label: `패트로누스 수련${streak > 0 ? ` (연속 ${streak}/3)` : ''}`, detail: '복도에서 루핀 교수를 찾자' });
-  } else if (f.patronusPractice_done && !f.patronusTrial_done) {
-    const streak = (state.streaks || {}).patronusTrial || 0;
-    list.push({ tag: '시련', label: `패트로누스 시련${streak > 0 ? ` (연속 ${streak}/3)` : ''}`, detail: '복도에서 루핀 교수에게 도전을 청하자' });
-  }
-
-  return list;
-}
-
-function enterHeadmasterOffice() {
-  const ch = getAvailableChapter();
-  if (!ch) {
-    addLog('덤블도어 교수는 조용히 차를 마시고 있다. "지금은 특별히 할 이야기가 없구나."', 'log-npc');
-    render();
-    return;
-  }
-  state.pendingChapter = ch;
-  state.mode = 'story';
-  addLog(`[${ch.title}]`, 'log-story-title');
-  addLogParagraphs(ch.text, 'log-story');
-  render();
-}
-
-function resolveChapterChoice(idx) {
-  const ch = state.pendingChapter;
-  if (!ch) return;
-  const choice = ch.choices[idx];
-  applyEffect(choice.effect);
-  logResultWithEffect(choice.resultText, choice.effect);
-  state.flags[ch.setFlag] = true;
-  state.pendingChapter = null;
-  state.mode = 'explore';
-  if (ch.id === 'ch1_report') advanceDeadlineChapter('ch1');
-  else if (ch.id === 'ch2') advanceDeadlineChapter('ch2');
-  else if (ch.id === 'ch3') advanceDeadlineChapter('ch3');
-  if (ch.id === 'ch2') addLog('비밀의 방으로 향하는 통로가 열렸다. 도전할 준비가 되면 [비밀의 방]으로 이동하세요.', 'log-story');
-  render();
-}
-
-function enterChamber() {
-  if (!state.flags.chamber_unlocked) { addLog('아직 비밀의 방으로 가는 길을 찾지 못했다.', 'log-warn'); render(); return; }
-  if (state.flags.voldemort_defeated) { addLog('비밀의 방은 이제 고요하다.', ''); render(); return; }
-  if (!state.flags.riddle_defeated) {
-    addLog('축축한 어둠 속에서 톰 리들의 환영이 모습을 드러낸다!', 'log-event');
-    startCombat('riddleShade');
-    return;
-  }
-  if (!state.flags.ch3_done) { addLog('환영을 물리쳤지만 아직 교장에게 보고하지 않았다. 교장실로 가보자.', 'log-warn'); render(); return; }
-  addLog('깊은 어둠 속에서 볼드모트의 잔영이 형체를 갖추기 시작한다. 마지막 결전이다!', 'log-event');
-  startCombat('voldemortShadow');
-}
-
-/* ---------------- 엔딩 ---------------- */
 /* 마감을 거듭 어겼다면 좋은 결말도 한 단계 어두워진다 — "강등"이라는 약속을 지킨다 */
 const ENDING_DOWNGRADE = { together: 'light', light: 'balanced', balanced: 'dark', dark: 'dark' };
 

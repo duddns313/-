@@ -409,3 +409,11 @@ body {
 .sheet-stat-item { margin: 3px 0; font-size: 0.9rem; color: var(--green); }
 .sheet-enhance-note { color: var(--gold); font-size: 0.85rem; }
 .sheet-unknown-note { color: var(--text-dim); font-style: italic; margin-bottom: 10px; }
+
+.settings-label { margin: 14px 0 4px; font-size: 0.95rem; color: var(--text-dim); }
+.settings-label:first-of-type { margin-top: 4px; }
+.settings-desc { margin: 0 0 8px; font-size: 0.82rem; color: var(--text-dim); }
+.settings-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+
+/* 연출 줄이기: 흔들림·점멸 계열 애니메이션은 이 클래스가 붙으면 모두 무효화한다 */
+.reduce-motion * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

@@ -1,6 +1,7 @@
 /* ===================== 부트스트랩 ===================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   showSetupScreen();
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -11,7 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'sheet-overlay') closeSheet();
   });
 
-  $('log-recent').addEventListener('click', skipTypewriters);
+  /* 화면 아무 곳이나 눌러도 타이핑 중인 글이 즉시 끝까지 나온다 */
+  $('game-shell').addEventListener('click', skipTypewriters);
+
+  $('btn-settings').addEventListener('click', openSettingsSheet);
 
   $('btn-save').addEventListener('click', () => {
     if (!state) return;

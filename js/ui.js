@@ -60,6 +60,30 @@ function confirmSheet(message, onConfirm) {
   });
 }
 
+/* ---------------- 설정 ---------------- */
+function openSettingsSheet() {
+  openSheet((content) => {
+    content.appendChild(el('h3', 'sheet-item-name', '설정'));
+
+    content.appendChild(el('p', 'settings-label', '글자 속도'));
+    const speedRow = el('div', 'settings-row');
+    [['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게'], ['off', '즉시 표시']].forEach(([val, label]) => {
+      speedRow.appendChild(button(label, () => { setTypeSpeed(val); openSettingsSheet(); }, { cls: 'btn-small' + (settings.typeSpeed === val ? ' btn-primary' : '') }));
+    });
+    content.appendChild(speedRow);
+
+    content.appendChild(el('p', 'settings-label', '연출 줄이기'));
+    content.appendChild(el('p', 'settings-desc', '화면 흔들림·점멸 등 움직임을 최소화합니다.'));
+    const motionRow = el('div', 'settings-row');
+    motionRow.appendChild(button(settings.reduceMotion ? '켜짐' : '꺼짐', () => { setReduceMotion(!settings.reduceMotion); openSettingsSheet(); }, { cls: 'btn-small' + (settings.reduceMotion ? ' btn-primary' : '') }));
+    content.appendChild(motionRow);
+
+    const closeRow = el('div', 'sheet-actions');
+    closeRow.appendChild(button('닫기', closeSheet, { cls: 'btn' }));
+    content.appendChild(closeRow);
+  });
+}
+
 /* ---------------- 판정 연출 (주사위 플래시 + 햅틱) ---------------- */
 function notifyCheck(result) {
   const container = $('check-flash-container');
@@ -84,12 +108,21 @@ function processLogQueue() {
   const recent = $('log-recent');
   if (!recent || logQueue.length === 0) return;
   const entry = logQueue.shift();
-  typingActive = true;
   const p = el('p', 'log-entry ' + entry.cls);
   recent.appendChild(p);
   while (recent.children.length > 6) recent.removeChild(recent.firstChild);
-  let i = 0;
   const full = entry.text;
+  const speed = getTypeSpeedMs();
+
+  if (speed <= 0) {
+    p.textContent = full;
+    recent.scrollTop = recent.scrollHeight;
+    setTimeout(processLogQueue, 0);
+    return;
+  }
+
+  typingActive = true;
+  let i = 0;
   const timer = setInterval(() => {
     i += 1;
     p.textContent = full.slice(0, i);
@@ -100,7 +133,7 @@ function processLogQueue() {
       typingActive = false;
       setTimeout(processLogQueue, 130);
     }
-  }, 22);
+  }, speed);
   currentTypewriter = { timer, node: p, full };
 }
 

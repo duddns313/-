@@ -45,9 +45,10 @@ function logResultWithEffect(text, effect, cls) {
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-function runCheck(statKey, dc) {
-  const result = skillCheck(statKey, dc);
-  addLog(`[${STAT_META[statKey].label} 판정 · ${CHECK_TIER_LABEL[result.tier]}] (성공률 ${result.rate}%)`, 'log-check-' + result.tier);
+function runCheck(statKey, dc, bonusPercent) {
+  const result = skillCheck(statKey, dc, bonusPercent);
+  const bonusNote = bonusPercent ? ` (기억 보정 +${bonusPercent}%)` : '';
+  addLog(`[${STAT_META[statKey].label} 판정 · ${CHECK_TIER_LABEL[result.tier]}] (성공률 ${result.rate}%)${bonusNote}`, 'log-check-' + result.tier);
   if (typeof notifyCheck === 'function') notifyCheck(result);
   return result;
 }
@@ -87,6 +88,7 @@ function applyEffect(effect) {
   if (effect.alignment) state.alignment = clamp(state.alignment + effect.alignment, -100, 100);
   if (effect.item) addItemStack(effect.item, 1);
   if (effect.flag) state.flags[effect.flag] = true;
+  if (effect.memory) state.memories[effect.memory] = true;
   if (effect.exp) gainExp(effect.exp);
   if (effect.learnSpell) applyLearnSpellEffect(effect.learnSpell);
   if (effect.equipDrop) applyEquipDropEffect(effect.equipDrop);
@@ -294,6 +296,7 @@ function explore() {
   }
   const ev = chosenPool[randInt(0, chosenPool.length - 1)];
   if (ev.once) state.flags['event_' + ev.id] = true;
+  if (ev.recall && state.memories[ev.recall]) addLog(`💭 ${ev.recallText}`, 'log-memory');
 
   if (ev.combat) {
     addLogParagraphs(ev.text, 'log-event');
@@ -324,7 +327,7 @@ function resolveEventChoice(choiceIdx) {
 
   let resolved = choice;
   if (choice.check) {
-    const result = runCheck(choice.check.stat, choice.check.dc);
+    const result = runCheck(choice.check.stat, choice.check.dc, choice.check.bonusPercent);
     const outcome = choice.outcomes[result.tier]
       || (result.tier === 'critical' ? choice.outcomes.success : null)
       || (result.tier === 'fumble' ? choice.outcomes.fail : null)

@@ -120,6 +120,25 @@ const EVENTS = {
         },
       ],
     },
+    {
+      id: 'professor_suspicion', once: true,
+      requiresFn: (s) => !!(s.memories && s.memories.read_dark_book),
+      recall: 'read_dark_book', recallText: '금서 구역에서 옮겨 적었던 그 어두운 지식이 떠오른다.',
+      text: '스네이프 교수가 복도에서 영운을 불러 세운다.\n\n"요즘 자네에게서... 익숙하지 않은 기운이 느껴지는군." 그의 눈이 가늘어진다. "무엇을 공부하고 있는 건가?"',
+      choices: [
+        {
+          label: '시치미를 뗀다', check: { stat: 'charm', dc: 8 },
+          outcomes: {
+            critical: { effect: { exp: 10 }, text: '태연한 얼굴에 교수도 더 캐묻지 않고 돌아선다.' },
+            success: { effect: { exp: 5 }, text: '교수가 미심쩍은 눈으로 바라보지만, 일단은 넘어간다.' },
+            fail: { effect: { alignment: -3 }, text: '목소리가 떨린 걸 눈치챘는지, 교수의 눈빛이 더 날카로워진다.' },
+            fumble: { effect: { alignment: -6 }, text: '"거짓말은 서투르군." 교수가 낮게 말한다. 요주의 인물로 찍힌 듯하다.' },
+          },
+        },
+        { label: '솔직하게 털어놓는다', effect: { alignment: 3, exp: 6 }, resultText: '교수는 뜻밖이라는 듯 잠시 침묵하더니, "차라리 낫군." 이라고만 말한다.' },
+        { label: '얼버무리며 지나간다', effect: {}, resultText: '교수는 더 묻지 않지만, 시선이 오래도록 등 뒤에 머무는 게 느껴진다.' },
+      ],
+    },
   ],
 
   library: [
@@ -154,8 +173,8 @@ const EVENTS = {
         {
           label: '몰래 살펴본다', check: { stat: 'intelligence', dc: 9 },
           outcomes: {
-            critical: { effect: { item: 'scrollSectumsempra', alignment: -5, exp: 10 }, text: '위험한 지식을 완전히 이해했다. [섹텀셈프라] 주문서를 손에 넣었다.' },
-            success: { effect: { item: 'scrollSectumsempra', alignment: -8 }, text: '어둠의 지식을 옮겨 적었다. [섹텀셈프라] 주문서를 손에 넣었다.' },
+            critical: { effect: { item: 'scrollSectumsempra', alignment: -5, exp: 10, memory: 'read_dark_book' }, text: '위험한 지식을 완전히 이해했다. [섹텀셈프라] 주문서를 손에 넣었다.' },
+            success: { effect: { item: 'scrollSectumsempra', alignment: -8, memory: 'read_dark_book' }, text: '어둠의 지식을 옮겨 적었다. [섹텀셈프라] 주문서를 손에 넣었다.' },
             fail: { effect: { alignment: -3 }, text: '알 수 없는 불쾌한 기운만 느끼고 물러났다.' },
             fumble: { effect: { alignment: -10, hp: -10 }, text: '봉인 마법이 발동해 저주에 스쳤다!' },
           },
@@ -211,6 +230,24 @@ const EVENTS = {
             fumble: { effect: { companionAffinity: { id: 'hermione', amount: -3 } }, text: '헤르미온느가 다른 책에 정신이 팔려 대답도 건성이다. 살짝 무시당한 기분이다.' },
           },
         },
+      ],
+    },
+    {
+      id: 'hermione_crisis', once: true, requiresFlag: 'ch1_done',
+      recall: 'saved_hermione', recallText: '트롤에게서 헤르미온느를 구했던 그날 밤이 스친다.',
+      text: '서가 사이, 헤르미온느가 낡은 마법서를 끌어안은 채 안절부절못하고 있다.\n\n"이 주문, 시험에서 실패하면 어떡하지..." 그녀답지 않게 목소리가 떨린다. 평소라면 누구보다 자신만만했을 텐데.',
+      choices: [
+        {
+          label: '"나를 믿어. 잘할 거야."', requiresMemory: 'saved_hermione',
+          check: { stat: 'charm', dc: 6, bonusPercent: 15 },
+          outcomes: {
+            critical: { effect: { companionAffinity: { id: 'hermione', amount: 15 }, exp: 10 }, text: '헤르미온느가 망설임 없이 고개를 끄덕인다. 그날 밤처럼, 영운을 믿기로 한 것이다.' },
+            success: { effect: { companionAffinity: { id: 'hermione', amount: 8 }, exp: 5 }, text: '헤르미온느의 표정이 한결 편안해진다.' },
+            fail: { effect: {}, text: '헤르미온느는 여전히 초조한 얼굴이지만, 옆에 있어준 것만으로도 고마워하는 눈치다.' },
+            fumble: { effect: { companionAffinity: { id: 'hermione', amount: -2 } }, text: '위로가 서툴렀는지, 헤르미온느가 어색하게 웃으며 화제를 돌린다.' },
+          },
+        },
+        { label: '조용히 옆에 앉아 함께 책을 본다', effect: { intelligence: 1, exp: 4 }, resultText: '말없이 함께 책장을 넘기다 보니, 어느새 헤르미온느의 손끝이 떨림을 멈췄다.' },
       ],
     },
   ],
@@ -364,7 +401,7 @@ const EVENTS = {
     {
       id: 'return_nevilles_book', priority: 1, once: true, requiresFlag: 'has_nevilles_book',
       text: '네빌에게 찾아낸 교과서를 건넨다.',
-      choices: [{ label: '"여기, 찾았어."', effect: { companionAffinity: { id: 'neville', amount: 15 }, gold: 10, exp: 8 }, resultText: '네빌이 눈물이 그렁그렁한 채로 고마워한다. (네빌과 더 가까워졌다)' }],
+      choices: [{ label: '"여기, 찾았어."', effect: { companionAffinity: { id: 'neville', amount: 15 }, gold: 10, exp: 8, memory: 'kept_promise_neville' }, resultText: '네빌이 눈물이 그렁그렁한 채로 고마워한다.' }],
     },
     {
       id: 'neville_chat',
@@ -389,7 +426,7 @@ const EVENTS = {
       id: 'halloween_troll', priority: 2, once: true, requiresFlag: 'ch1_started',
       text: '핼러윈 연회 도중, 한 교수가 다급하게 뛰어들며 외친다.\n"트롤이다! 던전에 트롤이 있다!"\n대연회장이 순식간에 아수라장이 된다. 문득 헤르미온느가 아직 화장실에서 나오지 않았다는 사실이 떠오른다.',
       choices: [
-        { label: '헤르미온느를 구하러 달려간다', effect: { companionAffinity: { id: 'hermione', amount: 20 } }, resultText: '한달음에 달려가니 거대한 트롤이 헤르미온느 앞을 가로막고 있었다!', combat: 'troll' },
+        { label: '헤르미온느를 구하러 달려간다', effect: { companionAffinity: { id: 'hermione', amount: 20 }, memory: 'saved_hermione' }, resultText: '한달음에 달려가니 거대한 트롤이 헤르미온느 앞을 가로막고 있었다!', combat: 'troll' },
         { label: '다른 학생들과 함께 대피한다', effect: { exp: 5, alignment: -2 }, resultText: '안전하게 대피했지만, 헤르미온느가 걱정되어 마음이 편치 않다.' },
       ],
     },

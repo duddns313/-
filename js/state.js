@@ -3,7 +3,7 @@
 const FIXED_PLAYER_NAME = '윤영운';
 const SAVE_KEY = 'hp_text_game_save_v2';
 const OLD_SAVE_KEYS = ['hp_text_game_save_v1'];
-const CURRENT_SAVE_VERSION = 6;
+const CURRENT_SAVE_VERSION = 7;
 const MIN_COMPATIBLE_VERSION = 2; /* v1은 구조 자체가 달라 이관 불가. v2부터는 점진적 이관 지원. */
 
 const DEADLINE_CHAPTERS = {
@@ -59,6 +59,7 @@ function newState(name, houseId) {
     ngPlusCount: 0,
     companions: {},
     flags: {},
+    memories: {},
     log: [],
     mode: 'explore',
     combat: null,
@@ -176,6 +177,10 @@ function migrateSave(parsed) {
     if (here) here.connections.forEach((cid) => { visited[cid] = true; });
     parsed.visitedLocations = visited;
     parsed.saveVersion = 6;
+  }
+  if (parsed.saveVersion === 6) {
+    parsed.memories = parsed.memories || {};
+    parsed.saveVersion = 7;
   }
   return parsed;
 }

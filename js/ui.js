@@ -412,10 +412,12 @@ function renderEventStage(stage) {
   const ev = state.pendingEvent;
   const wrap = el('div', 'choice-wrap');
   ev.choices.forEach((choice, idx) => {
+    if (choice.requiresMemory && !(state.memories && state.memories[choice.requiresMemory])) return;
     let label = choice.label;
     if (choice.check) {
-      const rate = getCheckRate(choice.check.stat, choice.check.dc);
-      label += ` [${STAT_META[choice.check.stat].label} 판정 · 성공률 ${rate}%]`;
+      const rate = getCheckRate(choice.check.stat, choice.check.dc, choice.check.bonusPercent);
+      const bonusNote = choice.check.bonusPercent ? ` (기억 보정 +${choice.check.bonusPercent}%)` : '';
+      label += ` [${STAT_META[choice.check.stat].label} 판정 · 성공률 ${rate}%${bonusNote}]`;
     }
     wrap.appendChild(button(label, () => resolveEventChoice(idx)));
   });
@@ -607,6 +609,19 @@ function renderCharacterTab() {
     dBox.appendChild(el('p', remain < 0 ? 'deadline-overdue' : remain <= 5 ? 'deadline-close' : 'deadline-note',
       `${state.deadline.label} — ${remain >= 0 ? `D-${remain}` : `기한 초과 (+${-remain}일)`}`));
     panel.appendChild(dBox);
+  }
+
+  const memoryIds = Object.keys(state.memories || {}).filter((id) => state.memories[id] && MEMORIES[id]);
+  if (memoryIds.length) {
+    const mBox = el('div', 'panel-box');
+    mBox.appendChild(el('h3', 'panel-title', '💭 기억'));
+    memoryIds.forEach((id) => {
+      const row = el('div', 'memory-row');
+      row.appendChild(el('div', 'memory-label', MEMORIES[id].label));
+      row.appendChild(el('div', 'memory-desc', MEMORIES[id].desc));
+      mBox.appendChild(row);
+    });
+    panel.appendChild(mBox);
   }
 
   const dailyBox = el('div', 'panel-box');

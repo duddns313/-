@@ -194,6 +194,16 @@ body {
 .log-check-success { color: var(--green); }
 .log-check-fail { color: var(--text-dim); }
 .log-check-fumble { color: var(--red); font-weight: bold; }
+.log-memory {
+  color: var(--gold);
+  font-style: italic;
+  border-left: 3px solid var(--gold);
+  padding-left: 8px;
+}
+.memory-row { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.memory-row:last-child { border-bottom: none; }
+.memory-label { color: var(--gold); font-size: 0.92rem; }
+.memory-desc { color: var(--text-dim); font-size: 0.8rem; margin-top: 2px; }
 .log-effect-chip {
   display: inline-block;
   color: var(--text-dim);

@@ -517,14 +517,62 @@ function renderTravel() {
   row.innerHTML = '';
   if (!['explore', 'shop'].includes(state.mode)) return;
   const loc = LOCATIONS[state.location];
-  row.appendChild(el('h4', 'travel-title', '이동'));
+
+  const titleRow = el('div', 'travel-title-row');
+  titleRow.appendChild(el('h4', 'travel-title', '이동'));
+  titleRow.appendChild(button('🗺️ 지도', openMinimapSheet, { cls: 'btn-tiny' }));
+  row.appendChild(titleRow);
+
   const btnRow = el('div', 'travel-buttons');
   loc.connections.forEach((cid) => {
     const target = LOCATIONS[cid];
     const locked = target.locked && !state.flags.chamber_unlocked;
-    btnRow.appendChild(button(target.name + (locked ? ' 🔒' : ''), () => travelTo(cid), { cls: 'btn-travel' }));
+    const crossesZone = target.zone !== loc.zone;
+    const free = !crossesZone || hasMarauderMap();
+    const hint = getLocationHint(cid);
+
+    const card = document.createElement('button');
+    card.className = 'btn btn-travel-card';
+    card.appendChild(el('span', 'travel-name', target.name + (locked ? ' 🔒' : '') + (hint ? ' ' + hint : '')));
+    const costText = crossesZone ? (hasMarauderMap() ? '구역 이동 · 도둑 지도로 무료' : '구역 이동 · 시간대 1') : '같은 구역 · 무료';
+    card.appendChild(el('span', 'travel-sub', `${riskLabel(target.risk)} · ${costText}`));
+    card.addEventListener('click', () => travelTo(cid));
+    if (!free) card.classList.add('travel-costly');
+    btnRow.appendChild(card);
   });
   row.appendChild(btnRow);
+}
+
+/* ---------------- 미니맵 (구역별 목록) ---------------- */
+function openMinimapSheet() {
+  openSheet((content) => {
+    content.appendChild(el('h3', 'sheet-item-name', '호그와트 지도'));
+    if (hasMarauderMap()) content.appendChild(el('p', 'sheet-item-rarity', '🗺️ 도둑 지도 보유 중 — 구역 이동이 항상 무료다.'));
+
+    ['castle', 'outskirts', 'deep'].forEach((zoneId) => {
+      const locsInZone = Object.values(LOCATIONS).filter((l) => l.zone === zoneId);
+      if (!locsInZone.length) return;
+      const zoneBox = el('div', 'minimap-zone');
+      zoneBox.appendChild(el('h4', 'minimap-zone-title', ZONE_LABELS[zoneId] || zoneId));
+      locsInZone.forEach((l) => {
+        const known = !!(state.visitedLocations && state.visitedLocations[l.id]);
+        const row = el('div', 'minimap-row' + (l.id === state.location ? ' minimap-here' : ''));
+        if (!known) {
+          row.appendChild(el('span', 'minimap-name', '??? — 아직 가보지 않았다'));
+        } else {
+          const hint = getLocationHint(l.id);
+          row.appendChild(el('span', 'minimap-name', (l.id === state.location ? '▶ ' : '') + l.name + (l.locked && !state.flags.chamber_unlocked ? ' 🔒' : '')));
+          row.appendChild(el('span', 'minimap-tag', `${riskLabel(l.risk)}${hint ? ' · ' + hint : ''}`));
+        }
+        zoneBox.appendChild(row);
+      });
+      content.appendChild(zoneBox);
+    });
+
+    const closeRow = el('div', 'sheet-actions');
+    closeRow.appendChild(button('닫기', closeSheet, { cls: 'btn' }));
+    content.appendChild(closeRow);
+  });
 }
 
 /* ---------------- 캐릭터 탭 ---------------- */

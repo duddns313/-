@@ -209,7 +209,28 @@ body {
 .stage-subtitle { color: var(--text-dim); font-size: 0.85rem; margin: 10px 0 6px; }
 .choice-wrap, .travel-buttons { display: flex; flex-direction: column; gap: 6px; }
 .travel-buttons { flex-direction: row; flex-wrap: wrap; }
-.travel-title { margin: 0 0 6px; color: var(--text-dim); font-size: 0.85rem; }
+.travel-title { margin: 0; color: var(--text-dim); font-size: 0.85rem; }
+.travel-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.btn-travel-card {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+.btn-travel-card.travel-costly { border-color: var(--gold); }
+.travel-name { font-size: 0.95rem; }
+.travel-sub { font-size: 0.72rem; color: var(--text-dim); }
+
+.minimap-zone { margin-bottom: 14px; }
+.minimap-zone-title { margin: 0 0 6px; color: var(--gold); font-size: 0.9rem; }
+.minimap-row { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+.minimap-row:last-child { border-bottom: none; }
+.minimap-here { color: var(--gold); }
+.minimap-name { flex: 1; }
+.minimap-tag { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
 
 #panel-log { padding-bottom: 20px; }
 #log-full {

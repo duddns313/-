@@ -185,6 +185,9 @@ function gainExp(amount) {
 }
 
 /* ---------------- 이동 ---------------- */
+function hasMarauderMap() { return (state.itemStacks.marauderMap || 0) > 0; }
+
+/* 같은 구역 안에서는 무료, 구역을 넘을 때만 시간대가 든다 — 도둑 지도가 있으면 그마저 무료 */
 function travelTo(locId) {
   const loc = LOCATIONS[locId];
   if (!loc) return;
@@ -193,7 +196,12 @@ function travelTo(locId) {
     render();
     return;
   }
+  const fromLoc = LOCATIONS[state.location];
+  const crossesZone = fromLoc.zone !== loc.zone;
+  if (crossesZone && !hasMarauderMap()) advanceTimeSlot();
   state.location = locId;
+  state.visitedLocations = state.visitedLocations || {};
+  state.visitedLocations[locId] = true;
   addLog(`--- ${loc.name}(으)로 이동했다 ---`, 'log-move');
   state.mode = loc.shop ? 'shop' : 'explore';
   render();
@@ -233,6 +241,33 @@ function advanceDeadlineChapter(finishedChapterId) {
 }
 
 /* ---------------- 탐험 / 랜덤 이벤트 ---------------- */
+function eligibleEventsFor(loc) {
+  const pool = EVENTS[loc.tag];
+  if (!pool) return [];
+  return pool.filter((ev) => {
+    if (ev.once && state.flags['event_' + ev.id]) return false;
+    if (ev.requiresFlag && !state.flags[ev.requiresFlag]) return false;
+    if (ev.notFlag && state.flags[ev.notFlag]) return false;
+    if (ev.requiresFn && !ev.requiresFn(state)) return false;
+    return true;
+  });
+}
+
+/* 이동 버튼에 붙는 목적지 힌트 — "어디를 가야 할지" 미리 보여줘서 이동을 방황이 아닌 항해로 만든다 */
+function getLocationHint(locId) {
+  const loc = LOCATIONS[locId];
+  if (loc.shop) return '🏪';
+  if (loc.tag === 'training') return '🪄';
+  if (loc.tag === 'quest') return getAvailableChapter() ? '⭐' : '';
+  if (loc.tag === 'safe') return '🛏️';
+  if (loc.tag === 'chamber') return state.flags.chamber_unlocked && !state.flags.voldemort_defeated ? '⚔️' : '';
+  const eligible = eligibleEventsFor(loc);
+  const maxPriority = eligible.reduce((max, ev) => Math.max(max, ev.priority || 0), 0);
+  if (maxPriority >= 3) return '⭐';
+  if (maxPriority >= 1) return '❗';
+  return '';
+}
+
 function explore() {
   advanceTimeSlot();
   const loc = LOCATIONS[state.location];
@@ -244,13 +279,7 @@ function explore() {
     render();
     return;
   }
-  const eligible = pool.filter((ev) => {
-    if (ev.once && state.flags['event_' + ev.id]) return false;
-    if (ev.requiresFlag && !state.flags[ev.requiresFlag]) return false;
-    if (ev.notFlag && state.flags[ev.notFlag]) return false;
-    if (ev.requiresFn && !ev.requiresFn(state)) return false;
-    return true;
-  });
+  const eligible = eligibleEventsFor(loc);
   // 우선순위 3단계: 3=메인 퀘스트 > 2=대형 이벤트 > 1=사이드 퀘스트 > 0=잡 이벤트.
   // 조건을 충족한 이벤트 중 가장 높은 등급만 후보로 남겨, 메인 퀘스트가 잡다한 이벤트에 묻히지 않게 한다.
   const maxPriority = eligible.reduce((max, ev) => Math.max(max, ev.priority || 0), 0);

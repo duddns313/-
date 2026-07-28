@@ -3,7 +3,7 @@
 const FIXED_PLAYER_NAME = '윤영운';
 const SAVE_KEY = 'hp_text_game_save_v2';
 const OLD_SAVE_KEYS = ['hp_text_game_save_v1'];
-const CURRENT_SAVE_VERSION = 5;
+const CURRENT_SAVE_VERSION = 6;
 const MIN_COMPATIBLE_VERSION = 2; /* v1은 구조 자체가 달라 이관 불가. v2부터는 점진적 이관 지원. */
 
 const DEADLINE_CHAPTERS = {
@@ -34,6 +34,7 @@ function newState(name, houseId) {
     gold: 30,
     alignment: 0,
     location: 'commonRoom',
+    visitedLocations: { commonRoom: true, greatHall: true, library: true, corridors: true },
     day: 1,
     timeSlot: 0,
     bonusSlotsToday: 0,
@@ -166,6 +167,15 @@ function migrateSave(parsed) {
       parsed.deadline = { chapterId, label: info.label, dueDay: parsed.day + info.days };
     }
     parsed.saveVersion = 5;
+  }
+  if (parsed.saveVersion === 5) {
+    /* 이동 개편: 구역(zone) 기반 비용 + 미니맵을 위한 방문 기록 도입.
+     * 이미 이동 버튼으로 이름이 노출돼 있던 인접 지역까지는 "이미 알던 곳"으로 취급한다. */
+    const visited = { [parsed.location]: true };
+    const here = LOCATIONS[parsed.location];
+    if (here) here.connections.forEach((cid) => { visited[cid] = true; });
+    parsed.visitedLocations = visited;
+    parsed.saveVersion = 6;
   }
   return parsed;
 }

@@ -106,7 +106,7 @@ const ITEMS = {
   scrollSectumsempra: { id: 'scrollSectumsempra', name: '주문서 : 섹텀셈프라 (금서)', type: 'scroll', spellId: 'sectumsempra', dc: 11, price: 0, sell: 50, desc: '금지된 지식. 습득 시 성향이 크게 흔들린다.' },
   scrollAvadaKedavra: { id: 'scrollAvadaKedavra', name: '주문서 : 아바다 케다브라 (금서)', type: 'scroll', spellId: 'avadaKedavra', dc: 14, price: 0, sell: 100, desc: '용서받을 수 없는 저주의 지식. 습득 시 영혼이 크게 어두워진다.' },
 
-  marauderMap: { id: 'marauderMap', name: '도둑 지도', type: 'quest', desc: '성 안의 비밀 통로와 사람들의 위치를 보여주는 지도.' },
+  marauderMap: { id: 'marauderMap', name: '도둑 지도', type: 'quest', price: 150, desc: '성 안의 비밀 통로와 사람들의 위치를 보여주는 지도. 지니고 있으면 구역을 넘나드는 이동이 시간을 잡아먹지 않는다.' },
   oldDiary: { id: 'oldDiary', name: '낡은 일기장', type: 'quest', desc: '누군가 숨겨둔 듯한 정체불명의 일기장.' },
   rustyKey: { id: 'rustyKey', name: '녹슨 열쇠', type: 'quest', desc: '오래된 자물쇠에 맞을 것 같은 열쇠.' },
   basiliskFang: { id: 'basiliskFang', name: '바실리스크의 송곳니', type: 'quest', desc: '거대한 뱀의 것으로 보이는 송곳니.' },

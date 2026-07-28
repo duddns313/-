@@ -251,8 +251,10 @@ function explore() {
     if (ev.requiresFn && !ev.requiresFn(state)) return false;
     return true;
   });
-  // 핵심(퀘스트) 이벤트가 조건을 충족했다면 잡다한 이벤트에 묻히지 않고 최우선으로 등장한다
-  const priorityEligible = eligible.filter((ev) => ev.priority);
+  // 우선순위 3단계: 3=메인 퀘스트 > 2=대형 이벤트 > 1=사이드 퀘스트 > 0=잡 이벤트.
+  // 조건을 충족한 이벤트 중 가장 높은 등급만 후보로 남겨, 메인 퀘스트가 잡다한 이벤트에 묻히지 않게 한다.
+  const maxPriority = eligible.reduce((max, ev) => Math.max(max, ev.priority || 0), 0);
+  const priorityEligible = maxPriority > 0 ? eligible.filter((ev) => (ev.priority || 0) === maxPriority) : [];
   const chosenPool = priorityEligible.length > 0 ? priorityEligible
     : eligible.length > 0 ? eligible
       : pool.filter((ev) => !ev.once);

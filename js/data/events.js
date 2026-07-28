@@ -101,7 +101,7 @@ const EVENTS = {
       ],
     },
     {
-      id: 'find_nevilles_book', priority: true, once: true, requiresFlag: 'neville_book_active', notFlag: 'has_nevilles_book',
+      id: 'find_nevilles_book', priority: 1, once: true, requiresFlag: 'neville_book_active', notFlag: 'has_nevilles_book',
       text: '복도 구석 화분 뒤에 낡은 책 한 권이 떨어져 있다. 네빌이 찾던 것과 비슷하다.',
       choices: [{ label: '책을 챙긴다', effect: { item: 'nevilleBook', flag: 'has_nevilles_book', exp: 5 }, resultText: '네빌의 교과서를 찾았다! 돌려주러 가자.' }],
     },
@@ -124,7 +124,7 @@ const EVENTS = {
 
   library: [
     {
-      id: 'clue_diary', priority: true, once: true, requiresFlag: 'ch1_started', notFlag: 'has_diary',
+      id: 'clue_diary', priority: 3, once: true, requiresFlag: 'ch1_started', notFlag: 'has_diary',
       text: '서고 깊은 곳, 먼지 쌓인 책들 사이에서 낯선 일기장을 발견했다.',
       choices: [{ label: '일기장을 챙긴다', effect: { item: 'oldDiary', flag: 'has_diary', exp: 10 }, resultText: '낡은 일기장을 손에 넣었다. 무언가 단서가 될 것 같다.' }],
     },
@@ -228,7 +228,7 @@ const EVENTS = {
       combat: 'basilisk',
     },
     {
-      id: 'hagrid_favor_herb', priority: true, once: true, requiresFlag: 'hagrid_favor_active', notFlag: 'hagrid_favor_have_herb',
+      id: 'hagrid_favor_herb', priority: 1, once: true, requiresFlag: 'hagrid_favor_active', notFlag: 'hagrid_favor_have_herb',
       text: '해그리드가 말한 은빛 잎사귀 약초가 나무 아래 자라있다.',
       choices: [{ label: '조심스레 채집한다', effect: { item: 'rareHerb', flag: 'hagrid_favor_have_herb', exp: 6 }, resultText: '희귀한 약초를 채집했다. 해그리드에게 가져다주자.' }],
     },
@@ -249,7 +249,7 @@ const EVENTS = {
     },
     { id: 'forest_herb', text: '희귀한 마법 약초가 자라난 것을 발견했다.', choices: [{ label: '채집한다', effect: { item: 'manaPotion', exp: 5 }, resultText: '약초를 채집해 마나 물약으로 정제했다.' }] },
     {
-      id: 'forest_key', priority: true, once: true, notFlag: 'has_key',
+      id: 'forest_key', priority: 3, once: true, notFlag: 'has_key',
       text: '땅에 반쯤 파묻힌 녹슨 열쇠를 발견했다.',
       choices: [{ label: '집어 든다', effect: { item: 'rustyKey', flag: 'has_key', exp: 6 }, resultText: '녹슨 열쇠를 손에 넣었다.' }],
     },
@@ -295,12 +295,12 @@ const EVENTS = {
       ],
     },
     {
-      id: 'hagrid_favor_ask', priority: true, once: true, notFlag: 'hagrid_favor_active',
+      id: 'hagrid_favor_ask', priority: 1, once: true, notFlag: 'hagrid_favor_active',
       text: '해그리드가 걱정스러운 표정으로 말한다. "영운아, 부탁 하나만 들어줄 수 있겠니? 금지된 숲 깊은 곳에 은빛 잎사귀 약초가 자란다는데, 다치는 동물이 있어서 말이야..."',
       choices: [{ label: '부탁을 들어주겠다고 한다', effect: { flag: 'hagrid_favor_active' }, resultText: '금지된 숲에서 약초를 찾아보기로 했다.' }],
     },
     {
-      id: 'hagrid_favor_return', priority: true, once: true, requiresFlag: 'hagrid_favor_have_herb',
+      id: 'hagrid_favor_return', priority: 1, once: true, requiresFlag: 'hagrid_favor_have_herb',
       text: '해그리드에게 채집해 온 약초를 건넨다.',
       choices: [{ label: '"여기, 부탁하신 약초예요."', effect: { gold: 30, exp: 15, item: 'healPotion' }, resultText: '해그리드가 활짝 웃으며 고마워한다. 답례로 회복 물약을 챙겨준다.' }],
     },
@@ -357,12 +357,12 @@ const EVENTS = {
       ],
     },
     {
-      id: 'neville_book_request', priority: true, once: true, notFlag: 'neville_book_active',
+      id: 'neville_book_request', priority: 1, once: true, notFlag: 'neville_book_active',
       text: '네빌이 걱정스러운 얼굴로 다가온다. "혹시 내 약초학 교과서 못 봤어? 복도 어딘가에서 잃어버린 것 같은데..."',
       choices: [{ label: '찾아봐 주겠다고 한다', effect: { flag: 'neville_book_active' }, resultText: '네빌의 교과서를 찾아주기로 했다.' }],
     },
     {
-      id: 'return_nevilles_book', priority: true, once: true, requiresFlag: 'has_nevilles_book',
+      id: 'return_nevilles_book', priority: 1, once: true, requiresFlag: 'has_nevilles_book',
       text: '네빌에게 찾아낸 교과서를 건넨다.',
       choices: [{ label: '"여기, 찾았어."', effect: { companionAffinity: { id: 'neville', amount: 15 }, gold: 10, exp: 8 }, resultText: '네빌이 눈물이 그렁그렁한 채로 고마워한다. (네빌과 더 가까워졌다)' }],
     },
@@ -386,7 +386,7 @@ const EVENTS = {
   /* 대연회장·기숙사 휴게실 — 책에 등장하는 대형 이벤트들. 필수 조건 충족 시 다른 것보다 우선 등장한다. */
   safe: [
     {
-      id: 'halloween_troll', priority: true, once: true, requiresFlag: 'ch1_started',
+      id: 'halloween_troll', priority: 2, once: true, requiresFlag: 'ch1_started',
       text: '핼러윈 연회 도중, 한 교수가 다급하게 뛰어들며 외친다.\n"트롤이다! 던전에 트롤이 있다!"\n대연회장이 순식간에 아수라장이 된다. 문득 헤르미온느가 아직 화장실에서 나오지 않았다는 사실이 떠오른다.',
       choices: [
         { label: '헤르미온느를 구하러 달려간다', effect: { companionAffinity: { id: 'hermione', amount: 20 } }, resultText: '한달음에 달려가니 거대한 트롤이 헤르미온느 앞을 가로막고 있었다!', combat: 'troll' },
@@ -394,7 +394,7 @@ const EVENTS = {
       ],
     },
     {
-      id: 'quidditch_match', priority: true, once: true, requiresFlag: 'ch1_done',
+      id: 'quidditch_match', priority: 2, once: true, requiresFlag: 'ch1_done',
       text: '기숙사 대항 퀴디치 시합 날이다! 관중석이 함성으로 가득 찬 가운데, 빗자루를 탄 선수들이 하늘로 날아오른다.',
       choices: [
         {
@@ -410,7 +410,7 @@ const EVENTS = {
       ],
     },
     {
-      id: 'yule_ball', priority: true, once: true, requiresFlag: 'ch2_done',
+      id: 'yule_ball', priority: 2, once: true, requiresFlag: 'ch2_done',
       text: '겨울 무도회가 열리는 밤, 화려하게 장식된 대연회장에 친구들이 한자리에 모였다.',
       choices: [
         {

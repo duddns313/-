@@ -3,7 +3,7 @@
 const SETTINGS_KEY = 'hp_text_game_settings_v1';
 const TYPE_SPEED_MS = { slow: 40, normal: 22, fast: 10, off: 0 };
 
-let settings = { typeSpeed: 'normal', reduceMotion: false };
+let settings = { typeSpeed: 'normal', reduceMotion: true };
 
 function loadSettings() {
   try {

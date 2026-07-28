@@ -892,7 +892,13 @@ function triggerEnding() {
     }
   }
 
-  state.ending = ending;
+  /* 3장에서 남긴 기억이 결말의 마지막 문장에 조용히 반영된다 */
+  let memoryNote = '';
+  if (state.memories.asked_companions_final) memoryNote = '\n\n결전을 앞두고 손을 내밀었던 순간이, 끝까지 곁을 지켜준 이들의 얼굴과 함께 떠올랐다.';
+  else if (state.memories.solo_resolve) memoryNote = '\n\n누구에게도 기대지 않고 혼자 짊어졌던 그 밤이, 지금의 영운을 만들었다.';
+  else if (state.memories.afraid_but_resolute) memoryNote = '\n\n두려움을 인정하고도 물러서지 않았던 그 순간이, 오래도록 마음에 남았다.';
+
+  state.ending = memoryNote ? { ...ending, text: ending.text + memoryNote } : ending;
   state.mode = 'ending';
   render();
 }

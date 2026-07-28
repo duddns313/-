@@ -11,8 +11,8 @@ const EVENTS = {
         {
           label: '"그림자입니다."', check: { stat: 'intelligence', dc: 5 },
           outcomes: {
-            critical: { effect: { intelligence: 2, exp: 12 }, text: '남작이 감탄하며 사라진다. (지식 +2, 경험치 +12)' },
-            success: { effect: { intelligence: 1, exp: 6 }, text: '남작이 만족스러운 듯 사라진다. (지식 +1, 경험치 +6)' },
+            critical: { effect: { intelligence: 2, exp: 12 }, text: '남작이 감탄하며 사라진다.' },
+            success: { effect: { intelligence: 1, exp: 6 }, text: '남작이 만족스러운 듯 사라진다.' },
             fail: { effect: {}, text: '남작이 코웃음을 치며 사라진다.' },
             fumble: { effect: { exp: 1, courage: -1 }, text: '남작이 서늘하게 웃으며 벽을 통과해 사라진다. 등골이 서늘하다.' },
           },
@@ -27,7 +27,7 @@ const EVENTS = {
         {
           label: '재빨리 피한다', check: { stat: 'agility', dc: 5 },
           outcomes: {
-            critical: { effect: { exp: 8, agility: 1 }, text: '가볍게 피하며 멋진 몸놀림을 보였다. (민첩 +1)' },
+            critical: { effect: { exp: 8, agility: 1 }, text: '가볍게 피하며 멋진 몸놀림을 보였다.' },
             success: { effect: { exp: 4 }, text: '간신히 피했다.' },
             fail: { effect: { hp: -6 }, text: '물풍선을 정통으로 맞았다. 로브가 흠뻑 젖었다.' },
             fumble: { effect: { hp: -10, charm: -1 }, text: '미끄러져 넘어지며 온몸이 젖었다. 지나가던 학생들이 웃는다.' },
@@ -40,8 +40,8 @@ const EVENTS = {
       id: 'lost_firstyear',
       text: '길을 잃은 신입생이 울먹이며 서 있다.',
       choices: [
-        { label: '길을 안내해준다', effect: { charm: 1, alignment: 4, exp: 5 }, resultText: '신입생이 고마워하며 뛰어간다. (매력 +1, 성향 +4)' },
-        { label: '무시하고 지나간다', effect: { alignment: -3 }, resultText: '신입생이 실망한 표정을 짓는다. (성향 -3)' },
+        { label: '길을 안내해준다', effect: { charm: 1, alignment: 4, exp: 5 }, resultText: '신입생이 고마워하며 뛰어간다.' },
+        { label: '무시하고 지나간다', effect: { alignment: -3 }, resultText: '신입생이 실망한 표정을 짓는다.' },
       ],
     },
     { id: 'find_coin', text: '복도 구석에서 반짝이는 갈레온 몇 개를 발견했다.', choices: [{ label: '줍는다', effect: { gold: 8 }, resultText: '8 갈레온을 얻었다.' }] },
@@ -130,7 +130,7 @@ const EVENTS = {
     },
     {
       id: 'study_session', text: '조용히 앉아 마법 이론서를 읽는다.',
-      choices: [{ label: '집중해서 공부한다', effect: { intelligence: 2, exp: 6 }, resultText: '지식이 한층 늘었다. (지식 +2)' }],
+      choices: [{ label: '집중해서 공부한다', effect: { intelligence: 2, exp: 6 }, resultText: '지식이 한층 늘었다.' }],
     },
     {
       id: 'hermione_help',
@@ -140,7 +140,7 @@ const EVENTS = {
           label: '경청한다', check: { stat: 'charm', dc: 6 },
           outcomes: {
             critical: { effect: { learnSpell: 'episkey' }, text: '헤르미온느가 감탄하며 에피스키 시전법을 직접 보여준다! [에피스키]를 습득했다.' },
-            success: { effect: { intelligence: 1, charm: 1, exp: 8 }, text: '많은 것을 배웠다. (지식 +1, 매력 +1)' },
+            success: { effect: { intelligence: 1, charm: 1, exp: 8 }, text: '많은 것을 배웠다.' },
             fail: { effect: {}, text: '설명이 너무 빨라 절반쯤 놓쳤다.' },
             fumble: { effect: { charm: -1 }, text: '엉뚱한 질문을 해서 살짝 무안해졌다.' },
           },
@@ -154,13 +154,13 @@ const EVENTS = {
         {
           label: '몰래 살펴본다', check: { stat: 'intelligence', dc: 9 },
           outcomes: {
-            critical: { effect: { item: 'scrollSectumsempra', alignment: -5, exp: 10 }, text: '위험한 지식을 완전히 이해했다. [섹텀셈프라] 주문서를 손에 넣었다. (성향 -5)' },
-            success: { effect: { item: 'scrollSectumsempra', alignment: -8 }, text: '어둠의 지식을 옮겨 적었다. [섹텀셈프라] 주문서를 손에 넣었다. (성향 -8)' },
-            fail: { effect: { alignment: -3 }, text: '알 수 없는 불쾌한 기운만 느끼고 물러났다. (성향 -3)' },
-            fumble: { effect: { alignment: -10, hp: -10 }, text: '봉인 마법이 발동해 저주에 스쳤다! (성향 -10, 체력 -10)' },
+            critical: { effect: { item: 'scrollSectumsempra', alignment: -5, exp: 10 }, text: '위험한 지식을 완전히 이해했다. [섹텀셈프라] 주문서를 손에 넣었다.' },
+            success: { effect: { item: 'scrollSectumsempra', alignment: -8 }, text: '어둠의 지식을 옮겨 적었다. [섹텀셈프라] 주문서를 손에 넣었다.' },
+            fail: { effect: { alignment: -3 }, text: '알 수 없는 불쾌한 기운만 느끼고 물러났다.' },
+            fumble: { effect: { alignment: -10, hp: -10 }, text: '봉인 마법이 발동해 저주에 스쳤다!' },
           },
         },
-        { label: '그냥 지나친다', effect: { alignment: 2 }, resultText: '유혹을 뿌리쳤다. (성향 +2)' },
+        { label: '그냥 지나친다', effect: { alignment: 2 }, resultText: '유혹을 뿌리쳤다.' },
       ],
     },
     {
@@ -240,9 +240,9 @@ const EVENTS = {
           label: '정중히 인사한다', check: { stat: 'charm', dc: 6 },
           outcomes: {
             critical: { effect: { charm: 2, exp: 14, alignment: 4, item: 'manaPotion' }, text: '켄타우로스가 흡족해하며 마나 물약을 건넨다.' },
-            success: { effect: { charm: 1, exp: 8, alignment: 2 }, text: '알듯 모를 듯한 조언을 건넨다. (매력 +1)' },
+            success: { effect: { charm: 1, exp: 8, alignment: 2 }, text: '알듯 모를 듯한 조언을 건넨다.' },
             fail: { effect: {}, text: '반응 없이 별만 바라본다.' },
-            fumble: { effect: { alignment: -2 }, text: '무례하다는 듯 자리를 피한다. (성향 -2)' },
+            fumble: { effect: { alignment: -2 }, text: '무례하다는 듯 자리를 피한다.' },
           },
         },
       ],
@@ -290,7 +290,7 @@ const EVENTS = {
       id: 'hogsmeade_hagrid',
       text: '해그리드가 오두막 앞에서 손을 흔든다. "영운아, 차 한잔 하고 가겠니?"',
       choices: [
-        { label: '함께 차를 마신다', effect: { hp: 15, charm: 2, exp: 6 }, resultText: '따뜻한 차와 함께 즐거운 시간을 보냈다. (체력 +15, 매력 +2)' },
+        { label: '함께 차를 마신다', effect: { hp: 15, charm: 2, exp: 6 }, resultText: '따뜻한 차와 함께 즐거운 시간을 보냈다.' },
         { label: '바쁘다며 사양한다', effect: {}, resultText: '해그리드가 아쉬운 표정을 짓는다.' },
       ],
     },
@@ -311,7 +311,7 @@ const EVENTS = {
         {
           label: '열어본다', check: { stat: 'luck', dc: 5 },
           outcomes: {
-            critical: { effect: { gold: 20, exp: 5 }, text: '먼 친척이 용돈을 보내주었다! (갈레온 +20)' },
+            critical: { effect: { gold: 20, exp: 5 }, text: '먼 친척이 용돈을 보내주었다!' },
             success: { effect: { gold: 8 }, text: '작은 용돈이 들어있었다.' },
             fail: { effect: {}, text: '광고 전단지였다.' },
             fumble: { effect: { alignment: -1 }, text: '누군가 보낸 짓궂은 장난 편지였다.' },
@@ -323,7 +323,7 @@ const EVENTS = {
       id: 'hogsmeade_quidditch',
       text: '친구가 퀴디치 경기 표를 흔들며 함께 보러 가자고 한다.',
       choices: [
-        { label: '함께 응원하러 간다', effect: { charm: 1, exp: 6, hp: 10 }, resultText: '신나는 경기를 보며 스트레스를 풀었다. (매력 +1, 체력 +10)' },
+        { label: '함께 응원하러 간다', effect: { charm: 1, exp: 6, hp: 10 }, resultText: '신나는 경기를 보며 스트레스를 풀었다.' },
         { label: '다음에 가겠다고 한다', effect: {}, resultText: '아쉽지만 다음을 기약했다.' },
       ],
     },
@@ -331,8 +331,8 @@ const EVENTS = {
       id: 'hogsmeade_beggar',
       text: '길가에 지친 방랑자 마법사가 도움을 청한다.',
       choices: [
-        { label: '갈레온 10을 준다', requiresGold: 10, effect: { gold: -10, alignment: 6, exp: 5 }, resultText: '방랑자가 진심으로 고마워한다. (성향 +6)' },
-        { label: '외면한다', effect: { alignment: -4 }, resultText: '뒤통수가 따갑다. (성향 -4)' },
+        { label: '갈레온 10을 준다', requiresGold: 10, effect: { gold: -10, alignment: 6, exp: 5 }, resultText: '방랑자가 진심으로 고마워한다.' },
+        { label: '외면한다', effect: { alignment: -4 }, resultText: '뒤통수가 따갑다.' },
       ],
     },
     { id: 'hogsmeade_duel', text: '한 학생이 결투를 신청한다. "실력 좀 볼까?"', combat: 'rivalStudent' },
@@ -348,7 +348,7 @@ const EVENTS = {
         {
           label: '갈레온 5로 산다', requiresGold: 5, check: { stat: 'luck', dc: 6 },
           outcomes: {
-            critical: { effect: { gold: -5, item: 'magicStone', exp: 4 }, text: '상자 안에 마법석이 두 개나 들어있었다! (마법석 +2)' },
+            critical: { effect: { gold: -5, item: 'magicStone', exp: 4 }, text: '상자 안에 마법석이 반짝이며 들어있었다!' },
             success: { effect: { gold: -5, item: 'magicStone' }, text: '마법석 하나를 건졌다.' },
             fail: { effect: { gold: -5 }, text: '잡동사니뿐이었다.' },
             fumble: { effect: { gold: -5, alignment: -1 }, text: '상자 안에서 고약한 냄새가 나는 물건만 나왔다.' },

@@ -114,7 +114,8 @@ function processLogQueue() {
   const full = entry.text;
   const speed = getTypeSpeedMs();
 
-  if (speed <= 0) {
+  /* 효과 요약 칩은 서사가 아닌 시스템 표시이므로 타자 없이 즉시 보여준다 */
+  if (speed <= 0 || entry.cls === 'log-effect-chip') {
     p.textContent = full;
     recent.scrollTop = recent.scrollHeight;
     setTimeout(processLogQueue, 0);

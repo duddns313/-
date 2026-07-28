@@ -7,6 +7,41 @@ function addLog(text, cls) {
   if (typeof uiAppendLogEntry === 'function') uiAppendLogEntry(entry);
 }
 
+/* 빈 줄로 구분된 문단을 각각 별도 로그 항목으로 나눠, 문단 사이에 타자 호흡을 준다 */
+function addLogParagraphs(text, cls) {
+  if (!text) return;
+  const paras = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  if (paras.length <= 1) { addLog(text, cls); return; }
+  paras.forEach((p) => addLog(p, cls));
+}
+
+/* 서사 문장 안에 수치를 손으로 적지 않도록, effect 객체에서 표시용 요약을 자동 생성한다 */
+const EFFECT_SUMMARY_LABELS = { hp: '체력', mp: '마력', gold: '갈레온', exp: '경험치', alignment: '성향' };
+
+function formatEffectSummary(effect) {
+  if (!effect) return '';
+  const parts = [];
+  ['hp', 'mp', 'gold', 'exp', 'alignment'].forEach((k) => {
+    if (effect[k]) parts.push(`${EFFECT_SUMMARY_LABELS[k]} ${effect[k] > 0 ? '+' : ''}${effect[k]}`);
+  });
+  ['intelligence', 'courage', 'charm', 'agility', 'luck'].forEach((k) => {
+    if (effect[k]) parts.push(`${STAT_META[k].label} ${effect[k] > 0 ? '+' : ''}${effect[k]}`);
+  });
+  if (effect.item && ITEMS[effect.item]) parts.push(`[${ITEMS[effect.item].name}] 획득`);
+  if (effect.companionAffinity && COMPANIONS[effect.companionAffinity.id]) {
+    const amt = effect.companionAffinity.amount;
+    parts.push(`${COMPANIONS[effect.companionAffinity.id].name}와의 우정 ${amt > 0 ? '+' : ''}${amt}`);
+  }
+  return parts.join(' · ');
+}
+
+/* 결과 문장을 문단 단위로 출력한 뒤, 수치 변화를 별도의 시스템 영역(칩)으로 붙인다 */
+function logResultWithEffect(text, effect, cls) {
+  addLogParagraphs(text || '', cls || 'log-result');
+  const summary = formatEffectSummary(effect);
+  if (summary) addLog(summary, 'log-effect-chip');
+}
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
@@ -210,14 +245,14 @@ function explore() {
   state.day += 1;
 
   if (ev.combat) {
-    addLog(ev.text, 'log-event');
+    addLogParagraphs(ev.text, 'log-event');
     startCombat(ev.combat);
     return;
   }
 
   state.pendingEvent = ev;
   state.mode = 'event';
-  addLog(ev.text, 'log-event');
+  addLogParagraphs(ev.text, 'log-event');
   render();
 }
 
@@ -244,11 +279,11 @@ function resolveEventChoice(choiceIdx) {
       || (result.tier === 'fumble' ? choice.outcomes.fail : null)
       || choice.outcomes.fail;
     applyEffect(outcome.effect);
-    addLog(outcome.text || '', 'log-result');
+    logResultWithEffect(outcome.text, outcome.effect);
     resolved = outcome;
   } else {
     applyEffect(choice.effect);
-    addLog(choice.resultText || '', 'log-result');
+    logResultWithEffect(choice.resultText, choice.effect);
   }
 
   state.pendingEvent = null;
@@ -666,7 +701,7 @@ function enterHeadmasterOffice() {
   state.pendingChapter = ch;
   state.mode = 'story';
   addLog(`[${ch.title}]`, 'log-story-title');
-  addLog(ch.text, 'log-story');
+  addLogParagraphs(ch.text, 'log-story');
   render();
 }
 
@@ -675,7 +710,7 @@ function resolveChapterChoice(idx) {
   if (!ch) return;
   const choice = ch.choices[idx];
   applyEffect(choice.effect);
-  addLog(choice.resultText || '', 'log-result');
+  logResultWithEffect(choice.resultText, choice.effect);
   state.flags[ch.setFlag] = true;
   state.pendingChapter = null;
   state.mode = 'explore';

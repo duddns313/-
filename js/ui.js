@@ -641,6 +641,13 @@ function renderCharacterTab() {
     panel.appendChild(mBox);
   }
 
+  if (state.patronusForm) {
+    const pBox = el('div', 'panel-box');
+    pBox.appendChild(el('h3', 'panel-title', '패트로누스'));
+    pBox.appendChild(el('p', 'memory-label', `✨ ${state.patronusForm}`));
+    panel.appendChild(pBox);
+  }
+
   const dailyBox = el('div', 'panel-box');
   dailyBox.appendChild(el('h3', 'panel-title', `오늘의 과제 (${state.day}일차)`));
   (state.dailyQuests || []).forEach((q) => {

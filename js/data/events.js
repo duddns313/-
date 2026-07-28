@@ -158,6 +158,88 @@ const EVENTS = {
         },
       ],
     },
+    {
+      id: 'boggart_encounter', once: true, priority: 1,
+      text: '복도 끝, 낡은 옷장이 덜컹거리며 흔들린다.\n\n손잡이를 잡는 순간 문이 벌컥 열리며, 안개 같은 형체가 소용돌이친다. 그것은 아직 아무 모습도 아니었다 — 이제 막, 영운이 가장 두려워하는 것으로 변하려는 참이다.',
+      choices: [
+        {
+          label: '거대한 거미가 나타난다', check: { stat: 'courage', dc: 7 },
+          outcomes: {
+            critical: { effect: { memory: 'fear_spider', flag: 'boggart_faced', exp: 15, courage: 1 }, text: '"리들리쿠러스!" 외치자 거미 다리에 롤러스케이트가 채워지며 우스꽝스럽게 미끄러진다. 웃음이 터지자 안개가 순식간에 옅어지며 사라졌다.' },
+            success: { effect: { memory: 'fear_spider', flag: 'boggart_faced', exp: 8 }, text: '"리, 리들리쿠러스!" 목소리가 떨렸지만, 거미 다리 여덟 개가 풍선처럼 부풀어 오르는 걸 보자 웃음이 새어 나왔다. 형체가 흐려지며 흩어진다.' },
+            fail: { effect: { memory: 'fear_spider', flag: 'boggart_faced' }, text: '주문이 목에 걸려 나오지 않는다. 거미가 성큼 다가서는 순간, 지나가던 선배가 대신 주문을 외쳐준다. 안개가 겨우 흩어졌다.' },
+            fumble: { effect: { memory: 'fear_spider', flag: 'boggart_faced', hp: -4 }, text: '몸이 얼어붙어 아무 말도 나오지 않는다. 거미 형상이 코앞까지 다가온 순간에야, 누군가 대신 처리해준다. 식은땀이 흥건하다.' },
+          },
+        },
+        {
+          label: '숨 막히는 어둠이 밀려온다', check: { stat: 'courage', dc: 7 },
+          outcomes: {
+            critical: { effect: { memory: 'fear_darkness', flag: 'boggart_faced', exp: 15, courage: 1 }, text: '"리들리쿠러스!" 어둠이 뿅 소리를 내며 색색의 폭죽처럼 터진다. 형체가 순식간에 흩어지며 사라졌다.' },
+            success: { effect: { memory: 'fear_darkness', flag: 'boggart_faced', exp: 8 }, text: '숨이 턱 막혔지만 주문을 외치자, 어둠이 반짝이는 색종이 조각으로 변해 흩날린다.' },
+            fail: { effect: { memory: 'fear_darkness', flag: 'boggart_faced' }, text: '목소리가 나오지 않는다. 지나가던 선배가 대신 주문을 외쳐, 어둠이 겨우 걷힌다.' },
+            fumble: { effect: { memory: 'fear_darkness', flag: 'boggart_faced', hp: -4 }, text: '숨이 막혀 아무것도 할 수 없다. 누군가 대신 처리해줄 때까지, 온몸이 얼어붙어 있었다.' },
+          },
+        },
+        {
+          label: '무언가에 실패하는 모습이 보인다', check: { stat: 'courage', dc: 7 },
+          outcomes: {
+            critical: { effect: { memory: 'fear_failure', flag: 'boggart_faced', exp: 15, courage: 1 }, text: '"리들리쿠러스!" 실패하는 자신의 모습이 우스꽝스러운 몸짓으로 바뀌어 버린다. 웃음과 함께 형체가 사라졌다.' },
+            success: { effect: { memory: 'fear_failure', flag: 'boggart_faced', exp: 8 }, text: '주문을 외치자 장면이 익살스럽게 뒤틀린다. 조금 민망하지만, 형체는 흩어졌다.' },
+            fail: { effect: { memory: 'fear_failure', flag: 'boggart_faced' }, text: '그 장면에서 눈을 뗄 수가 없다. 선배가 대신 주문을 외워준다.' },
+            fumble: { effect: { memory: 'fear_failure', flag: 'boggart_faced', hp: -4 }, text: '다리에 힘이 풀려 주저앉는다. 누군가 대신 처리해줄 때까지 아무 말도 나오지 않았다.' },
+          },
+        },
+        {
+          label: '소중한 사람을 잃는 장면이 스친다', check: { stat: 'courage', dc: 7 },
+          outcomes: {
+            critical: { effect: { memory: 'fear_loss', flag: 'boggart_faced', exp: 15, courage: 1 }, text: '"리들리쿠러스!" 장면이 뚝 끊기며 우스꽝스러운 촌극으로 바뀐다. 웃음과 함께 형체가 사라졌다.' },
+            success: { effect: { memory: 'fear_loss', flag: 'boggart_faced', exp: 8 }, text: '목이 메었지만 주문을 외쳤다. 장면이 어색하게 뒤틀리며 형체가 흩어진다.' },
+            fail: { effect: { memory: 'fear_loss', flag: 'boggart_faced' }, text: '가슴이 죄어와 아무 말도 나오지 않는다. 선배가 대신 나서준다.' },
+            fumble: { effect: { memory: 'fear_loss', flag: 'boggart_faced', hp: -4 }, text: '그 자리에 얼어붙어 버렸다. 누군가 나서줄 때까지, 눈물이 핑 돌았다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'patronus_practice', once: true, priority: 1,
+      requiresFlag: 'dementor_faced',
+      requiresFn: (s) => !s.flags.patronusPractice_done,
+      text: '루핀 교수가 조용히 다가온다.\n\n"디멘터를 마주쳤다고 들었네. 괜찮다면… 패트로누스를 가르쳐주지. 쉽지 않을 걸세. 정말로 행복했던 기억 하나에 온전히 집중해야 하네."',
+      choices: [
+        {
+          label: '행복한 기억에 집중하며 "익스펙토 패트로눔!"', check: { stat: 'charm', dc: 9 },
+          streakId: 'patronusPractice', streakTarget: 3,
+          streakRewardText: '은빛 안개가 짙어지더니, 마침내 또렷한 형체를 갖춘다 — 영운만의 수호신이 완성되었다!',
+          streakReward: { learnSpell: 'expectoPatronum' },
+          outcomes: {
+            critical: { effect: { exp: 10 }, text: '지팡이 끝에서 밝은 은빛이 뿜어져 나온다. 루핀 교수의 눈이 커진다. "훌륭하군!"' },
+            success: { effect: { exp: 6 }, text: '희미한 은빛 안개가 지팡이 끝에서 피어오른다. "좋아, 그 감각을 잊지 말게."' },
+            fail: { effect: {}, text: '아무 일도 일어나지 않는다. "괜찮네, 다시 해보게." 루핀 교수가 다독인다.' },
+            fumble: { effect: {}, text: '집중이 흐트러지며 오히려 서늘한 기운이 스친다. 잠시 숨을 고른다.' },
+          },
+        },
+      ],
+    },
+    {
+      id: 'patronus_trial', once: true, priority: 1,
+      requiresFlag: 'patronusPractice_done',
+      requiresFn: (s) => !s.flags.patronusTrial_done,
+      text: '루핀 교수가 진지한 얼굴로 말한다.\n\n"기초는 익혔군. 하지만 진짜 디멘터 앞에서, 그것도 여러 번 연속으로 버텨낼 수 있겠나? 이건 훈련이 아니라 시련일세. 준비되었을 때만 도전하게."',
+      choices: [
+        {
+          label: '시련에 도전한다 (연속 3회 성공 · 실패 시 처음부터)', check: { stat: 'charm', dc: 12 },
+          streakId: 'patronusTrial', streakTarget: 3,
+          streakRewardText: '',
+          outcomes: {
+            critical: { effect: { exp: 15 }, text: '수호신이 또렷하게 솟아올라 주변을 은빛으로 물들인다. 루핀 교수가 감탄한다.' },
+            success: { effect: { exp: 8 }, text: '수호신이 흔들림 없이 버텨낸다.' },
+            fail: { effect: {}, text: '집중이 무너지며 수호신이 옅어진다. 처음부터 다시 해야 한다.' },
+            fumble: { effect: { hp: -6 }, text: '서늘한 냉기가 스치며 온몸에 소름이 돋는다. 다시 정신을 가다듬어야 한다.' },
+          },
+        },
+        { label: '아직은 때가 아니다', effect: {}, resultText: '조금 더 자신감이 붙으면 다시 도전하기로 했다.' },
+      ],
+    },
   ],
 
   library: [
@@ -272,6 +354,18 @@ const EVENTS = {
   ],
 
   forest: [
+    {
+      id: 'dementor_encounter', once: true, priority: 1,
+      requiresFlag: 'boggart_faced',
+      recallOptions: {
+        fear_spider: '보가트가 거미로 변했던 순간이 스친다. 그때와 같은 오싹함이 등줄기를 타고 오른다.',
+        fear_darkness: '숨 막히는 어둠이 밀려오던 그 순간이 떠오른다. 시야가 다시 흐려지는 것 같다.',
+        fear_failure: '무언가에 실패하던 그 장면이 눈앞에 아른거린다.',
+        fear_loss: '소중한 사람을 잃는 장면이 다시 스쳐 지나간다.',
+      },
+      text: '숲 사이로 냉기가 밀려온다. 나뭇잎이 하나둘 얼어붙고, 내쉬는 숨이 하얗게 응결된다.\n\n검은 로브를 두른 형체가 미끄러지듯 다가온다 — 디멘터다.',
+      combat: 'dementor',
+    },
     { id: 'forest_acromantula', text: '거대한 거미줄 너머로 아크로만툴라가 모습을 드러낸다!', combat: 'acromantula' },
     { id: 'forest_darkcreature', text: '나무 그림자 사이에서 정체를 알 수 없는 어둠의 생명체가 튀어나온다!', combat: 'darkCreature' },
     { id: 'forest_troll', text: '거대한 발소리와 함께 산 트롤이 나타난다!', combat: 'troll' },

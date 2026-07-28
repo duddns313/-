@@ -8,6 +8,8 @@ const ACHIEVEMENTS = [
   { id: 'grand_master', name: '대마법사의 재능', desc: '어떤 주문이든 숙련도 90(통달)에 도달한다.', check: (s) => Object.values(s.spells).some((m) => m >= 90), bonus: { intelligence: 2, courage: 2 } },
   { id: 'rare_finder', name: '행운의 발견', desc: '진귀한 등급 이상 장비를 처음 얻는다.', check: (s) => s.equipment.some((e) => rarityIndex(e.rarity) >= rarityIndex('rare')), bonus: { luck: 2 } },
   { id: 'legendary_finder', name: '전설의 손길', desc: '전설 등급 장비를 얻는다.', check: (s) => s.equipment.some((e) => e.rarity === 'legendary'), bonus: { luck: 3 } },
+  { id: 'patronus_master', name: '수호신을 부르는 자', desc: '패트로누스 주문을 완성한다.', check: (s) => !!s.flags.patronusPractice_done, bonus: { charm: 1, courage: 1 } },
+  { id: 'patronus_trial_master', name: '디멘터의 천적', desc: '패트로누스 시련을 완수해 성물을 얻는다.', check: (s) => !!s.flags.patronusTrial_done, bonus: { charm: 2 } },
   { id: 'master_smith', name: '대장장이의 벗', desc: '장비를 +10까지 강화한다.', check: (s) => s.equipment.some((e) => e.enhanceLevel >= 10), bonus: { luck: 2 } },
   { id: 'wand_chosen', name: '지팡이의 선택', desc: '지팡이 뽑기에서 지팡이가 당신을 선택하게 만든다.', check: (s) => (s.statsTrack.wandMatchCount || 0) >= 1, bonus: { luck: 2 } },
   { id: 'fully_equipped', name: '완전 무장', desc: '지팡이·로브·장신구를 모두 장착한다.', check: (s) => !!(s.equipped.wand && s.equipped.robe && s.equipped.accessory), bonus: { atk: 1, def: 1 } },

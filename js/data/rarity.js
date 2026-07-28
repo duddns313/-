@@ -6,7 +6,7 @@ const RARITIES = [
   { id: 'rare', name: '진귀한', color: '#5b8bd0', affixSlots: 2, statMult: 1.35, weight: 18 },
   { id: 'epic', name: '명품', color: '#a557f0', affixSlots: 2, statMult: 1.6, weight: 6, needsId: true },
   { id: 'legendary', name: '전설', color: '#e08a2b', affixSlots: 2, statMult: 2.0, weight: 1.5, needsId: true, unique: true },
-  { id: 'artifact', name: '성물', color: '#d4af37', affixSlots: 0, statMult: 1.0, weight: 0, needsId: true, fixed: true },
+  { id: 'artifact', name: '성물', color: '#d4af37', affixSlots: 0, statMult: 2.5, weight: 0, needsId: true, fixed: true, unique: true },
 ];
 const RARITY_BY_ID = Object.fromEntries(RARITIES.map((r) => [r.id, r]));
 function rarityIndex(id) { return RARITIES.findIndex((r) => r.id === id); }
@@ -57,12 +57,15 @@ const EQUIP_TEMPLATES = {
   /* 최상급 장비 — 상점에서 팔지 않으며 강력한 적의 전리품으로만 얻을 수 있다 */
   obsidianWand: { id: 'obsidianWand', name: '흑요석 지팡이', slot: 'wand', stat: 'atk', range: [16, 22], tier: 4 },
   centaurHideRobe: { id: 'centaurHideRobe', name: '켄타우로스 가죽 로브', slot: 'robe', stat: 'def', range: [14, 19], tier: 4 },
+
+  /* 시련 전용 보상 — 무작위 드랍 풀에서 제외하고, 시련 완수 시에만 성물(artifact) 등급으로 지급한다 */
+  patronusCharm: { id: 'patronusCharm', name: '수호신의 부적', slot: 'accessory', stat: 'charm', range: [12, 16], tier: 4, excludeFromLoot: true },
 };
 
 const EQUIP_TEMPLATES_BY_SLOT = {
-  wand: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'wand' && !t.starter),
-  robe: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'robe' && !t.starter),
-  accessory: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'accessory' && !t.starter),
+  wand: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'wand' && !t.starter && !t.excludeFromLoot),
+  robe: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'robe' && !t.starter && !t.excludeFromLoot),
+  accessory: Object.values(EQUIP_TEMPLATES).filter((t) => t.slot === 'accessory' && !t.starter && !t.excludeFromLoot),
 };
 
 /* 지팡이 뽑기 재료(코어) */

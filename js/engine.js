@@ -110,6 +110,8 @@ function advanceStreak(choice, success) {
       state.streaks[id] = 0;
       addLog(`🎯 연속 ${choice.streakTarget}회 성공! ${choice.streakRewardText || '훈련을 완전히 익혔다.'}`, 'log-win');
       if (choice.streakReward) applyEffect(choice.streakReward);
+      if (id === 'patronusPractice') completePatronusChain();
+      if (id === 'patronusTrial') completePatronusTrial();
     } else {
       addLog(`연속 ${state.streaks[id]}/${choice.streakTarget} 성공.`, 'log-result');
     }
@@ -117,6 +119,22 @@ function advanceStreak(choice, success) {
     if (state.streaks[id] > 0) addLog('연속 기록이 끊겼다. 처음부터 다시 도전해야 한다.', 'log-warn');
     state.streaks[id] = 0;
   }
+}
+
+/* ---------------- 체인① 보가트 → 패트로누스 ---------------- */
+function completePatronusChain() {
+  const fearKey = Object.keys(PATRONUS_FORM_BY_FEAR).find((k) => state.memories[k]);
+  const form = PATRONUS_FORM_BY_FEAR[fearKey] || { name: '빛의 형체', desc: '아직 뚜렷한 형태를 갖추지 못한 은빛 안개가 영운을 지킨다.' };
+  state.patronusForm = form.name;
+  addLog(`은빛 안개가 걷히며 모습을 드러낸다 — ${form.name}. ${form.desc}`, 'log-win');
+}
+
+/* ---------------- 시련② 패트로누스 시련 ---------------- */
+function completePatronusTrial() {
+  const inst = createEquipInstance('patronusCharm', 'artifact');
+  receiveEquipment(inst);
+  state.flags.dementorImmune = true;
+  addLog(`✨ 성물 등급 [${getItemDisplayName(inst)}]을(를) 얻었다! 이제 디멘터의 냉기가 영운을 스치지 못한다.`, 'log-win');
 }
 
 /* ---------------- 동료 관계 ---------------- */
@@ -320,6 +338,10 @@ function explore() {
   const ev = chosenPool[randInt(0, chosenPool.length - 1)];
   if (ev.once) state.flags['event_' + ev.id] = true;
   if (ev.recall && state.memories[ev.recall]) addLog(`💭 ${ev.recallText}`, 'log-memory');
+  else if (ev.recallOptions) {
+    const matchedId = Object.keys(ev.recallOptions).find((mid) => state.memories[mid]);
+    if (matchedId) addLog(`💭 ${ev.recallOptions[matchedId]}`, 'log-memory');
+  }
 
   if (ev.combat) {
     addLogParagraphs(ev.text, 'log-event');
@@ -606,6 +628,13 @@ function getDeadlinePenaltyMult() {
 
 function startCombat(enemyId) {
   const enemy = ENEMIES[enemyId];
+  if (enemyId === 'dementor' && state.flags.dementorImmune) {
+    addLog('은빛 수호신이 나서자, 디멘터는 다가오지도 못하고 물러난다.', 'log-win');
+    state.flags.dementor_faced = true;
+    state.mode = 'explore';
+    render();
+    return;
+  }
   const mult = enemy.boss ? getDeadlinePenaltyMult() : 1;
   const enemyMaxHp = Math.round(enemy.hp * mult);
   state.combat = { enemyId, enemyHp: enemyMaxHp, enemyMaxHp, atkMult: mult, playerDefending: false };
@@ -762,6 +791,7 @@ function winCombat() {
     addLog('환영이 흩어지며 낡은 주문서를 남겼다. [주문서 : 콘프린고]을(를) 얻었다.', 'log-result');
   }
   if (c.enemyId === 'voldemortShadow') state.flags.voldemort_defeated = true;
+  if (c.enemyId === 'dementor') state.flags.dementor_faced = true;
 
   state.combat = null;
   state.mode = 'explore';
@@ -821,8 +851,18 @@ function getActiveQuestLog() {
   if (f.hagrid_favor_active && !f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드의 부탁: 약초 채집', detail: '금지된 숲에서 약초를 찾자' });
   else if (f.hagrid_favor_have_herb) list.push({ tag: '사이드', label: '해그리드에게 약초 전달', detail: '금지된 숲 근처에서 해그리드를 만나자' });
 
-  const streak = (state.streaks || {}).broomBalance || 0;
-  if (!f.broomBalance_done && streak > 0) list.push({ tag: '도전', label: `빗자루 균형 훈련 (연속 ${streak}/3)`, detail: '복도 쪽에서 도전할 수 있다' });
+  const broomStreak = (state.streaks || {}).broomBalance || 0;
+  if (!f.broomBalance_done && broomStreak > 0) list.push({ tag: '도전', label: `빗자루 균형 훈련 (연속 ${broomStreak}/3)`, detail: '복도 쪽에서 도전할 수 있다' });
+
+  if (f.boggart_faced && !f.dementor_faced) {
+    list.push({ tag: '체인', label: '보가트를 물리쳤다', detail: '금지된 숲 어딘가에 디멘터가 나타난다' });
+  } else if (f.dementor_faced && !f.patronusPractice_done) {
+    const streak = (state.streaks || {}).patronusPractice || 0;
+    list.push({ tag: '체인', label: `패트로누스 수련${streak > 0 ? ` (연속 ${streak}/3)` : ''}`, detail: '복도에서 루핀 교수를 찾자' });
+  } else if (f.patronusPractice_done && !f.patronusTrial_done) {
+    const streak = (state.streaks || {}).patronusTrial || 0;
+    list.push({ tag: '시련', label: `패트로누스 시련${streak > 0 ? ` (연속 ${streak}/3)` : ''}`, detail: '복도에서 루핀 교수에게 도전을 청하자' });
+  }
 
   return list;
 }

@@ -22,6 +22,9 @@ function goToScene(id) {
 
   uiStartScene(sc);
 
+  /* 하루가 지났다면 날짜가 바뀐 것을 먼저 알린다 */
+  if (sc.costDay) sceneEmit(`── ${dateLabel()} ──`, 'scene-daybreak');
+
   /* 회상 배너 */
   if (sc.recall && state.memories[sc.recall]) {
     sceneEmit(`💭 ${sc.recallText}`, 'log-memory');
@@ -53,6 +56,36 @@ function choiceAvailable(ch) {
 
 function visibleChoices(sc) {
   return (sc.choices || []).map((c, i) => ({ c, i })).filter(({ c }) => choiceAvailable(c));
+}
+
+/* ── 대화: 장면을 넘기지 않고 말만 걸어본다 ──
+ * 스탯이 변하지 않아도 좋다. 소설 안에서 사람과 마주 앉은 느낌이 목적이다. */
+function availableTalks(sc) {
+  if (!sc || !sc.talks) return [];
+  state.usedTalks = state.usedTalks || {};
+  return sc.talks
+    .map((t, i) => ({ t, i }))
+    .filter(({ t, i }) => {
+      if (state.usedTalks[sc.id + ':' + i]) return false;
+      if (t.requiresFlag && !state.flags[t.requiresFlag]) return false;
+      if (t.requiresMemory && !state.memories[t.requiresMemory]) return false;
+      if (t.requiresFn && !t.requiresFn(state)) return false;
+      return true;
+    });
+}
+
+function doTalk(idx) {
+  const sc = currentScene();
+  if (!sc || state.scenePhase !== 'body') return;
+  const t = (sc.talks || [])[idx];
+  if (!t) return;
+  state.usedTalks = state.usedTalks || {};
+  state.usedTalks[sc.id + ':' + idx] = true;
+  sceneEmit(t.say, 'scene-para talk-line');
+  sceneEmit(t.text, 'scene-para');
+  if (t.effect) { applyEffect(t.effect); emitEffectChip(t.effect); }
+  if (t.fragment) addFragment(t.fragment.id, t.fragment.label);
+  render();
 }
 
 function resolveSceneChoice(idx) {
@@ -93,6 +126,8 @@ function resolveSceneChoice(idx) {
     sceneEmit(choice.resultText, 'scene-para result');
     emitEffectChip(choice.effect);
   }
+
+  if (sc.afterText) sceneEmit(sc.afterText, 'scene-para');
 
   state.scenePhase = 'result';
   state.sceneNext = next;

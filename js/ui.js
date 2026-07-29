@@ -301,7 +301,7 @@ function render() {
 
 function renderTopbar() {
   $('topbar-name').textContent = `${state.name} · ${HOUSES[state.houseId].name} · Lv.${state.level}`;
-  $('topbar-day').textContent = `${state.day}일차`;
+  $('topbar-day').textContent = dateLabel();
 
   const deadlineEl = $('topbar-deadline');
   if (state.deadline) {
@@ -348,11 +348,27 @@ function renderStage() {
   if (sc.hub) { renderHubStage(stage, sc); return; }
   if (sc.registerAction) { renderRegisterActionStage(stage); return; }
 
+  /* 대화 — 장면을 넘기지 않고 말만 걸어보는 선택지 */
+  const talks = availableTalks(sc);
+  if (talks.length) {
+    const tbox = el('div', 'talk-box');
+    tbox.appendChild(el('div', 'talk-head', '말을 걸어본다'));
+    talks.forEach(({ t, i }) => {
+      const b = document.createElement('button');
+      b.className = 'btn talk-card';
+      b.textContent = veilText(t.label);
+      b.addEventListener('click', () => doTalk(i));
+      tbox.appendChild(b);
+    });
+    stage.appendChild(tbox);
+  }
+
   const list = visibleChoices(sc);
   if (!list.length) {
     stage.appendChild(button('계속 ▸', continueScene, { cls: 'btn btn-primary btn-continue' }));
     return;
   }
+  if (talks.length) stage.appendChild(el('div', 'talk-divider', sc.actPrompt || '그리고—'));
   list.forEach(({ c, i }) => stage.appendChild(choiceCard(c, i)));
 }
 
@@ -375,6 +391,20 @@ function choiceCard(c, idx) {
 }
 
 function renderHubStage(stage, sc) {
+  const board = el('div', 'hub-board');
+  board.appendChild(el('div', 'hub-date', `📅 ${dateLabel()}`));
+  const left = daysLeft();
+  if (left != null) {
+    const row = el('div', 'hub-deadline' + (left < 0 ? ' deadline-overdue' : left <= 7 ? ' deadline-close' : ''));
+    row.textContent = left >= 0
+      ? `${state.deadline.label} — 앞으로 ${left}일`
+      : `${state.deadline.label} — 기한을 ${-left}일 넘겼다`;
+    board.appendChild(row);
+  }
+  board.appendChild(el('div', 'hub-hint',
+    '▶ 표시된 일은 시간이 들지 않는다. 그 밖의 일에는 하루가 지나가고, 하루가 지날 때마다 잊힘이 조금씩 번진다.'));
+  stage.appendChild(board);
+
   const opts = hubOptions();
   opts.forEach((o) => {
     const target = SCENES[o.id];

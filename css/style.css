@@ -559,3 +559,34 @@ body {
 .hold-name { font-size: 0.95rem; margin-bottom: 6px; }
 .hold-name.lost { color: #6f6890; }
 .hold-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+
+/* ── 대화 ── */
+.talk-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+.talk-head { font-size: 0.75rem; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 2px; }
+.talk-card {
+  text-align: left; padding: 10px 14px; min-height: 40px;
+  font-size: 0.92rem; color: #cfe3ff; border-color: #35507a; background: #16203a;
+  word-break: keep-all; line-height: 1.5;
+}
+.talk-card:hover:not(:disabled) { border-color: #6f9fe0; background: #1b2846; }
+.talk-divider {
+  font-size: 0.75rem; color: var(--text-dim); text-align: center;
+  margin: 14px 0 8px; letter-spacing: 0.08em;
+}
+.scene-para.talk-line { color: #cfe3ff; margin-bottom: 0.5em; }
+
+/* ── 날짜 전환 ── */
+.scene-daybreak {
+  text-align: center; color: var(--gold); font-size: 0.85rem;
+  letter-spacing: 0.1em; margin: 4px 0 22px; opacity: 0.85;
+}
+
+/* ── 허브 상태판 ── */
+.hub-board {
+  border: 1px solid var(--border); border-left: 3px solid var(--gold);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; background: var(--bg-panel);
+}
+.hub-date { color: var(--gold); font-size: 0.95rem; }
+.hub-deadline { font-size: 0.85rem; color: var(--text-dim); margin-top: 3px; }
+.hub-hint { font-size: 0.76rem; color: var(--text-dim); margin-top: 8px; line-height: 1.6; word-break: keep-all; }

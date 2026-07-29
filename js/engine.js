@@ -48,6 +48,26 @@ function emitEffectChip(effect) {
   if (summary) sceneEmit(summary, 'log-effect-chip');
 }
 
+/* ---------------- 날짜 ----------------
+ * 2022년 9월 26일(월) 개학. state.day 1 = 그날. */
+const GAME_START_DATE = [2022, 8, 26];
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function currentDate() {
+  const d = new Date(GAME_START_DATE[0], GAME_START_DATE[1], GAME_START_DATE[2]);
+  d.setDate(d.getDate() + (state.day - 1));
+  return d;
+}
+
+function dateLabel() {
+  const d = currentDate();
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+}
+
+function daysLeft() {
+  return state.deadline ? state.deadline.dueDay - state.day : null;
+}
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 

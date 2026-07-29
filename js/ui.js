@@ -196,7 +196,7 @@ function uiStartScene(sc) {
   }
   const placeEl = $('scene-place');
   if (placeEl) {
-    const t = { morning: '🌅 아침', noon: '☀️ 낮', evening: '🌙 저녁' }[sc.time];
+    const t = { morning: '🌅 아침', noon: '☀️ 낮', afternoon: '🌤️ 오후', evening: '🌆 저녁', night: '🌙 밤' }[sc.time];
     const bits = [sc.place, t].filter(Boolean);
     placeEl.textContent = bits.join(' · ');
     placeEl.classList.toggle('hidden', !bits.length);

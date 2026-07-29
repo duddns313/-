@@ -1,6 +1,6 @@
 /* ===================== 서비스 워커 (오프라인 캐시) ===================== */
 
-const CACHE_NAME = 'hogwarts-shadow-v6';
+const CACHE_NAME = 'hogwarts-shadow-v7';
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/style.css',

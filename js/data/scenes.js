@@ -882,7 +882,8 @@ hub1: {
 무엇을 하며 하루를 보낼까.`,
   options: [
     { id: 'ch1_edith', main: true, label: '▶ 로즈가 이름 하나를 알려주었다', desc: '무엇이든 적어두는 아이가 있다고', notFlag: 'edith_notebook' },
-    { id: 'ch1_restricted', main: true, label: '▶ 금서 구역으로 간다', desc: '허가증이 있다', requiresFlag: 'edith_notebook' },
+    { id: 'ch1_permit', main: true, label: '▶ 플리트윅 교수님을 찾아간다', desc: '금서 구역에 들어갈 방법을 물어본다', requiresFlag: 'edith_notebook', notFlag: 'restricted_permit' },
+    { id: 'ch1_restricted', main: true, label: '▶ 금서 구역으로 간다', desc: '허가증을 받았다', requiresFlag: 'restricted_permit' },
     { id: 'ch1_diary', main: true, label: '▶ 일기를 읽는다', desc: '가져온 것을 펼쳐본다', requiresFlag: 'has_diary' },
     { id: 'ch1_report', main: true, label: '▶ 교장실로 간다', desc: '알아낸 것을 보고한다', requiresFlag: 'read_diary' },
     { id: 'act_register', label: '수첩과 명부를 들여다본다', desc: '흐려진 이름을 붙든다' },
@@ -1121,6 +1122,168 @@ ch1_edith: {
 돌아서면서, 영운은 저 애가 방금 자기와 나눈 대화도 적고 있을 거라고 생각했다.
 
 그 생각이 이상하게 위로가 됐다.`,
+      next: 'HUB',
+    },
+  ],
+},
+
+ch1_permit: {
+  id: 'ch1_permit',
+  place: '플리트윅 교수 연구실',
+  time: 'afternoon',
+  registers: ['flitwick'],
+  recall: 'flitwick_deflected',
+  recallText: '전에 늦은 도서관에서 그가 했던 말이 떠올랐다. "나중에 정식으로 물어봐요."',
+  text:
+`수첩을 받은 다음 날, 영운은 생각했다. 이대로는 안 된다.
+
+들은 이야기, 손등의 잉크, 이디스의 수첩. 다 모아봐야 결국 소문과 감이다. 확실한 걸 보려면 진짜 기록이 있어야 했다. 그리고 그런 기록은 대개 아무나 못 보는 곳에 있다.
+
+"금서 구역 쪽일 거예요." 로즈가 말했다. 며칠 전 도서관에서 만난 참이었다. "근데 거긴 허가증 없이는 마담 핀스가 문도 안 열어줘요. 교수님 서명이 있어야 해요."
+
+"누구한테 받아야 하는데?"
+
+"보통은 담임 교수님이요." 로즈가 어깨를 으쓱했다. "저는 그리핀도르니까 맥고나걸 교수님이겠지만, 영운 씨는… 아, 이디스가 레번클로니까 플리트윅 교수님한테 부탁해보는 게 낫지 않을까요? 이디스 것도 같이 필요한 거잖아요."
+
+일리 있는 말이었다. 영운은 플리트윅 교수의 연구실 문을 두드렸다.
+
+"들어와요." 안에서 작은 목소리가 났다.
+
+연구실은 책과 트로피로 발 디딜 틈이 없었다. {{flitwick}} 교수가 의자 위에 무릎을 꿇고 앉아 서류를 정리하다가 안경 너머로 영운을 봤다.
+
+"편입생이군요. 무슨 일이에요?"`,
+  choices: [
+    {
+      label: '있었던 일을 처음부터 솔직하게 설명한다',
+      check: { stat: 'courage', dc: 7 },
+      outcomes: {
+        critical: {
+          effect: { courage: 2, exp: 20, flag: 'restricted_permit', memory: 'flitwick_listened' },
+          text:
+`영운은 빈자리부터 시작해서 순서대로 말했다. 접시가 없던 것, 손등에 남은 잉크, 이디스의 수첩이 스스로 적었다는 것.
+
+{{flitwick}} 교수는 도중에 끊지 않고 끝까지 들었다. 서류 정리는 이미 멈춘 지 오래였다.
+
+다 듣고 나서 그가 안경을 벗어 닦았다. 아까 도서관에서와 같은 손짓이었다.
+
+"…생각보다 많이 알아냈군요." 그가 말했다. "솔직히 말하면, 학생이 이 정도까지 올 줄은 몰랐어요."
+
+그는 양피지를 꺼내 뭔가를 적어 내려갔다.
+
+"허가증이에요. 이디스 것도 같이 써드리죠. 다만 하나만 약속해요. 혼자 다 짊어지려 하지 마세요. 그럴 필요 없는 일이에요."
+
+서명이 마르기를 기다리는 동안, 영운은 처음으로 어른 하나가 자기 편이 되었다는 걸 느꼈다.`,
+        },
+        success: {
+          effect: { courage: 1, exp: 12, flag: 'restricted_permit' },
+          text:
+`영운은 있었던 일을 순서대로 설명했다. 중간에 조금 헤맸지만 요점은 전달됐다.
+
+{{flitwick}} 교수는 잠깐 생각하더니 양피지를 꺼냈다.
+
+"…이례적이긴 한데, 근거가 없는 얘기는 아니군요." 그가 서명을 하며 말했다. "이걸로 한 시간 드리죠. 마담 핀스한테 보여줘요."`,
+        },
+        fail: {
+          effect: { exp: 5, flag: 'restricted_permit' },
+          text:
+`설명이 자꾸 앞뒤로 왔다 갔다 했다. {{flitwick}} 교수는 몇 번이나 되물어야 했다.
+
+그래도 끝까지 듣고는 한숨을 쉬며 허가증을 써주었다.
+
+"정리가 잘 안 되는 건 알겠어요. 일단 가져가요. 대신 다음엔 좀 더 순서대로 말해봐요."`,
+        },
+        fumble: {
+          effect: { flag: 'restricted_permit' },
+          text:
+`말이 너무 다급하게 나가서 앞뒤가 하나도 안 맞았다. 스스로도 무슨 말을 하는지 헷갈릴 정도였다.
+
+{{flitwick}} 교수가 걱정스러운 얼굴로 영운을 봤다.
+
+"…일단 앉아서 물부터 마셔요." 한참 진정시킨 뒤에야 그는 허가증을 내주었다. "이거면 될까요? 더 필요한 게 있으면 언제든 다시 와요."`,
+        },
+      },
+      next: 'HUB',
+    },
+    {
+      label: '연구 목적으로 조사하는 중이라고 차분히 설명한다',
+      check: { stat: 'intelligence', dc: 7 },
+      outcomes: {
+        critical: {
+          effect: { intelligence: 2, exp: 20, flag: 'restricted_permit', memory: 'flitwick_impressed' },
+          text:
+`영운은 감정을 최대한 빼고 순서대로 정리해서 말했다. 관찰한 사실, 확인이 필요한 것, 왜 금서 구역 자료가 필요한지.
+
+{{flitwick}} 교수의 눈썹이 조금씩 올라갔다.
+
+"…정리하는 방식이 마음에 드는군요." 그가 말했다. "감이 아니라 근거로 말하는 학생은 오랜만이에요."
+
+그는 서랍에서 특별한 양피지를 꺼내 서명했다. 평소 쓰는 것보다 조금 더 두꺼운 종이였다.
+
+"이건 두 시간짜리예요. 원래는 안 주는 건데, 학생 정리가 워낙 깔끔해서요." 그가 안경을 밀어올렸다. "대신 뭘 찾든, 알아낸 건 저한테도 알려줘요. 저도 궁금해졌으니까."`,
+        },
+        success: {
+          effect: { intelligence: 1, exp: 12, flag: 'restricted_permit' },
+          text:
+`영운은 조사 중인 내용을 간단히 정리해서 전달했다.
+
+"…흥미롭군요." {{flitwick}} 교수가 양피지에 서명하며 말했다. "한 시간이에요. 시간 잘 지켜요."`,
+        },
+        fail: {
+          effect: { exp: 5, flag: 'restricted_permit' },
+          text:
+`설명이 너무 딱딱하게 나가서, 뭘 말하려는 건지 요점이 잘 안 잡혔다.
+
+{{flitwick}} 교수는 고개를 갸웃하면서도 허가증을 써주었다. "…뭔지는 잘 모르겠지만, 일단 가져가요."`,
+        },
+        fumble: {
+          effect: { flag: 'restricted_permit' },
+          text:
+`용어를 너무 어렵게 쓰려다 스스로도 무슨 말인지 꼬였다.
+
+{{flitwick}} 교수가 잠깐 웃음을 참는 얼굴을 했다. "…쉽게 말해도 돼요, 여기서는." 그래도 허가증은 내주었다.`,
+        },
+      },
+      next: 'HUB',
+    },
+    {
+      label: '이디스도 궁금해한다는 점을 강조하며 부탁한다',
+      check: { stat: 'charm', dc: 6 },
+      outcomes: {
+        critical: {
+          effect: { charm: 2, exp: 18, flag: 'restricted_permit', companionAffinity: { id: 'edith', amount: 8 }, memory: 'flitwick_fond_of_edith' },
+          text:
+`"이디스도 같이 알고 싶어 해요." 영운이 말했다. "그 애 수첩에 있던 건데, 정작 그 애는 왜 적었는지도 몰라요."
+
+{{flitwick}} 교수의 표정이 눈에 띄게 부드러워졌다.
+
+"파넬 학생 얘기라면 다르죠." 그가 서랍을 열며 말했다. "그 학생, 저희 기숙사에서 제일 걱정되는 아이예요. 뭐든 도움이 된다면야."
+
+그는 허가증 두 장을 써서 내밀었다. 하나는 영운, 하나는 이디스 몫이었다.
+
+"…이거 받으면 파넬 학생한테 꼭 전해줘요. 혼자 다 짊어지지 말라고. 제가 그렇게 말했다고 해도 돼요."`,
+        },
+        success: {
+          effect: { charm: 1, exp: 11, flag: 'restricted_permit', companionAffinity: { id: 'edith', amount: 4 } },
+          text:
+`"이디스 것도 같이 필요해서요." 영운이 말했다.
+
+{{flitwick}} 교수가 고개를 끄덕였다. "…그렇다면야." 그가 양피지에 서명했다. "한 시간이에요."`,
+        },
+        fail: {
+          effect: { exp: 5, flag: 'restricted_permit' },
+          text:
+`말을 꺼내긴 했는데 설득력 있게 나오지 않았다.
+
+{{flitwick}} 교수는 잠깐 뜸을 들이다가 그래도 서명해주었다. "…파넬 학생 얘기가 나와서 그냥 믿어보는 거예요."`,
+        },
+        fumble: {
+          effect: { flag: 'restricted_permit', companionAffinity: { id: 'edith', amount: -2 } },
+          text:
+`이디스 얘기를 꺼내면서 말이 필요 이상으로 과장됐다. 마치 이디스가 위험한 상태인 것처럼 들렸다.
+
+{{flitwick}} 교수의 얼굴이 굳었다. "…파넬 학생한테 무슨 일 있어요?" 오해를 푸는 데 한참 걸렸다. 그래도 허가증은 받았다.`,
+        },
+      },
       next: 'HUB',
     },
   ],
@@ -1987,6 +2150,13 @@ act_study: {
   id: 'act_study',
   repeatable: true,
   costDay: true,
+  variants: ['act_study_a', 'act_study_b', 'act_study_c'],
+},
+
+act_study_a: {
+  id: 'act_study_a',
+  repeatable: true,
+  costDay: true,
   place: '도서관',
   time: 'noon',
   text:
@@ -2025,8 +2195,115 @@ act_study: {
   next: 'HUB',
 },
 
+act_study_b: {
+  id: 'act_study_b',
+  repeatable: true,
+  costDay: true,
+  place: '도서관 · 지도 서가',
+  time: 'afternoon',
+  text:
+`오늘은 창가가 아니라 지도 서가 쪽에 자리를 잡았다. 호그와트 증축 기록을 모아둔 칸이었다.
+
+두꺼운 양피지 지도를 펼치자 먼지 냄새가 훅 끼쳤다. 연도별로 성의 구조가 조금씩 다르다. 어느 해에는 탑이 하나 더 있고, 어느 해에는 다리가 없다.
+
+이십오 년 전 지도를 찾아 이층 층계참을 짚어보았다. 그 칸에 작은 글씨로 메모가 적혀 있었다. *(보수 완료 — 세부는 별도 문서)*. 별도 문서가 어디 있는지는 나와 있지 않았다.`,
+  choices: [
+    {
+      label: '연도별 지도를 겹쳐서 대조해본다',
+      check: { stat: 'intelligence', dc: 6 },
+      outcomes: {
+        critical: { effect: { intelligence: 2, exp: 15, memory: 'compared_maps' }, text: '지도 세 장을 나란히 펼쳐놓고 층계참 구역만 계속 봤다.\n\n한 해와 다음 해 사이, 벽 두께가 미묘하게 달라져 있었다. 손가락 한 마디만큼. 무너졌다가 다시 쌓은 자리라면 딱 그만큼 달라질 법한 두께였다.\n\n그리고 그 옆, 원래는 없던 작은 방 표시가 다음 해 지도에만 있다가, 그다음 해 지도에서는 다시 사라졌다. 있다가 없어진 방이라니.' },
+        success: { effect: { intelligence: 1, exp: 8 }, text: '벽 두께가 해마다 조금씩 다르게 그려져 있다는 걸 알아챘다.\n\n오차인지 실제 변화인지는 확실하지 않았지만, 뭔가 있다는 감은 잡혔다.' },
+        fail: { effect: { exp: 2 }, text: '지도마다 표기법이 달라서 대조가 쉽지 않았다.\n\n한참을 들여다봤지만 뭐가 다른지 뭐가 원래 그런 건지 구분이 안 갔다.' },
+        fumble: { effect: { hp: -2 }, text: '무거운 지도 뭉치를 옮기다 서가에 부딪혔다.\n\n먼지가 확 일어 한참 기침했다. 사서가 조용히 하라며 눈치를 줬다.' },
+      },
+    },
+    {
+      label: '마담 핀스에게 별도 문서의 행방을 물어본다',
+      check: { stat: 'charm', dc: 7 },
+      outcomes: {
+        critical: { effect: { charm: 1, exp: 16, memory: 'asked_pince' }, text: '마담 핀스는 처음엔 대답하지 않았다. 그러다 안경 너머로 영운을 한참 보더니 짧게 말했다.\n\n"그 문서는 금서 구역에 있어요. 아무나 못 봐요."\n\n그러고는 더 묻기 전에 덧붙였다. "보고 싶으면 허가증을 받아 와요. 저는 규칙대로만 움직이니까."\n\n퉁명스러운 말투였지만, 문이 완전히 닫힌 건 아니라는 뜻으로 들렸다.' },
+        success: { effect: { exp: 9 }, text: '"그런 문서가 있었나요." 마담 핀스가 목록을 뒤적이다 말했다. "있어도 여기 목록엔 없네요. 금서 구역 쪽이면 제가 확인해드릴 수 없어요."\n\n적어도 어디로 가야 할지는 알았다.' },
+        fail: { effect: {}, text: '"그런 건 저도 몰라요." 마담 핀스는 짧게 답하고 다시 책 정리로 돌아갔다.\n\n더 캐물을 분위기가 아니었다.' },
+        fumble: { effect: { charm: -1 }, text: '질문이 너무 다급하게 나갔다. 마담 핀스가 눈을 가늘게 떴다.\n\n"학생, 여기는 뭘 캐고 다니는 곳이 아니에요." 그 뒤로 며칠은 그녀와 눈이 마주칠 때마다 괜히 움츠러들었다.' },
+      },
+    },
+    {
+      label: '지도는 접어두고 그냥 숙제를 한다',
+      effect: { exp: 4 },
+      resultText: '오늘은 여기까지 하기로 했다.\n\n미뤄둔 변신술 과제를 펼쳤다. 지도보다는 훨씬 재미없었지만, 마음은 더 편했다.',
+    },
+  ],
+  next: 'HUB',
+},
+
+act_study_c: {
+  id: 'act_study_c',
+  repeatable: true,
+  costDay: true,
+  place: '도서관',
+  time: 'evening',
+  registers: ['flitwick'],
+  text:
+`늦은 시간까지 남아 있었더니 도서관에 사람이 거의 없었다. 램프 몇 개만 켜져 있다.
+
+책상 사이를 돌던 자그마한 사람이 영운의 자리 앞에서 멈췄다. 채점하던 양피지 뭉치를 옆구리에 낀 {{flitwick}} 교수였다.
+
+"이 시간까지 남아 있는 학생은 오랜만이군요." 그가 안경을 밀어올리며 말했다. "편입생이죠? 적응은 좀 됐어요?"`,
+  talks: [
+    {
+      label: '"교수님도 야근하시네요"',
+      say: `"교수님도 이 시간까지 계시네요."`,
+      text:
+`"채점이요." {{flitwick}}가 양피지 뭉치를 툭툭 쳤다. "쌓아두면 두 배로 무거워지거든요, 이상하게."
+
+그는 옆자리에 잠깐 걸터앉았다. 발이 바닥에 닿을락 말락 했다.
+
+"나이가 들면 잠이 줄어요. 그래서 그 시간에 이런 걸 하죠. 학생 때는 몰랐던 요령이에요."`,
+    },
+    {
+      label: '이층 층계참 얘기를 슬쩍 꺼내본다',
+      say: `"교수님, 이층 층계참에 있는 그거… 원래 뭐였는지 아세요?"`,
+      text:
+`{{flitwick}}의 손이 양피지 위에서 멈췄다.
+
+"…그건 학생이 물어볼 게 아니에요." 그가 조용히 말했다. 화난 목소리는 아니었다. 오히려 다칠까 봐 조심하는 쪽에 가까웠다.
+
+"궁금한 게 있으면, 나중에 정식으로 물어봐요. 이렇게 말고." 그가 안경을 고쳐 썼다. "그때는 대답해줄 사람이 있을 거예요."
+
+그러고는 자리에서 일어나 채점 뭉치를 안고 갔다. 몇 걸음 가다 한 번 돌아봤지만, 아무 말도 더 하지 않았다.`,
+      effect: { memory: 'flitwick_deflected' },
+    },
+  ],
+  choices: [
+    {
+      label: '집중해서 과제를 마저 끝낸다',
+      check: { stat: 'intelligence', dc: 5 },
+      outcomes: {
+        critical: { effect: { intelligence: 1, exp: 13 }, text: '{{flitwick}}가 가고 나서 오히려 집중이 잘 됐다.\n\n어려웠던 부분까지 한 번에 정리됐다. 램프 기름이 다 닳을 때쯤 과제를 덮었다.' },
+        success: { effect: { exp: 7 }, text: '남은 분량을 무난히 끝냈다. 큰 어려움은 없었다.' },
+        fail: { effect: { exp: 2 }, text: '자꾸 방금 나눈 대화가 생각나서 집중이 안 됐다.\n\n결국 절반만 하고 자리를 정리했다.' },
+        fumble: { effect: { mp: -3 }, text: '깃펜에 잉크를 너무 많이 찍어 양피지에 얼룩을 냈다.\n\n처음부터 다시 써야 했다. 피곤이 몰려왔다.' },
+      },
+    },
+    {
+      label: '조용히 짐을 챙겨 기숙사로 돌아간다',
+      effect: { hp: 6 },
+      resultText: '오늘은 여기까지. 늦은 복도를 혼자 걸었다.\n\n{{flitwick}}의 마지막 말이 계속 마음에 걸렸다. 대답해줄 사람이 있을 거라던 말.',
+    },
+  ],
+  next: 'HUB',
+},
+
 act_greenhouse: {
   id: 'act_greenhouse',
+  repeatable: true,
+  costDay: true,
+  variants: ['act_greenhouse_a', 'act_greenhouse_b', 'act_greenhouse_c'],
+},
+
+act_greenhouse_a: {
+  id: 'act_greenhouse_a',
   repeatable: true,
   costDay: true,
   place: '3번 온실',
@@ -2135,8 +2412,95 @@ act_greenhouse: {
   next: 'HUB',
 },
 
+act_greenhouse_b: {
+  id: 'act_greenhouse_b',
+  repeatable: true,
+  costDay: true,
+  place: '3번 온실',
+  time: 'morning',
+  registers: ['neville'],
+  text:
+`아침 일찍 온실에 갔더니 {{neville}} 교수가 벌써 나와 있었다. 화분들을 줄지어 옮기는 중이었다.
+
+"마침 잘 왔어요. 이것 좀 같이 옮겨줄래요? 맨드레이크는 자리를 자주 바꿔줘야 해서."
+
+화분은 생각보다 무거웠다. 흙 속에서 뭔가 꿈틀거리는 게 손끝으로 느껴졌다.
+
+"귀마개 잊지 말고요." 그가 선반에서 하나를 건넸다. "얘들 아직 어려서 울어봤자 기절까진 안 하겠지만, 두통은 각오해야 해요."`,
+  choices: [
+    {
+      label: '조심스럽게 화분을 옮긴다',
+      check: { stat: 'agility', dc: 6 },
+      outcomes: {
+        critical: { effect: { agility: 2, exp: 15 }, text: '흙 한 톨 흘리지 않고 화분 열 개를 다 옮겼다.\n\n{{neville}} 교수가 눈을 크게 떴다. "손이 야무지네요. 여기 소질 있는 거 아니에요?"\n\n칭찬이 낯설어서 오히려 대답을 못 했다.' },
+        success: { effect: { agility: 1, exp: 8 }, text: '몇 번 휘청였지만 큰 사고 없이 옮겼다.\n\n{{neville}} 교수가 고개를 끄덕였다. "처음치곤 잘하는데요."' },
+        fail: { effect: { exp: 2 }, text: '화분 하나를 놓칠 뻔했다. 겨우 붙잡았지만 흙이 사방에 튀었다.\n\n{{neville}} 교수가 웃으며 빗자루를 건넸다. "괜찮아요, 다들 처음엔 그래요."' },
+        fumble: { effect: { hp: -5 }, text: '귀마개가 옮기는 중에 헐거워져 벗겨졌다.\n\n맨드레이크 유묘가 짧게 낑낑거렸다. 어리다지만 그 소리에도 머리가 띵했다. 한참 벽에 기대 있어야 했다.' },
+      },
+    },
+    {
+      label: '틈틈이 물어본다 — "이거 다 옮기고 나면요?"',
+      check: { stat: 'intelligence', dc: 5 },
+      outcomes: {
+        critical: { effect: { intelligence: 1, exp: 12, memory: 'neville_root_lesson' }, text: '"자리를 안 바꿔주면 뿌리끼리 얽혀요." {{neville}} 교수가 화분 하나를 톡톡 쳤다. "그럼 서로 뭘 먹고 자라는지도 헷갈리게 되고요."\n\n그는 잠깐 손을 멈췄다.\n\n"사람도 비슷하지 않아요? 한자리에 너무 오래 있으면, 자기가 뭘로 자라고 있는지 잊어버리잖아요."\n\n그 말이 화분 얘기 같지 않게 들렸다.' },
+        success: { effect: { intelligence: 1, exp: 7 }, text: '"뿌리가 얽히기 전에 옮겨야 해요." 그가 간단히 답했다. "별거 아닌 것 같아도 중요한 일이에요."' },
+        fail: { effect: { exp: 2 }, text: '질문이 어설프게 나갔다. {{neville}} 교수는 웃으며 대충 얼버무리듯 답했다.' },
+        fumble: { effect: {}, text: '엉뚱한 질문을 했다. {{neville}} 교수가 잠깐 헷갈린 얼굴을 했다가 그냥 넘어갔다.' },
+      },
+    },
+    {
+      label: '묵묵히 옮기는 일만 돕는다',
+      effect: { hp: 10 },
+      resultText: '별 말 없이 화분만 옮겼다.\n\n한 시간쯤 지나자 등이 뻐근했지만 머리는 오히려 맑아졌다. {{neville}} 교수가 마지막 화분을 내려놓으며 물을 건넸다.\n\n"고마워요. 오늘 하려던 게 반나절 만에 끝났네요."',
+    },
+  ],
+  next: 'HUB',
+},
+
+act_greenhouse_c: {
+  id: 'act_greenhouse_c',
+  repeatable: true,
+  costDay: true,
+  place: '3번 온실',
+  time: 'evening',
+  registers: ['neville'],
+  text:
+`비가 오는 저녁이었다. 유리 지붕에 빗방울 부딪히는 소리가 끊이지 않았다.
+
+{{neville}} 교수는 구석 화분들을 살피고 있었다. "비 오는 날은 오히려 조용해서 좋아요. 학생들도 잘 안 오고."
+
+영운이 들어서자 그가 돌아봤다. "…어, 왔어요? 딱히 할 일은 없는데. 그냥 앉아 있어도 돼요."
+
+빗소리와 흙냄새 속에 한참 그렇게 있었다.`,
+  choices: [
+    {
+      label: '기념비 세 번째 줄 이야기를 조심스레 꺼낸다',
+      check: { stat: 'courage', dc: 7 },
+      outcomes: {
+        critical: { effect: { courage: 2, exp: 17, memory: 'neville_row3' }, text: '{{neville}} 교수의 손이 화분 위에서 멈췄다.\n\n"콜린이요." 그가 조용히 말했다. "그 줄 맨 위. 걔는 또렷하게 기억나요. 항상 카메라를 들고 다녔거든요."\n\n그는 흙을 한참 만지작거리다 말을 이었다.\n\n"근데 그 옆 칸은… 이상해요. 분명 뭔가 있어야 할 자리 같은데, 아무리 봐도 안 떠올라요. 처음부터 없었던 것 같기도 하고."\n\n그가 손등으로 눈가를 훔쳤다. 비 때문인지 다른 이유인지는 묻지 않았다.' },
+        success: { effect: { courage: 1, exp: 9 }, text: '"그 얘기는…" {{neville}} 교수가 잠깐 말을 골랐다. "나중에 하죠. 오늘은 아니고."\n\n거절이라기보다는, 아직 준비가 안 됐다는 쪽에 가까웠다.' },
+        fail: { effect: { exp: 2 }, text: '말을 꺼내자 {{neville}} 교수의 표정이 굳었다.\n\n"…화분 얘기나 하죠, 우리." 그가 화제를 돌렸다. 더 캐물을 분위기가 아니었다.' },
+        fumble: { effect: { charm: -1 }, text: '질문이 너무 갑작스럽게 나갔다.\n\n{{neville}} 교수는 아무 말 없이 자리를 옮겨 다른 화분을 손봤다. 비 오는 소리만 한참 이어졌다.' },
+      },
+    },
+    {
+      label: '빗소리를 들으며 가만히 있는다',
+      effect: { hp: 16, mp: 8 },
+      resultText: '아무 말도 하지 않았다.\n\n빗소리, 흙냄새, 이따금 화분 옮기는 소리. 그것만으로 충분했다.\n\n나올 때쯤 비가 그쳐 있었다.',
+    },
+  ],
+  next: 'HUB',
+},
+
 act_rest: {
   id: 'act_rest',
+  repeatable: true,
+  costDay: true,
+  variants: ['act_rest_a', 'act_rest_b', 'act_rest_c'],
+},
+
+act_rest_a: {
+  id: 'act_rest_a',
   repeatable: true,
   costDay: true,
   place: '휴게실',
@@ -2151,6 +2515,60 @@ act_rest: {
 눈을 감았다.`,
   choices: [
     { label: '푹 잔다', effect: { hp: 999, mp: 999 }, resultText: '오래 잤다.\n\n꿈은 꾸지 않았다. 눈을 떴을 때 창밖이 밝았고, 몸이 가벼웠다.\n\n이런 날도 필요하다. 며칠 만에 처음으로 손등을 확인하지 않고 일어났다.' },
+  ],
+  next: 'HUB',
+},
+
+act_rest_b: {
+  id: 'act_rest_b',
+  repeatable: true,
+  costDay: true,
+  place: '기숙사 침실',
+  time: 'night',
+  text:
+`일찍 잠자리에 들었다. 커튼을 치자 침대 안이 어두워졌다.
+
+옆 침대에서 누군가의 고른 숨소리가 들렸다. 창밖 부엉이 울음이 멀리서 한 번, 두 번.
+
+눈을 감으니 금방 잠이 들었다.`,
+  choices: [
+    {
+      label: '(꿈을 꾼다)',
+      effect: { hp: 999, mp: 999, memory: 'dream_of_forgetting' },
+      resultText:
+`꿈속에서 영운은 명부를 펼치고 있었다. 이름을 하나씩 읽어 내려가는데, 다 읽고 나면 방금 읽은 게 뭐였는지 기억나지 않았다.
+
+계속 읽었다. 계속 잊었다. 어느 순간부터는 이름이 아니라 그냥 검은 줄만 보였다.
+
+누군가 뒤에서 말했다. "그래도 계속 읽어야 해요." 목소리는 낯익었는데 누구인지는 몰랐다.
+
+눈을 떴을 때는 아침이었다. 몸은 개운했지만, 꿈의 뒷맛이 하루 종일 가시지 않았다.`,
+    },
+  ],
+  next: 'HUB',
+},
+
+act_rest_c: {
+  id: 'act_rest_c',
+  repeatable: true,
+  costDay: true,
+  place: '휴게실',
+  time: 'evening',
+  text:
+`휴게실이 오늘따라 시끌시끌했다. 저학년 몇이 마법사 체스판을 놓고 한창이었다. 말이 서로에게 소리를 지르며 부서지는 걸 보고 다들 웃었다.
+
+벽난로 앞자리는 비어 있었다. 영운은 그쪽에 앉아 잠깐 그 소란을 구경했다.`,
+  choices: [
+    {
+      label: '체스 구경을 하다가 잔다',
+      effect: { hp: 999, mp: 999, exp: 3 },
+      resultText: '한 판이 끝날 때까지 구경했다. 이긴 쪽이 방 안을 한 바퀴 돌며 자랑했다.\n\n별거 아닌 소란인데도 보고 있으니 마음이 풀렸다. 그러다 자리에서 그대로 잠들었다.\n\n누군가 담요를 덮어준 모양이었다. 아침에 깨어보니 목까지 잘 덮여 있었다.',
+    },
+    {
+      label: '조용히 자리를 피해 침실로 간다',
+      effect: { hp: 999, mp: 999 },
+      resultText: '오늘은 사람 많은 곳이 버거웠다.\n\n조용히 침실로 올라가 일찍 누웠다. 아래층 웃음소리가 희미하게 들려오다 어느새 잠들었다.',
+    },
   ],
   next: 'HUB',
 },

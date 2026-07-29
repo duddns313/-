@@ -3,8 +3,22 @@
 
 function currentScene() { return SCENES[state.sceneId] || null; }
 
+/* 같은 장소를 반복 방문할 때 매번 같은 장면만 나오지 않도록,
+ * variants를 가진 장면은 그 중 하나를 무작위로 골라 대신 보여준다.
+ * 직전에 나온 것은 (가능하면) 피해서 연달아 같은 걸 보는 일을 줄인다. */
+function pickVariant(groupId, variants) {
+  state.lastVariantPick = state.lastVariantPick || {};
+  const last = state.lastVariantPick[groupId];
+  const pool = variants.length > 1 ? variants.filter((v) => v !== last) : variants;
+  const pick = pool[randInt(0, pool.length - 1)];
+  state.lastVariantPick[groupId] = pick;
+  return pick;
+}
+
 function goToScene(id) {
   if (id === 'HUB') id = state.currentHub;
+  const group = SCENES[id];
+  if (group && group.variants) id = pickVariant(id, group.variants);
   const sc = SCENES[id];
   if (!sc) { addLog(`(장면 «${id}»을 찾을 수 없습니다)`, 'log-warn'); return; }
 

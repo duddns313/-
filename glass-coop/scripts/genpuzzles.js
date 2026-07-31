@@ -15,16 +15,17 @@ import {
 } from '../js/puzzle.js';
 import { writeFileSync } from 'node:fs';
 
-// 색은 정보가 아니라 장식이다 — 영역의 수는 pip(주사위 눈)으로 표시하므로
-// 색이 몇 종이든 퍼즐을 읽는 데 지장이 없다.
-const COLORS = ['azure', 'crimson', 'amber', 'jade', 'violet', 'rose', 'teal', 'gold'];
+// ★ 색이 곧 크기다. 크기 4짜리 영역은 전부 같은 색.
+// 영역이 14개여도 색은 크기 종류(2~6)만큼인 5종이면 되고, 같은 색이 반복되며
+// 창 전체에 리듬이 생긴다. 보라→파랑→초록→호박→진홍 순서라 스펙트럼처럼 익힌다.
+const SIZE_COLOR = { 2: 'violet', 3: 'azure', 4: 'jade', 5: 'amber', 6: 'crimson' };
 
 // 협동 조작의 두 접점은 격자 대각선의 35% 이상 떨어져야 한다.
 // (혼자 두 손으로 하는 걸 물리적으로 막기 위한 조건)
 const MIN_SPAN_RATIO = 0.35;
 
-// 영역 넓이 상한. pip 패턴으로 표시 가능한 범위(2~9)로 묶는다.
-const MAX_AREA = 9;
+// 영역 넓이 상한. 색 5종·점 6개까지로 묶어 한눈에 읽히게 한다.
+const MAX_AREA = 6;
 
 function makeRng(seed) {
   let s = seed >>> 0;
@@ -180,9 +181,9 @@ function buildPuzzle(id, stage, rng) {
   if (rects.some((R) => R.h * R.w < 2 || R.h * R.w > MAX_AREA)) return null;
 
   // 각 직사각형 안의 임의 칸에 색점을 놓는다
-  const seeds = rects.map((R, i) => ({
+  const seeds = rects.map((R) => ({
     cell: cellIndex(size, R.r0 + Math.floor(rng() * R.h), R.c0 + Math.floor(rng() * R.w)),
-    color: COLORS[i % COLORS.length],
+    color: SIZE_COLOR[R.h * R.w],
     size: R.h * R.w,
   }));
 
@@ -207,11 +208,11 @@ function buildPuzzle(id, stage, rng) {
 
 // ─── 난이도 곡선 (측정된 유일해 분포에 맞춰 조정) ───
 const PLAN = [
-  { count: 2, size: 4, regionRange: [4, 5],   want: { double: 0, long: 0, lock: 0 }, tier: '튜토리얼' },
-  { count: 2, size: 4, regionRange: [4, 6],   want: { double: 1, long: 0, lock: 0 }, tier: '튜토리얼' },
-  { count: 4, size: 5, regionRange: [5, 8],   want: { double: 1, long: 1, lock: 0 }, tier: '쉬움' },
-  { count: 6, size: 6, regionRange: [8, 12],  want: { double: 1, long: 1, lock: 1 }, tier: '보통' },
-  { count: 4, size: 7, regionRange: [10, 15], want: { double: 2, long: 1, lock: 1 }, tier: '어려움' },
+  { count: 2, size: 4, regionRange: [4, 6],   want: { double: 0, long: 0, lock: 0 }, tier: '튜토리얼' },
+  { count: 2, size: 4, regionRange: [4, 7],   want: { double: 1, long: 0, lock: 0 }, tier: '튜토리얼' },
+  { count: 4, size: 5, regionRange: [6, 10],  want: { double: 1, long: 1, lock: 0 }, tier: '쉬움' },
+  { count: 6, size: 6, regionRange: [9, 14],  want: { double: 1, long: 1, lock: 1 }, tier: '보통' },
+  { count: 4, size: 7, regionRange: [12, 18], want: { double: 2, long: 1, lock: 1 }, tier: '어려움' },
 ];
 
 function main() {

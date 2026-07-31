@@ -1,0 +1,14 @@
+{
+  "name": "유리 나누기",
+  "short_name": "유리",
+  "description": "둘이서 함께 스테인드글라스를 복원하는 협동 논리 퍼즐",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0f1218",
+  "theme_color": "#0f1218",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

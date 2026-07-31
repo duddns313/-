@@ -209,9 +209,9 @@ console.log('── 시나리오 2: 생성된 18판 전수 검사 ──');
     ok(res.regions.every((cells) => isRectangle(puzzle.size, cells)),
       `${tag} 정답의 모든 영역이 직사각형`);
 
-    // 색점 수는 pip으로 표시 가능한 범위(2..9)
-    ok(puzzle.seeds.every((s) => s.size >= 2 && s.size <= 9),
-      `${tag} 모든 영역 넓이가 2..9`,
+    // 영역 넓이는 색 5종·구슬 6개로 표시 가능한 범위
+    ok(puzzle.seeds.every((s) => s.size >= 2 && s.size <= 6),
+      `${tag} 모든 영역 넓이가 2..6`,
       puzzle.seeds.map((s) => s.size).join(','));
 
     // 납선 하나만 빼면 미완성이어야 한다 (정답이 최소 집합인지)

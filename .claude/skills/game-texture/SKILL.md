@@ -1,19 +1,73 @@
 ---
 name: game-texture
-description: 도형뿐인 브라우저 게임 화면에 힉스필드(Higgsfield) MCP로 비주얼을 입히는 스킬. "텍스처 입혀줘 / 땅 질감 / 지형 만들어줘 / 게임 화면 예쁘게 / 표면 재질"처럼 게임 비주얼 요청이 들어오면 발동. 먼저 완성 화면의 레퍼런스 컨셉 이미지를 생성해 그 그림에 맞춰 씬을 정교화하고, 그다음 seamless·top-down·no-shadow 3대 조건으로 타일 텍스처를 생성해 2×2 이음새를 검증한 뒤 Three.js에 반복 적용한다.
+description: 도형뿐인 브라우저 게임 화면에 비주얼을 입히는 스킬. "텍스처 입혀줘 / 땅 질감 / 지형 만들어줘 / 게임 화면 예쁘게 / 표면 재질"처럼 게임 비주얼 요청이 들어오면 발동. 힉스필드(Higgsfield) MCP가 연결돼 있으면 그걸로, 없으면 ambientCG/Poly Haven 같은 무료 CC0 라이브러리나 캔버스 절차적 생성으로 자동 폴백한다. 먼저 완성 화면의 레퍼런스 컨셉 이미지로 씬을 정교화하고, 그다음 seamless·top-down·no-shadow 3대 조건을 만족하는 타일 텍스처를 확보해 2×2 이음새를 검증한 뒤 Three.js에 반복 적용한다.
 ---
 
 # 게임 텍스처 스킬 (game-texture)
 
-게임 로직이 다 돌아가면(도형만으로도 플레이 가능), 이제 화면을 입힌다. 이 스킬은 **힉스필드 MCP로 텍스처 이미지를 생성해서 게임의 넓은 표면(땅·바닥·구조물)에 입힌다.** 핵심은 "반복해서 이어 붙여도 경계가 안 보이는" 타일 텍스처를 만드는 것.
+게임 로직이 다 돌아가면(도형만으로도 플레이 가능), 이제 화면을 입힌다. 이 스킬은 게임의 넓은 표면(땅·바닥·구조물)에 **"반복해서 이어 붙여도 경계가 안 보이는" 타일 텍스처**를 입힌다. 텍스처를 어떻게 확보하느냐는 아래 우선순위대로 정한다 — 유료 생성기가 필수는 아니다.
 
-## 전제 — 힉스필드 MCP 연결
+## 전제 — 텍스처 소스 결정 (무료 우선순위)
 
-이 스킬은 힉스필드 MCP로 이미지를 생성한다. 연결이 안 돼 있으면:
+1. **힉스필드(Higgsfield) MCP가 연결돼 있으면** 그걸로 원하는 스타일을 자유롭게 생성한다 (아래 0~2단계). 연결법: 힉스필드 사이트 MCP 메뉴에서 서버 주소 복사 → 클로드 커넥터/MCP 설정에 추가. 단, 힉스필드는 보통 유료/크레딧 서비스라 계정·비용이 든다.
+2. **연결이 없거나 무료로 하고 싶으면 → 무료 CC0 텍스처 라이브러리를 쓴다.** [ambientCG](https://ambientcg.com), [Poly Haven](https://polyhaven.com/textures) 등은 회원가입·API 키 없이 완전 무료(퍼블릭 도메인)로 PBR 세트(basecolor/normal/roughness/ao)를 직접 다운로드할 수 있고, 대부분 이미 seamless tileable·top-down으로 제작돼 있어 2단계의 3대 조건을 그대로 만족한다. `curl`로 zip을 받아 압축 해제하면 끝 — 이 스킬의 3~7단계(선정 기준·이음새 검증·Three.js 적용·repeat 밀도·함정 체크리스트)는 그대로 적용한다.
+3. **인터넷 접근도 안 되거나 완전히 게임 고유의 재질(외계 점막 등)이 필요하면 → 캔버스/셰이더 절차적 생성.** 외부 이미지 없이 코드로 노이즈 기반 타일 텍스처를 그 자리에서 만든다 (아래 "무료 폴백 C" 참고). 완전 무료·오프라인이지만 힉스필드보다 디테일 표현은 떨어진다.
 
-> 힉스필드 사이트의 MCP 메뉴에서 서버 주소를 복사 → 클로드(claude.ai 또는 Claude Code) 커넥터/MCP 설정에 그 주소를 추가하면 연결된다.
+무엇을 쓸지 애매하면: **힉스필드 연결 여부를 먼저 확인**하고, 없으면 바로 ambientCG/Poly Haven으로 넘어간다. 유저에게 굳이 되묻지 않아도 된다.
 
-연결되면 `generate_image` 류 도구가 보인다. 모델은 `gpt_image_2`, 1:1 비율, 1k 해상도, quality high가 기본.
+### 무료 폴백 A — ambientCG / Poly Haven에서 바로 받기
+
+두 사이트 다 API 키 없이 다이렉트 다운로드 URL을 제공한다. 예시 (사막 지형이면 "Ground" 카테고리에서 검색):
+
+```bash
+# ambientCG 예시 — 1K PNG 세트 (basecolor/normal/roughness/ao 포함)
+curl -L -o ground.zip "https://ambientcg.com/get?file=Ground048_1K-PNG.zip"
+unzip -o ground.zip -d textures/ground_raw
+# Poly Haven도 동일하게 API 경유 다이렉트 zip/개별 png 다운로드 가능
+```
+
+받은 파일 이름을 실제 프로젝트 규격(`ground_sand_basecolor.png` 등)에 맞게 정리하고, 3단계(추가 규격)·4단계(2×2 이음새 검증)를 그대로 통과시킨 뒤 5단계(Three.js 적용)로 넘어간다. **이미 seamless로 나온 소스라도 4단계 검증은 생략하지 말 것** — 크롭·리사이즈 과정에서 이음새가 깨질 수 있다.
+
+### 무료 폴백 B — 스타일이 안 맞으면 조합
+
+라이브러리 텍스처는 톤이 레퍼런스 컨셉 아트와 다를 수 있다. 색만 안 맞으면 새로 안 구해도 된다 — Three.js 재질의 `color`(sRGB 텍스처는 곱셈 틴트)나 후처리 톤매핑으로 색조를 맞추면 원본 디테일(노멀·러프니스)은 그대로 살리면서 게임 팔레트에 맞출 수 있다.
+
+### 무료 폴백 C — 캔버스 절차적 생성 (완전 오프라인)
+
+라이브러리에 없는 게임 고유 재질(예: 저그 점막, 외계 결정질 표면)이거나 인터넷 접근이 아예 없는 환경이면, Canvas 2D로 타일 노이즈 텍스처를 코드로 만든다. 핵심은 **가장자리를 감싸서(wrap) 그리면 자동으로 seamless가 된다**는 것 — 각 점을 찍을 때 캔버스 크기만큼 오프셋한 위치에도 같이 찍으면 좌우/상하 경계가 항상 이어진다.
+
+```js
+// 256x256 seamless 절차적 타일 (예: 얼룩진 암반) — 외부 이미지 불필요
+function makeSeamlessTile(size = 256, baseColor = '#4a453f', spots = 400) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(0, 0, size, size);
+
+  for (let i = 0; i < spots; i++) {
+    const x = Math.random() * size, y = Math.random() * size;
+    const r = 2 + Math.random() * 6;
+    const shade = Math.random() * 40 - 20;
+    ctx.fillStyle = `rgba(${20+shade},${18+shade},${15+shade},0.5)`;
+    // 4번 오프셋(±size)해서 찍으면 타일 경계가 항상 이어진다
+    for (const dx of [0, -size, size]) {
+      for (const dy of [0, -size, size]) {
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  return new THREE.CanvasTexture(c); // Three.js에 바로 사용
+}
+```
+
+이 방식은 4단계(2×2 검증)가 사실상 자동 통과다 (경계 개념이 없이 항상 이어붙게 그리므로). 다만 사실적인 재질감(암석 결·금속 스크래치 등)은 라이브러리 텍스처보다 단순하니, 눈에 잘 띄는 표면(플레이어 시야에 가까운 지형)엔 폴백 A를 우선하고, 이 방식은 배경/특수 표면 위주로 쓴다.
+
+## 참고 — 힉스필드로 할 경우 (0~2단계는 이 경로 전용)
+
+아래 0~2단계는 힉스필드로 생성할 때의 절차다. 폴백 A/C를 쓰면 0단계(컨셉 아트 생성)는 건너뛰고 — 대신 레퍼런스가 필요하면 텍스트로 톤·분위기를 정의해 두고 3단계로 바로 간다.
 
 ## 0단계 — RTS 레퍼런스 이미지 생성 (컨셉 아트 먼저)
 

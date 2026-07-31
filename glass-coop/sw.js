@@ -3,7 +3,11 @@
 // HTML은 network-first (새 버전이 바로 반영되게), 나머지 정적 파일은
 // cache-first (빠르게). 캐시 이름의 버전을 올리면 옛 캐시가 정리된다.
 
-const VERSION = 'glass-coop-v1';
+// ⚠️ Cache Storage는 오리진 전체가 공유한다 (duddns313.github.io 아래 모든 앱이 같은 통).
+// 그래서 "내 것 말고 다 지우기"를 하면 같은 오리진의 다른 앱 캐시까지 날린다.
+// 반드시 자기 접두사만 정리할 것.
+const PREFIX = 'glass-coop-';
+const VERSION = `${PREFIX}v1`;
 
 const ASSETS = [
   './',
@@ -29,7 +33,9 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k.startsWith(PREFIX) && k !== VERSION).map((k) => caches.delete(k)),
+      ))
       .then(() => self.clients.claim()),
   );
 });

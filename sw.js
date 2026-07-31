@@ -4,7 +4,9 @@
 // 그래서 activate에서 "내 것 말고 다 지우기"를 하면 옆 앱의 오프라인 캐시까지 날린다.
 // 반드시 자기 접두사만 정리할 것.
 const CACHE_PREFIX = 'hogwarts-shadow-';
-const CACHE_NAME = `${CACHE_PREFIX}v14`;
+// v15: v14 시절 캐시에 404 응답이 저장됐을 수 있어 통째로 버린다.
+// (아래 fetch 핸들러가 200이 아닌 응답도 캐시하던 버그 때문)
+const CACHE_NAME = `${CACHE_PREFIX}v15`;
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/style.css',
@@ -40,8 +42,12 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(event.request)
         .then((resp) => {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          // ⚠️ 성공한 응답만 캐시한다. 이 검사가 없으면 404·500까지 저장돼서,
+          //    나중에 그 주소에 파일이 생겨도 계속 옛 오류 응답을 내준다.
+          if (resp.ok && resp.type === 'basic') {
+            const copy = resp.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
           return resp;
         })
         .catch(() => cached);

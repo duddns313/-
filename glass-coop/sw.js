@@ -49,8 +49,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(request, copy));
+          // 성공한 응답만 캐시한다 — 404를 저장하면 그 주소가 영영 안 열린다
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(VERSION).then((c) => c.put(request, copy));
+          }
           return res;
         })
         .catch(() => caches.match(request).then((r) => r ?? caches.match('./index.html'))),

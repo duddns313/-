@@ -1,6 +1,10 @@
 /* ===================== 서비스 워커 (오프라인 캐시) ===================== */
 
-const CACHE_NAME = 'hogwarts-shadow-v14';
+// ⚠️ Cache Storage는 오리진 전체가 공유한다 (같은 github.io 도메인의 다른 앱과 한 통).
+// 그래서 activate에서 "내 것 말고 다 지우기"를 하면 옆 앱의 오프라인 캐시까지 날린다.
+// 반드시 자기 접두사만 정리할 것.
+const CACHE_PREFIX = 'hogwarts-shadow-';
+const CACHE_NAME = `${CACHE_PREFIX}v14`;
 const ASSETS = [
   './', './index.html', './manifest.json',
   './css/style.css',
@@ -22,7 +26,9 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k))
+    ))
   );
   self.clients.claim();
 });

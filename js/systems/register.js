@@ -45,9 +45,9 @@ function heldCount() { return heldNames().length; }
 /* 하루가 지날 때마다 잔영이 하나를 갉아먹는다 */
 function advanceErosion() {
   if (state.flags.erosionPaused) return;
-  /* 이야기가 시작되기 전에는 잠잠하다. 시작된 뒤에도 사흘에 한 번씩만 갉아먹는다. */
+  /* 이야기가 시작되기 전에는 잠잠하다. 시작된 뒤에도 엿새에 한 번씩만 갉아먹는다. */
   if (!state.flags.ch1_started) return;
-  if (state.day % 3 !== 0) return;
+  if (state.day % 6 !== 0) return;
 
   /* 플롯이 지정한 대상이 있으면 그것부터 */
   const forced = state.flags.fadingTarget;

@@ -1,7 +1,7 @@
 /* ===================== 능력 판정 시스템 ===================== */
 /* 서울 2033 / 모험과 이야기류의 핵심: 모든 의미 있는 선택에 성공률을 부여한다. */
 
-const CHECK_BASE = 45;
+const CHECK_BASE = 58;
 
 function getStatValue(statKey) {
   const base = (state.stats && state.stats[statKey]) || 0;

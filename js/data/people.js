@@ -29,6 +29,7 @@ const PEOPLE = {
   mcgonagall: { id: 'mcgonagall', name: '미네르바 맥고나걸', given: '미네르바', surname: '맥고나걸', note: '교장.' },
   dumbledore: { id: 'dumbledore', name: '알버스 덤블도어', given: '알버스', surname: '덤블도어', note: '교장실의 초상화.' },
   neville: { id: 'neville', name: '네빌 롱보텀', given: '네빌', surname: '롱보텀', note: '약초학 교수.' },
+  flitwick: { id: 'flitwick', name: '필리우스 플리트윅', given: '필리우스', surname: '플리트윅', note: '마법 주문학 교수. 레번클로 담임.' },
   simon: { id: 'simon', name: '시몬 애슈', given: '시몬', surname: '애슈', note: '서고 관리인. 조용하고 친절하다.' },
   greyLady: { id: 'greyLady', name: '회색 여인', given: '회색', surname: '여인', note: '레번클로의 유령.' },
 

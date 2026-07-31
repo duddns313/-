@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<!-- user-scalable=no 가 없으면 두 손가락이 가까울 때 핀치줌으로 오인식된다 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1218">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>유리 나누기</title>
+<!-- 데이터 URI로 넣어 favicon.ico 요청(=404) 자체를 없앤다 -->
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%230f1218"/><rect x="3" y="3" width="11" height="11" fill="%234a9eda"/><rect x="18" y="3" width="11" height="11" fill="%23d9455f"/><rect x="3" y="18" width="11" height="11" fill="%23e8a33d"/><rect x="18" y="18" width="11" height="11" fill="%233fb08a"/></svg>'>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- 위쪽 사람 (180° 회전) -->
+  <section class="panel panel-b" data-player="B">
+    <div class="panel-inner">
+      <div class="legend" data-legend></div>
+      <div class="coop-status" data-coop></div>
+      <div class="panel-row">
+        <span class="who">위쪽</span>
+        <span class="progress" data-progress>0 / 0</span>
+        <button class="btn" data-undo type="button">↺ 되돌리기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 공용 격자 -->
+  <main class="board">
+    <canvas id="board"></canvas>
+    <div class="overlay" data-overlay hidden>
+      <div class="overlay-card">
+        <p class="overlay-title">완성!</p>
+        <p class="overlay-sub" data-overlay-sub></p>
+        <button class="btn btn-primary" data-next type="button">다음 창 →</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 아래쪽 사람 (정방향) -->
+  <section class="panel panel-a" data-player="A">
+    <div class="panel-inner">
+      <div class="legend" data-legend></div>
+      <div class="coop-status" data-coop></div>
+      <div class="panel-row">
+        <span class="who">아래쪽</span>
+        <span class="progress" data-progress>0 / 0</span>
+        <button class="btn" data-undo type="button">↺ 되돌리기</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

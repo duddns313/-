@@ -29,6 +29,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // 게임과 무관한 부록 페이지는 캐시하지 않는다 (수정이 바로 반영되도록)
+  if (new URL(event.request.url).pathname.includes('/birth-schedule/')) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

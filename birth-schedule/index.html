@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>출산 준비 일정표 — 준비부터 집에 오기까지</title>
+<meta name="description" content="출산 D-30 준비부터 병원 입원·분만, 산후조리원, 집 복귀까지 17~18일 타임테이블과 준비물 체크리스트" />
+<meta name="theme-color" content="#fdf8f4" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🍼</text></svg>" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header id="topbar">
+  <div class="topbar-inner">
+    <h1>출산 일정표</h1>
+    <p class="subtitle">준비 D-30 → 입원 · 분만 → 산후조리원 → 집</p>
+  </div>
+</header>
+
+<div id="controls">
+  <div class="controls-inner">
+
+    <div class="control-row">
+      <label class="control-label" for="due-date">출산 예정일</label>
+      <input type="date" id="due-date" />
+      <button type="button" id="btn-clear-date" class="btn-ghost" title="날짜 지우기">지우기</button>
+    </div>
+
+    <div class="control-row">
+      <span class="control-label">분만 방식</span>
+      <div class="segmented" role="group" aria-label="분만 방식 선택">
+        <button type="button" class="seg-btn" data-mode="natural">자연분만</button>
+        <button type="button" class="seg-btn" data-mode="csection">제왕절개</button>
+      </div>
+    </div>
+
+    <p id="span-note" class="span-note"></p>
+
+    <div id="progress-wrap" class="progress-wrap hidden">
+      <div class="progress-head">
+        <span>준비물 · 할일 진행률</span>
+        <span id="progress-text">0 / 0</span>
+      </div>
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<nav id="tabs" role="tablist">
+  <button type="button" class="tab-btn" data-tab="timeline" role="tab">📅 타임테이블</button>
+  <button type="button" class="tab-btn" data-tab="checklist" role="tab">🎒 준비물 · 할일</button>
+</nav>
+
+<main id="main">
+
+  <p class="disclaimer">
+    일정과 수치는 <strong>전형적인 사례를 정리한 참고용</strong>입니다. 병원과 조리원마다 절차가 다르고
+    산모·아기 상태에 따라 달라지므로, 실제 진행은 <strong>담당 의료진과 시설의 안내를 우선</strong>하세요.
+  </p>
+
+  <section id="panel-timeline" class="panel" role="tabpanel">
+    <div class="panel-tools">
+      <button type="button" class="btn-ghost" data-action="expand-all">모두 펼치기</button>
+      <button type="button" class="btn-ghost" data-action="collapse-all">모두 접기</button>
+      <button type="button" class="btn-ghost" data-action="print">인쇄</button>
+    </div>
+    <div id="timeline-list"></div>
+  </section>
+
+  <section id="panel-checklist" class="panel hidden" role="tabpanel">
+    <div class="panel-tools">
+      <button type="button" class="btn-ghost" data-action="expand-all">모두 펼치기</button>
+      <button type="button" class="btn-ghost" data-action="collapse-all">모두 접기</button>
+      <button type="button" class="btn-ghost" data-action="print">인쇄</button>
+      <button type="button" class="btn-ghost btn-danger" data-action="reset-checks">체크 초기화</button>
+    </div>
+    <div id="checklist-list"></div>
+  </section>
+
+</main>
+
+<footer id="footer">
+  <p>체크 상태와 예정일은 이 기기의 브라우저에만 저장됩니다.</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -14,6 +14,17 @@ python3 -m http.server 8080
 # http://localhost:8080
 ```
 
+**단일 HTML로 묶기** — 정적 호스팅이 안 되는 곳에 통째로 넘길 때:
+
+```
+node scripts/build-single.js
+# dist/hogwarts-shade.html   더블클릭하면 바로 실행되는 단독 파일
+# dist/artifact.html          html/head/body 껍데기를 벗긴 게시용
+```
+
+`index.html`의 `<script>` 순서를 그대로 읽어 인라인하므로 파일을 추가해도
+빌드 스크립트를 따로 고칠 필요가 없습니다.
+
 밸런스 검증용 헤드리스 시뮬레이터:
 
 ```

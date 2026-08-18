@@ -42,6 +42,7 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     progress: 0,
     turn: 0,
     sinceErosion: 0,
+    sinceClass: 0,
     warnedAt: -1,
 
     /* ── 지금 보고 있는 인카운터 ── */

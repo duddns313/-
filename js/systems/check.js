@@ -41,10 +41,14 @@ function situationalBonus(check) {
   }
   /* 상위 특성 「이음매를 읽는 눈」 — 조사 계열 판정 전부 */
   if (check.search && typeof hasTrait === 'function' && hasTrait('keenEye2')) bonus += 8;
-  /* 상위 특성 「끈질김」 계열 — 붙들기 판정 */
-  if (check.hold && typeof hasTrait === 'function') {
-    if (hasTrait('tenacious')) bonus += 10;
-    if (hasTrait('tenacious2')) bonus += 10;
+  /* 붙들기 — 세계 규칙 5. 영운이 붙들 수 있는 것은 재능이 아니라
+   * 놓지 않기로 정했기 때문이다. 그 결심 자체가 보정이다. */
+  if (check.hold) {
+    bonus += 10;
+    if (typeof hasTrait === 'function') {
+      if (hasTrait('tenacious')) bonus += 10;
+      if (hasTrait('tenacious2')) bonus += 10;
+    }
   }
   return bonus;
 }

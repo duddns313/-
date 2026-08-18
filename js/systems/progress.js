@@ -23,7 +23,8 @@ const POOL_WEIGHTS = [
   { max: 101, common: 5, search: 25, combat: 40, eerie: 30 },
 ];
 
-const RECENT_MEMORY = 8;  /* 최근 이만큼은 다시 뽑지 않는다 */
+const RECENT_MEMORY = 8;   /* 최근 이만큼은 다시 뽑지 않는다 */
+const CLASS_INTERVAL = 5;  /* 이만큼 지나면 다음은 반드시 수업 */
 
 function poolWeights() {
   return POOL_WEIGHTS.find((b) => state.progress < b.max) || POOL_WEIGHTS[POOL_WEIGHTS.length - 1];
@@ -161,14 +162,21 @@ function nextEncounter() {
     if (ALL_ENCOUNTERS[id]) { presentEncounter(ALL_ENCOUNTERS[id]); return; }
   }
 
-  /* 3. 침식 경보 */
+  /* 3. 시간표 — 인카운터 풀이 커질수록 수업이 희석되어 주문 계통이 자라지 않는다.
+   *    가중치로 버티면 콘텐츠를 추가할 때마다 다시 깨지므로 여기서 보장한다. */
+  if (state.sinceClass >= CLASS_INTERVAL) {
+    const cls = Object.values(ALL_ENCOUNTERS).filter((e) => e.kind === 'class' && encounterAvailable(e));
+    if (cls.length) { presentEncounter(cls[randInt(0, cls.length - 1)]); return; }
+  }
+
+  /* 4. 침식 경보 */
   if (shouldWarnErosion() && ALL_ENCOUNTERS.warn_fading) {
     state.warnedAt = state.turn;
     presentEncounter(ALL_ENCOUNTERS.warn_fading);
     return;
   }
 
-  /* 4. 가중 랜덤 */
+  /* 5. 가중 랜덤 */
   const enc = drawEncounter();
   if (!enc) { addLog('(더 이상 남은 인카운터가 없습니다)', 'log-warn'); render(); return; }
   presentEncounter(enc);
@@ -183,6 +191,8 @@ function presentEncounter(enc) {
   state.seenEncounters[enc.id] = true;
   state.recent.push(enc.id);
   while (state.recent.length > RECENT_MEMORY) state.recent.shift();
+
+  state.sinceClass = enc.kind === 'class' ? 0 : (state.sinceClass || 0) + 1;
 
   (enc.registers || []).forEach((pid) => { registerPerson(pid); markSeen(pid); });
   if (enc.onEnter) enc.onEnter(state);

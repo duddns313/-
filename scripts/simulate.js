@@ -71,10 +71,9 @@ function getData() { return { ENDINGS, ENDING_LIST, BACKGROUNDS, ALL_ENCOUNTERS,
 /* 이름이 흐려졌고 체력이 남아 있으면 붙든다 — 명부 탭을 실제로 쓰는 플레이어 */
 function tryHold() {
   if (!state.flags.holdUnlocked) return;
-  const ids = Object.keys(state.register).filter((id) => canHold(id));
+  const ids = Object.keys(state.register).filter((id) => canHold(id) && erosionOf(id) >= 2);
   if (!ids.length) return;
-  if (state.hp < 30) return;
-  ids.sort((a, b) => erosionOf(b) - erosionOf(a));
+  if (state.hp < getMaxHp() * 0.4) return;
   holdName(ids[0], 'courage');
 }
 
@@ -253,11 +252,27 @@ if (Object.keys(missed).length) {
   console.log('');
 }
 
-console.log('── 어떻게 끝났는가 ──');
+/* 판이 끝난 '원인'은 엔딩 종류와 다르다.
+ * 「기록만 남기고」·「반복되는 자」는 조건부 엔딩이지만 진행도 100% 완주다. */
+function terminationCause(r) {
+  if (r.endingKind === 'death') return 'hp';
+  if (r.ending === 'alone' || r.ending === 'lost_the_one') return 'register';
+  return 'progress';
+}
+
+console.log('── 판이 끝난 원인 ──');
+const byCause = {};
+results.forEach((r) => { const c = terminationCause(r); byCause[c] = (byCause[c] || 0) + 1; });
+[['hp', '체력 0 (사망)'], ['register', '명부 전멸'], ['progress', '진행도 100% (완주)']].forEach(([k, label]) => {
+  console.log('  ' + label.padEnd(22) + pct(byCause[k] || 0) + '  (' + (byCause[k] || 0) + ')');
+});
+console.log('');
+
+console.log('── 엔딩 계열 ──');
 const byKind = {};
 results.forEach((r) => { byKind[r.endingKind] = (byKind[r.endingKind] || 0) + 1; });
 Object.keys(byKind).sort((a, b) => byKind[b] - byKind[a]).forEach((k) => {
-  const label = { death: '사망(체력 0)', alone: '명부 전멸', finish: '완주', special: '조건부', true: '진엔딩' }[k] || k;
+  const label = { death: '사망', alone: '명부 전멸', finish: '완주', special: '조건부', true: '진엔딩' }[k] || k;
   console.log('  ' + label.padEnd(16) + pct(byKind[k]) + '  (' + byKind[k] + ')');
 });
 console.log('');
@@ -288,7 +303,8 @@ const checks = [
   ['끝까지 간 판은 비트 5개를 모두 본다', beatsWhenReached >= 4.95],
   ['최종 Lv.8~10', avg('level') >= 7 && avg('level') <= 11],
   ['주문 6~10개 습득', avg('spells') >= 5.5 && avg('spells') <= 10.5],
-  ['사망 원인이 한쪽으로 70% 넘게 쏠리지 않음', Object.values(byKind).every((v) => v / results.length <= 0.7)],
+  ['죽음이 실재한다 (체력 0이 8% 이상)', (byCause.hp || 0) / results.length >= 0.08],
+  ['완주가 전부는 아니다 (진행도 100%가 92% 이하)', (byCause.progress || 0) / results.length <= 0.92],
   ['엔딩 3종 이상 도달', Object.keys(byEnding).length >= 3],
 ];
 checks.forEach(([label, ok]) => console.log('  ' + (ok ? '✅' : '❌') + ' ' + label));

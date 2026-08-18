@@ -770,3 +770,21 @@ body {
 /* 판정 플래시가 본문을 오래 가리지 않도록 — 겹쳐 쌓이면 글이 안 읽힌다 */
 #check-flash-container { pointer-events: none; }
 .check-flash + .check-flash { display: none; }
+
+/* ── 모험 화면의 붙들기 패널 ──
+   명부 탭 안에만 두면 이런 기능이 있는 줄도 모르고 이름을 잃는다 */
+.hold-panel {
+  margin-bottom: 14px; padding: 10px 12px;
+  border: 1px solid var(--gold); border-radius: 8px;
+  background: linear-gradient(180deg, #241f42, var(--bg-panel));
+}
+.hold-head { color: var(--gold); font-size: 0.88rem; margin-bottom: 8px; }
+.hold-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.hold-name { color: var(--text); font-size: 0.95rem; }
+.hold-state { color: #c47a3a; font-size: 0.78rem; }
+.hold-note { color: var(--text-dim); font-size: 0.78rem; }
+.btn-hold {
+  flex-basis: 100%; margin-top: 2px;
+  border-color: var(--gold); color: var(--gold); font-size: 0.85rem;
+}
+.hold-foot { color: var(--text-dim); font-size: 0.76rem; line-height: 1.5; word-break: keep-all; }

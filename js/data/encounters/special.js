@@ -18,17 +18,20 @@ warn_fading: {
 
 영운은 손끝으로 그 줄을 짚었다. 종이는 그대로였다.
 
-무언가가 이 이름을 향해 오고 있다.`;
+무언가가 이 이름을 향해 오고 있다.
+
+이럴 때 어떻게 해야 하는지는 아무도 가르쳐준 적이 없다. 다만 어릴 때 할머니가 그랬다. 잊고 싶지 않은 건 소리 내어 불러두라고. 속으로 생각만 하면 흩어진다고.`;
   },
   choices: [
     {
       label: '지금 소리 내어 불러둔다',
       check: { stat: 'courage', dc: 8, hold: true },
+      gain: 1,
       outcomes: {
         critical: { effect: { courage: 1, exp: 26, flag: 'erosionDelayed' },
-          text: '영운은 소리 내어 불렀다. 한 번, 두 번, 세 번.\n\n세 번째에 글씨가 또렷해졌다. 그리고 한동안 그대로였다.' },
+          text: '영운은 소리 내어 불렀다. 한 번, 두 번, 세 번.\n\n세 번째에 글씨가 또렷해졌다. 그리고 한동안 그대로였다.\n\n이제 방법은 안다. 흐려진 이름은 부르면 돌아온다. 다만 부를 때마다 몸이 축난다.' },
         success: { effect: { exp: 14, flag: 'erosionDelayed' },
-          text: '영운은 소리 내어 불렀다. 목이 아팠지만 글씨가 다시 또렷해졌다.' },
+          text: '영운은 소리 내어 불렀다. 목이 아팠지만 글씨가 다시 또렷해졌다.\n\n이제 방법은 안다. 흐려진 이름은 부르면 돌아온다. 다만 부를 때마다 몸이 축난다.' },
         fail: { effect: { hp: -4 },
           text: '불러봤지만 소리가 목 안에서 멎었다. 이름이 입 밖으로 나오지 않았다.' },
         fumble: { effect: { hp: -8 },
@@ -45,7 +48,12 @@ warn_fading: {
     },
     { label: '덮는다', effect: {}, resultText: '영운은 명부를 덮었다. 덮고 나니 방금 무엇이 이상했는지 잘 떠오르지 않았다.' },
   ],
-  onEnter: (s) => { s.flags.erosionWarned = true; },
+  onEnter: (s) => {
+    s.flags.erosionWarned = true;
+    /* 침식은 진행도 20부터 시작하는데 해금이 비트 ③(46)이면
+     * 그 사이에 이름이 갉아먹히는 걸 보고만 있어야 한다. 여기서 연다. */
+    s.flags.holdUnlocked = true;
+  },
 },
 
 /* ── 특성 승급 (진행도 35~65) ── */

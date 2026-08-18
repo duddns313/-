@@ -75,8 +75,22 @@ function bumpErosion(id) {
   const p = PEOPLE[id];
   if (r.erosion === 1) addLog(`명부의 «${p.name}» 옆이 조금 흐려졌다.`, 'log-warn');
   else if (r.erosion === 2) addLog('명부에서 이름 하나가 더 지워졌다. 누구였는지 떠오르지 않는다.', 'log-warn');
-  else addLog('명부의 한 줄이 통째로 비었다.', 'log-warn');
+  else loseName();
 }
+
+/* 이름 하나를 통째로 잃으면 영운 자신도 그만큼 얇아진다.
+ *
+ * 이게 없으면 침식을 무시하는 것이 최적 전략이 된다 — 시뮬레이션에서
+ * 붙들기를 안 한 판의 사망률이 7.5%, 한 판이 46%였다. 붙들기가 순손실이면
+ * 3자원 저글링이 성립하지 않는다. 이름을 놓는 데도 값이 있어야 한다. */
+function loseName() {
+  addLog('명부의 한 줄이 통째로 비었다.', 'log-warn');
+  state.maxHp = Math.max(20, state.maxHp - NAME_LOSS_HP);
+  state.hp = Math.min(state.hp, getMaxHp());
+  addLog('무언가 같이 빠져나갔다. 몸이 조금 가벼워졌고, 그게 좋은 뜻은 아니었다.', 'log-warn');
+}
+
+const NAME_LOSS_HP = 12;
 
 function markSeen(id) {
   if (!state.register[id]) return;
@@ -87,10 +101,13 @@ function markSeen(id) {
  * 체력이 유일한 제한이다. 이름을 지키면 전투에서 죽고, 체력을 아끼면 이름을 잃는다.
  * 그 저울질이 이 게임의 중심이다. */
 
-const HOLD_HP_COST = 8;
+const HOLD_HP_COST = 4;
 
+/* 붙들기는 침식에 대한 '의도된 반격'이다. 초안(8 + 단계×4)은 2단계에서 DC 16이라
+ * 성공률이 27%밖에 안 됐고, 대가만 치르고 실패하는 일이 반복돼
+ * "붙들지 않는 쪽"이 최적 전략이 됐다. DC 표(§4-1) 안쪽으로 끌어내린다. */
 function holdDc(id) {
-  return 8 + erosionOf(id) * 4;
+  return erosionOf(id) === 1 ? 4 : 8;
 }
 
 function canHold(id) {

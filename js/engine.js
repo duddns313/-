@@ -117,7 +117,9 @@ function applyLearnSpellEffect(spellId) {
     addLog(`[${sp.name}] 숙련도가 올랐다.`, 'log-spell');
     return;
   }
-  const result = learnSpell(spellId, 25);
+  /* 초기 숙련도 40 = '능숙'. 25로 두면 다음 단계 선행(40)을 못 넘겨
+   * 한 판에 계통이 두 칸도 못 자란다 (시뮬레이션 습득 5.6 → 6.1). */
+  const result = learnSpell(spellId, 40);
   if (result.ok) {
     autoSlotSpell(spellId);
     addLog(`새로운 주문을 익혔다 — [${sp.name}]`, 'log-spell');
@@ -148,8 +150,8 @@ function practiceSubject(subjectId, amount) {
   const known = Object.keys(state.spells).filter((id) => SPELLS[id].subject === subjectId || SPELLS[id].line === line);
 
   /* 그 계열을 하나도 모르면 연습할 것 자체가 없다.
-   * 이때는 입문 주문의 형태만 겨우 익힌 것으로 친다 — 성공했을 때(숙련 25)보다
-   * 한참 못하지만, 계통이 통째로 잠겨 수업이 헛도는 것보다는 낫다. */
+   * 이때는 입문 주문의 형태만 겨우 익힌 것으로 친다 — 제대로 배웠을 때(숙련 40)와
+   * 비교도 안 되지만, 계통이 통째로 잠겨 수업이 헛도는 것보다는 낫다. */
   if (!known.length) {
     const entry = nextSpellForSubject(subjectId);
     if (entry && canLearnSpell(entry.id).ok) {

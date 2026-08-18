@@ -431,9 +431,50 @@ function renderStage() {
   const enc = currentEncounter();
   if (!enc) { stage.appendChild(button('시작 ▸', nextEncounter, { cls: 'btn btn-primary btn-continue' })); return; }
 
+  /* 흐려진 이름이 있으면 모험 화면에서 바로 붙들 수 있게 한다.
+   * 명부 탭 안에만 두면 플레이어가 그런 기능이 있는 줄도 모르고 이름을 잃는다. */
+  renderHoldPanel(stage);
+
   const list = visibleChoices(enc);
   if (!list.length) { stage.appendChild(button('계속 ▸', () => finishEncounter(enc.gain || 2), { cls: 'btn btn-primary btn-continue' })); return; }
   list.forEach(({ c, i }) => stage.appendChild(choiceCard(c, i)));
+}
+
+/* 모험 화면 위쪽의 붙들기 패널 — 흐려진 이름이 있을 때만 나타난다 */
+function renderHoldPanel(stage) {
+  if (!state.flags.holdUnlocked) return;
+  const fading = Object.keys(state.register).filter((id) => erosionOf(id) > 0 && erosionOf(id) < 3);
+  if (!fading.length) return;
+
+  fading.sort((a, b) => erosionOf(b) - erosionOf(a));
+  const box = el('div', 'hold-panel');
+  box.appendChild(el('div', 'hold-head', '📖 명부에서 흐려지고 있는 이름'));
+
+  fading.forEach((id) => {
+    const row = el('div', 'hold-row');
+    row.appendChild(el('span', 'hold-name', veilName(id)));
+    row.appendChild(el('span', 'hold-state', EROSION_LABEL[erosionOf(id)]));
+    if (state.hp <= HOLD_HP_COST) {
+      row.appendChild(el('span', 'hold-note', '체력이 모자라 부를 수 없다'));
+    } else {
+      const stat = bestHoldStat(id);
+      const rate = getCheckRate(stat, holdDc(id), 0, { hold: true, about: id });
+      const b = button(`소리 내어 부른다  ·  ${STAT_META[stat].label} ${rate}%  ·  체력 −${HOLD_HP_COST}`,
+        () => holdName(id, stat), { cls: 'btn btn-hold' });
+      row.appendChild(b);
+    }
+    box.appendChild(row);
+  });
+
+  box.appendChild(el('div', 'hold-foot', '부르지 않으면 이 이름은 결국 지워진다. 전부 지워지면 이야기가 그대로 끝난다.'));
+  stage.appendChild(box);
+}
+
+/* 지금 가장 잘 붙들 수 있는 능력치를 골라준다 — 셋을 일일이 비교하게 하지 않는다 */
+function bestHoldStat(id) {
+  return ['courage', 'intelligence', 'charm']
+    .sort((a, b) => getCheckRate(b, holdDc(id), 0, { hold: true, about: id })
+                  - getCheckRate(a, holdDc(id), 0, { hold: true, about: id }))[0];
 }
 
 function choiceCard(c, idx) {

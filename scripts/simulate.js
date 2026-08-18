@@ -1,0 +1,295 @@
+/* ===================== 헤드리스 밸런스 시뮬레이터 =====================
+ * 게임 번들에는 포함되지 않는 개발 도구.
+ *
+ *   node scripts/simulate.js [판수]
+ *
+ * UI 없이 한 판을 끝까지 돌려서 ADVENTURE_PLAN §16의 검증 기준을 재본다.
+ * 선택지는 무작위로 고른다 — "아무렇게나 눌러도 판이 성립하는가"가 1차 관문이다. */
+
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const ROOT = path.join(__dirname, '..');
+
+/* index.html과 같은 순서로 읽는다 (UI·부트스트랩은 제외) */
+const FILES = [
+  'js/data/houses.js',
+  'js/data/backgrounds.js',
+  'js/data/traits.js',
+  'js/data/rarity.js',
+  'js/data/spells.js',
+  'js/data/enemies.js',
+  'js/data/people.js',
+  'js/data/fragments.js',
+  'js/data/endings.js',
+  'js/data/achievements.js',
+  'js/data/beats.js',
+  'js/data/encounters/common.js',
+  'js/data/encounters/search.js',
+  'js/data/encounters/combat.js',
+  'js/data/encounters/eerie.js',
+  'js/data/encounters/special.js',
+  'js/systems/ledger.js',
+  'js/systems/check.js',
+  'js/systems/item.js',
+  'js/systems/loot.js',
+  'js/systems/spell.js',
+  'js/systems/loadout.js',
+  'js/systems/duel.js',
+  'js/systems/achievement.js',
+  'js/systems/register.js',
+  'js/systems/progress.js',
+  'js/state.js',
+  'js/engine.js',
+];
+
+/* UI 자리를 메우는 최소 스텁. 여기서 잡히는 예외가 곧 실제 버그다. */
+const STUBS = `
+const _store = {};
+const localStorage = {
+  getItem: (k) => (_store[k] === undefined ? null : _store[k]),
+  setItem: (k, v) => { _store[k] = String(v); },
+  removeItem: (k) => { delete _store[k]; },
+};
+let EMITTED = [];
+let HOLD_MODE = false;
+function sceneEmit(text, cls) { if (text) EMITTED.push({ text: String(text), cls: cls || '' }); }
+function render() {}
+function uiStartEncounter() {}
+function toast() {}
+function notifyCheck() {}
+`;
+
+const source = STUBS + FILES.map((f) => `\n/* ==== ${f} ==== */\n` + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+
+const DRIVER = `
+/* vm 스크립트 스코프의 const는 컨텍스트에 붙지 않으므로 함수로 꺼낸다 */
+function getRunLog() { return EMITTED; }
+function getData() { return { ENDINGS, ENDING_LIST, BACKGROUNDS, ALL_ENCOUNTERS, BEAT_LIST }; }
+
+/* 이름이 흐려졌고 체력이 남아 있으면 붙든다 — 명부 탭을 실제로 쓰는 플레이어 */
+function tryHold() {
+  if (!state.flags.holdUnlocked) return;
+  const ids = Object.keys(state.register).filter((id) => canHold(id));
+  if (!ids.length) return;
+  if (state.hp < 30) return;
+  ids.sort((a, b) => erosionOf(b) - erosionOf(a));
+  holdName(ids[0], 'courage');
+}
+
+function runOnce(bgId, houseId, traitId, holdMode) {
+  HOLD_MODE = !!holdMode;
+  EMITTED = [];
+  state = newRun(houseId, bgId, traitId, {});
+  const trace = { encounters: 0, combats: 0, holds: 0, beats: 0, maxProgress: 0 };
+
+  nextEncounter();
+
+  let guard = 0;
+  while (state.mode !== 'ending' && guard < 600) {
+    guard += 1;
+    if (state.phase === 'body') {
+      if (HOLD_MODE) tryHold();
+      const enc = currentEncounter();
+      if (!enc) { finishEncounter(2); continue; }
+      const list = visibleChoices(enc);
+      trace.encounters += 1;
+      if (state.isBeat) trace.beats += 1;
+      if (!list.length) { finishEncounter(enc.gain || 2); continue; }
+      const pick = list[randInt(0, list.length - 1)];
+      if (pick.c.combat || (pick.c.outcomes && Object.values(pick.c.outcomes).some((o) => o.combat))) trace.combats += 1;
+      resolveChoice(pick.i);
+    } else {
+      continueRun();
+    }
+    if (state.progress > trace.maxProgress) trace.maxProgress = state.progress;
+  }
+
+  if (state.mode !== 'ending') {
+    return { ok: false, reason: 'guard', turns: guard, progress: state.progress };
+  }
+
+  return {
+    ok: true,
+    ending: state.ending,
+    endingKind: ENDINGS[state.ending].kind,
+    turns: trace.encounters,
+    beats: trace.beats,
+    progress: Math.floor(trace.maxProgress),
+    level: state.level,
+    spells: Object.keys(state.spells).length,
+    held: heldCount(),
+    fragments: fragmentCount(),
+    gold: state.gold,
+    combatWins: state.statsTrack.combatWins || 0,
+    holds: state.statsTrack.holds || 0,
+    maxMastery: Math.max.apply(null, Object.values(state.spells)),
+    missedBeats: BEAT_LIST.filter((b) => !state.beatsDone[b.id]).map((b) => b.order + ':' + b.title).join(','),
+    endProgress: Math.floor(state.progress),
+    learned: state.log.filter((l) => l.text.indexOf('익혔다 —') >= 0).length,
+    practiced: state.log.filter((l) => l.text.indexOf('반복해 연습했다') >= 0).length,
+    blockedPrereq: state.log.filter((l) => l.text.indexOf('손에 붙지 않는다') >= 0).length,
+    blockedFull: state.log.filter((l) => l.text.indexOf('꽉 찼다') >= 0).length,
+    noSubject: state.log.filter((l) => l.text.indexOf('손에 붙지 않았다') >= 0).length,
+  };
+}
+`;
+
+const context = {
+  console,
+  Math,
+  JSON,
+  Date,
+  Object,
+  Array,
+  String,
+  Number,
+  Boolean,
+  Error,
+  isNaN,
+  parseInt,
+  parseFloat,
+};
+vm.createContext(context);
+
+try {
+  vm.runInContext(source + DRIVER, context, { filename: 'bundle.js' });
+} catch (e) {
+  console.error('로드 실패:', e.message);
+  console.error(e.stack.split('\n').slice(0, 6).join('\n'));
+  process.exit(1);
+}
+
+/* ---------------- 실행 ---------------- */
+
+const RUNS = parseInt(process.argv[2], 10) || 200;
+const HOLD = process.argv.indexOf('--hold') >= 0;
+const BGS = ['transfer', 'bereaved', 'archivist', 'touched'];
+const HOUSES_L = ['gryffindor', 'slytherin', 'ravenclaw', 'hufflepuff'];
+const TRAITS_L = ['tenacious', 'keenEye', 'bold', 'ordinary'];
+
+context.loadLedger();
+const DATA = context.getData();
+
+const results = [];
+const failures = [];
+
+for (let i = 0; i < RUNS; i++) {
+  const bg = BGS[i % BGS.length];
+  const house = HOUSES_L[Math.floor(Math.random() * 4)];
+  const trait = TRAITS_L[Math.floor(Math.random() * 4)];
+  let r;
+  try {
+    r = context.runOnce(bg, house, trait, HOLD);
+  } catch (e) {
+    failures.push({ bg, house, trait, error: e.message, stack: e.stack.split('\n')[1] });
+    continue;
+  }
+  if (!r.ok) { failures.push({ bg, house, trait, error: '판이 끝나지 않음 (' + r.reason + ', 진행도 ' + Math.floor(r.progress) + ')' }); continue; }
+  r.bg = bg;
+  results.push(r);
+}
+
+/* ---------------- 보고 ---------------- */
+
+function avg(key) { return results.length ? (results.reduce((s, r) => s + r[key], 0) / results.length) : 0; }
+function pct(n) { return ((n / results.length) * 100).toFixed(1) + '%'; }
+
+if (process.argv.indexOf('--sample') >= 0) {
+  context.state = null;
+  const r = context.runOnce('transfer', 'gryffindor', 'bold', true);
+  console.log('\n──── 표본 판의 로그 (전투·판정 위주) ────\n');
+  const log = context.getRunLog();
+  log.forEach((l) => console.log((l.cls || '').padEnd(18) + '| ' + l.text.slice(0, 100)));
+  process.exit(0);
+}
+
+console.log('');
+console.log('════════ 시뮬레이션 ' + RUNS + '판' + (HOLD ? ' · 붙들기 ON' : ' · 붙들기 OFF') + ' ════════');
+console.log('');
+
+if (failures.length) {
+  console.log('❌ 실패 ' + failures.length + '건');
+  const seen = {};
+  failures.forEach((f) => {
+    const key = f.error;
+    if (seen[key]) { seen[key].n += 1; return; }
+    seen[key] = { n: 1, at: f.stack, bg: f.bg };
+  });
+  Object.keys(seen).forEach((k) => {
+    console.log('   [' + seen[k].n + '회] ' + k);
+    if (seen[k].at) console.log('        ' + seen[k].at.trim());
+  });
+  console.log('');
+}
+
+if (!results.length) { console.log('성공한 판이 없습니다.'); process.exit(1); }
+
+console.log('── 한 판의 모양 ──');
+console.log('  인카운터   평균 ' + avg('turns').toFixed(1) + '  (목표 45~55)');
+const reached = results.filter((r) => r.progress >= 88);
+const beatsWhenReached = reached.length ? reached.reduce((s, r) => s + r.beats, 0) / reached.length : 0;
+console.log('  고정 비트  평균 ' + avg('beats').toFixed(2) + '  (88%까지 간 판에서는 ' + beatsWhenReached.toFixed(2) + ' / 5.00)');
+console.log('  최종 레벨  평균 ' + avg('level').toFixed(1) + '  (목표 8~10)');
+console.log('  습득 주문  평균 ' + avg('spells').toFixed(1) + '  (목표 6~10)');
+console.log('  최고 숙련  평균 ' + avg('maxMastery').toFixed(0));
+console.log('  전투 승리  평균 ' + avg('combatWins').toFixed(1));
+console.log('  붙들기     평균 ' + avg('holds').toFixed(1));
+console.log('  남은 이름  평균 ' + avg('held').toFixed(1));
+console.log('  갈레온     평균 ' + avg('gold').toFixed(0));
+console.log('  [수업] 습득 ' + avg('learned').toFixed(1) + ' · 연습 ' + avg('practiced').toFixed(1)
+  + ' · 선행막힘 ' + avg('blockedPrereq').toFixed(1) + ' · 슬롯꽉 ' + avg('blockedFull').toFixed(1)
+  + ' · 계열없음 ' + avg('noSubject').toFixed(1));
+console.log('');
+
+const missed = {};
+reached.forEach((r) => { if (r.missedBeats) missed[r.missedBeats] = (missed[r.missedBeats] || 0) + 1; });
+if (Object.keys(missed).length) {
+  console.log('── 88%까지 갔는데 놓친 비트 ──');
+  Object.keys(missed).forEach((k) => console.log('  ' + k + '  ' + missed[k] + '회'));
+  const ex = reached.find((r) => r.missedBeats);
+  console.log('  예: 최종 진행도 ' + ex.endProgress + ', 최대 ' + ex.progress + ', 엔딩 ' + ex.ending);
+  console.log('');
+}
+
+console.log('── 어떻게 끝났는가 ──');
+const byKind = {};
+results.forEach((r) => { byKind[r.endingKind] = (byKind[r.endingKind] || 0) + 1; });
+Object.keys(byKind).sort((a, b) => byKind[b] - byKind[a]).forEach((k) => {
+  const label = { death: '사망(체력 0)', alone: '명부 전멸', finish: '완주', special: '조건부', true: '진엔딩' }[k] || k;
+  console.log('  ' + label.padEnd(16) + pct(byKind[k]) + '  (' + byKind[k] + ')');
+});
+console.log('');
+
+console.log('── 엔딩 종류 ──');
+const byEnding = {};
+results.forEach((r) => { byEnding[r.ending] = (byEnding[r.ending] || 0) + 1; });
+Object.keys(byEnding).sort((a, b) => byEnding[b] - byEnding[a]).forEach((id) => {
+  console.log('  ' + (DATA.ENDINGS[id].title + '').padEnd(20) + byEnding[id]);
+});
+console.log('  도달한 엔딩 ' + Object.keys(byEnding).length + '/' + DATA.ENDING_LIST.length + '종');
+console.log('');
+
+console.log('── 배경별 완주율 ──');
+BGS.forEach((bg) => {
+  const rs = results.filter((r) => r.bg === bg);
+  if (!rs.length) return;
+  const done = rs.filter((r) => r.progress >= 100).length;
+  console.log('  ' + DATA.BACKGROUNDS[bg].name.padEnd(16) + ((done / rs.length) * 100).toFixed(0) + '%  (' + rs.length + '판)');
+});
+console.log('');
+
+/* ── 검증 기준 ── */
+console.log('── 검증 (ADVENTURE_PLAN §16) ──');
+const checks = [
+  ['판이 예외 없이 끝난다', failures.length === 0],
+  ['인카운터 45~55', avg('turns') >= 40 && avg('turns') <= 60],
+  ['끝까지 간 판은 비트 5개를 모두 본다', beatsWhenReached >= 4.95],
+  ['최종 Lv.8~10', avg('level') >= 7 && avg('level') <= 11],
+  ['주문 6~10개 습득', avg('spells') >= 5.5 && avg('spells') <= 10.5],
+  ['사망 원인이 한쪽으로 70% 넘게 쏠리지 않음', Object.values(byKind).every((v) => v / results.length <= 0.7)],
+  ['엔딩 3종 이상 도달', Object.keys(byEnding).length >= 3],
+];
+checks.forEach(([label, ok]) => console.log('  ' + (ok ? '✅' : '❌') + ' ' + label));
+console.log('');

@@ -31,6 +31,11 @@ function createEquipInstance(templateId, forcedRarityId, bonusPct) {
   const affixes = [];
   for (let i = 0; i < rarity.affixSlots; i++) {
     const kind = i === 0 ? 'prefix' : 'suffix';
+    /* 접미사 자리에는 스탯 대신 어빌리티가 붙을 수 있다 — 이쪽이 전투를 실제로 바꾼다 */
+    if (kind === 'suffix') {
+      const ability = rollAbility(rarityId);
+      if (ability) { affixes.push({ id: ability.id, name: ability.name, ability: true, kind }); continue; }
+    }
     const pool = kind === 'prefix' ? PREFIXES : SUFFIXES;
     const pick = pool[randInt(0, pool.length - 1)];
     const [amin, amax] = pick.roll;
@@ -57,12 +62,44 @@ function createEquipInstance(templateId, forcedRarityId, bonusPct) {
   };
 }
 
+/* 어빌리티 추첨 — 등급이 높을수록 붙을 확률과 후보가 늘어난다 */
+const ABILITY_CHANCE = { uncommon: 0.20, rare: 0.35, epic: 0.55, legendary: 0.80, artifact: 1.0 };
+
+function rollAbility(rarityId) {
+  const chance = ABILITY_CHANCE[rarityId] || 0;
+  if (Math.random() >= chance) return null;
+  const idx = rarityIndex(rarityId);
+  const pool = ABILITY_LIST.filter((a) => rarityIndex(a.minRarity) <= idx);
+  if (!pool.length) return null;
+  return pool[randInt(0, pool.length - 1)];
+}
+
+/* 지금 장착 중인 장비가 이 어빌리티를 갖고 있는가 */
+function hasAbility(abilityId) {
+  if (!state || !state.equipped) return false;
+  return ['wand', 'robe', 'accessory'].some((slot) => {
+    const inst = getEquippedInstance(slot);
+    if (!inst || !inst.identified) return false;
+    return inst.affixes.some((a) => a.ability && a.id === abilityId);
+  });
+}
+
+function equippedAbilities() {
+  const found = [];
+  ['wand', 'robe', 'accessory'].forEach((slot) => {
+    const inst = getEquippedInstance(slot);
+    if (!inst || !inst.identified) return;
+    inst.affixes.forEach((a) => { if (a.ability && ABILITIES[a.id]) found.push(ABILITIES[a.id]); });
+  });
+  return found;
+}
+
 function getItemStatBreakdown(instance) {
   const tpl = EQUIP_TEMPLATES[instance.baseId];
   const breakdown = {};
   const mainVal = Math.round(instance.baseValue * (1 + instance.enhanceLevel * 0.08));
   breakdown[tpl.stat] = (breakdown[tpl.stat] || 0) + mainVal;
-  instance.affixes.forEach((a) => { breakdown[a.stat] = (breakdown[a.stat] || 0) + a.value; });
+  instance.affixes.forEach((a) => { if (!a.ability) breakdown[a.stat] = (breakdown[a.stat] || 0) + a.value; });
   if (instance.uniqueMark) breakdown[instance.uniqueMark.stat] = (breakdown[instance.uniqueMark.stat] || 0) + instance.uniqueMark.value;
   return breakdown;
 }
@@ -73,7 +110,8 @@ function getItemDisplayName(instance) {
   const prefix = instance.affixes.find((a) => a.kind === 'prefix');
   const suffix = instance.affixes.find((a) => a.kind === 'suffix');
   let name = tpl.name;
-  if (prefix) name = `${prefix.name} ${name}`;
+  /* "행운의 행운의 토끼발"처럼 접두사가 기본 이름과 겹치는 경우를 피한다 */
+  if (prefix && name.indexOf(prefix.name) !== 0) name = `${prefix.name} ${name}`;
   if (suffix) name = `${name} : ${suffix.name}`;
   if (instance.enhanceLevel > 0) name += ` +${instance.enhanceLevel}`;
   return name;

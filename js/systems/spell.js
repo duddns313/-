@@ -4,9 +4,10 @@ function getMasteryTier(mastery) {
   return SPELL_MASTERY_TIERS.find((t) => mastery >= t.min && mastery <= t.max) || SPELL_MASTERY_TIERS[0];
 }
 
-/* 레벨에 따른 최대 습득 슬롯. 학년(3년) 구조 대신 레벨을 게이트로 사용 — 전 계열 마스터를 막아 빌드 선택을 강제한다. */
+/* 한 판에 들고 갈 수 있는 주문 수. 사슬 슬롯이 최대 7이므로 그 언저리에서 묶는다.
+ * 전 계열 마스터를 막아 "무엇을 먼저 배우느냐"를 빌드 결정으로 만든다. */
 function maxLearnedSpells(level) {
-  return clamp(1 + level, 2, Object.keys(SPELLS).length);
+  return clamp(3 + level, 4, 12);
 }
 
 function learnedSpellCount() {

@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  loadLedger();          /* 「기록」은 판보다 먼저 읽는다 — 시작 화면이 이미 이걸 쓴다 */
   showSetupScreen();
 
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -12,20 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'sheet-overlay') closeSheet();
   });
 
-  /* 화면 아무 곳이나 눌러도 타이핑 중인 글이 즉시 끝까지 나온다 */
-  $('game-shell').addEventListener('click', skipTypewriters);
+  /* 본문 영역을 누르면 타이핑이 즉시 끝까지 나온다 (버튼 클릭은 방해하지 않는다) */
+  $('scene-page').addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    skipTypewriters();
+  });
 
   $('btn-settings').addEventListener('click', openSettingsSheet);
 
-  $('btn-save').addEventListener('click', () => {
-    if (!state) return;
-    const ok = saveGame();
-    toast(ok ? '게임을 저장했습니다.' : '저장에 실패했습니다.', { cls: ok ? '' : 'toast-warn' });
-  });
-
   $('btn-reset').addEventListener('click', () => {
     if (!state) return;
-    confirmSheet('정말로 처음부터 다시 시작하시겠습니까? 저장 데이터가 삭제됩니다.', () => {
+    confirmSheet('이 판을 포기하고 처음부터 다시 시작할까요?\n(「기록」에 남은 이름과 조각은 사라지지 않습니다)', () => {
       deleteSave();
       state = null;
       $('game-shell').classList.add('hidden');
@@ -34,6 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && state) saveGame();
+    if (document.visibilityState === 'hidden' && state && state.mode !== 'ending') saveGame();
   });
 });

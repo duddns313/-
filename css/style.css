@@ -590,3 +590,183 @@ body {
 .hub-date { color: var(--gold); font-size: 0.95rem; }
 .hub-deadline { font-size: 0.85rem; color: var(--text-dim); margin-top: 3px; }
 .hub-hint { font-size: 0.76rem; color: var(--text-dim); margin-top: 8px; line-height: 1.6; word-break: keep-all; }
+
+/* ═════════════════════════════════════════════════
+   모험가 이야기형 개편 (v10) — 신규 컴포넌트
+   ═════════════════════════════════════════════════ */
+
+/* ── 진행도 바 ── */
+#progress-wrap { margin-bottom: 8px; }
+#progress-track {
+  position: relative;
+  height: 7px;
+  background: #0a0814;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: visible;
+}
+#progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #4a3f8a, var(--purple));
+  transition: width 0.45s ease;
+}
+#progress-ticks { position: absolute; inset: 0; pointer-events: none; }
+.progress-tick {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 11px;
+  margin-left: -1px;
+  background: var(--text-dim);
+  opacity: 0.55;
+}
+.progress-tick.passed { background: var(--gold); opacity: 1; }
+
+#topbar-progress { color: var(--gold); font-weight: bold; }
+#topbar-warn { color: var(--red); font-size: 0.8rem; }
+#topbar-points { color: var(--green); font-size: 0.8rem; }
+#topbar-vitals { display: block; margin-top: 4px; font-size: 0.85rem; color: var(--text-dim); }
+
+/* ── 시작 화면: 배경·기숙사·특성 카드 ── */
+.setup-ledger {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin-bottom: 14px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-panel); color: var(--gold); font-size: 0.82rem;
+}
+.setup-section {
+  margin: 18px 0 8px; color: var(--gold); font-size: 0.95rem;
+  border-bottom: 1px solid var(--border); padding-bottom: 5px; text-align: left;
+}
+.card-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 480px) { .card-grid { grid-template-columns: 1fr 1fr; } }
+.pick-card {
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-panel); padding: 10px 12px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s; text-align: left;
+}
+.pick-card.selected { border-color: var(--gold); background: #2a2350; }
+.pick-name { margin: 0 0 2px; color: var(--gold); font-size: 0.98rem; }
+.pick-tag { margin: 0 0 5px; color: var(--purple); font-size: 0.8rem; }
+.pick-desc { margin: 0 0 6px; color: var(--text-dim); font-size: 0.82rem; line-height: 1.5; word-break: keep-all; }
+.pick-perk { margin: 0; color: var(--green); font-size: 0.78rem; }
+.pick-cost { margin: 2px 0 0; color: var(--red); font-size: 0.78rem; }
+.pick-card.small .pick-desc { margin-bottom: 4px; }
+
+.alloc-box { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); padding: 8px 12px; }
+.alloc-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.alloc-label { flex: 1; text-align: left; color: var(--text-dim); font-size: 0.88rem; }
+.alloc-value { min-width: 28px; text-align: right; color: var(--gold); font-weight: bold; }
+
+/* ── 고정 비트 머리말 ── */
+.beat-head {
+  margin: 0 0 14px; padding: 6px 0;
+  color: var(--gold); font-size: 1.05rem; letter-spacing: 0.06em; text-align: center;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+
+/* ── 전투 로그 ── */
+.duel-head { margin: 14px 0 4px; color: var(--purple); font-size: 0.9rem; text-align: center; letter-spacing: 0.04em; }
+.duel-roll { margin: 0 0 6px; color: var(--gold); font-size: 0.9rem; text-align: center; }
+.duel-roll.duel-crit { color: var(--gold); font-weight: bold; }
+.duel-roll.duel-fumble { color: var(--red); }
+.duel-line {
+  margin: 0 0 2px; padding-left: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem; color: var(--text-dim); white-space: pre-wrap;
+}
+.duel-echo { color: var(--purple); }
+.duel-total {
+  margin: 6px 0; padding-top: 5px; border-top: 1px dashed var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem; color: var(--text);
+}
+.scene-para.duel-win { color: #a9dcc0; }
+
+/* ── 선택지 부가 표시 ── */
+.choice-combat { color: var(--red); font-size: 0.8rem; }
+.choice-gate { color: var(--purple); font-size: 0.8rem; }
+
+/* ── 명부 ── */
+.erosion-timer { margin: 0 0 10px; color: var(--text-dim); font-size: 0.85rem; }
+.erosion-timer.urgent { color: var(--red); }
+.register-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  padding: 8px 10px; margin-bottom: 6px;
+  border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px;
+  background: var(--bg-panel);
+}
+.register-row.erosion-0 { border-left-color: var(--green); }
+.register-row.erosion-1 { border-left-color: var(--gold); }
+.register-row.erosion-2 { border-left-color: #c47a3a; }
+.register-row.erosion-3 { border-left-color: var(--red); opacity: 0.6; }
+.register-name { color: var(--text); font-size: 0.95rem; }
+.register-state { color: var(--text-dim); font-size: 0.78rem; }
+.register-note { flex-basis: 100%; color: var(--text-dim); font-size: 0.78rem; line-height: 1.5; }
+.register-actions { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+
+.fragment-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 6px 10px; margin-bottom: 4px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); opacity: 0.55;
+}
+.fragment-row.got { opacity: 1; border-color: var(--gold); }
+.fragment-label { color: var(--text); font-size: 0.85rem; white-space: nowrap; }
+.fragment-hint { color: var(--text-dim); font-size: 0.76rem; text-align: right; word-break: keep-all; }
+.fragment-row.got .fragment-hint { color: var(--gold); }
+
+/* ── 준비 탭: 능력치 · 주문 사슬 · 장비 ── */
+.stat-box { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel); padding: 6px 12px; margin-bottom: 8px; }
+.stat-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.stat-label { flex: 1; color: var(--text-dim); font-size: 0.88rem; }
+.stat-value { color: var(--gold); font-weight: bold; font-size: 0.9rem; }
+
+.chain-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; margin-bottom: 5px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); opacity: 0.5;
+}
+.chain-row.in-ap { opacity: 1; border-color: var(--purple); }
+.chain-index { color: var(--text-dim); font-size: 0.8rem; min-width: 14px; }
+.chain-main { flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; cursor: pointer; }
+.chain-spell { color: var(--text); font-size: 0.92rem; }
+.chain-cond { color: var(--purple); font-size: 0.78rem; }
+.chain-mastery { color: var(--text-dim); font-size: 0.72rem; }
+.chain-empty { color: var(--text-dim); font-size: 0.85rem; font-style: italic; }
+.chain-ctrl { display: flex; gap: 3px; }
+
+.equip-row { display: flex; gap: 10px; padding: 5px 10px; }
+.equip-slot { color: var(--text-dim); font-size: 0.82rem; min-width: 48px; }
+.equip-name { font-size: 0.88rem; }
+.ability-line { margin: 2px 0; color: var(--gold); font-size: 0.8rem; word-break: keep-all; }
+.bag-box { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+
+/* ── 기록 탭 ── */
+.ending-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 6px 10px; margin-bottom: 4px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); opacity: 0.5;
+}
+.ending-row.got { opacity: 1; border-color: var(--gold); }
+.ending-name { color: var(--text); font-size: 0.88rem; white-space: nowrap; }
+.ending-hint { color: var(--text-dim); font-size: 0.76rem; text-align: right; word-break: keep-all; }
+.spell-row { display: flex; justify-content: space-between; padding: 4px 10px; font-size: 0.85rem; }
+.spell-name { color: var(--text); }
+.spell-mastery { color: var(--text-dim); font-size: 0.78rem; }
+.log-box { max-height: 40vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel); padding: 8px 10px; }
+
+/* ── 엔딩 ── */
+.ending-title { margin: 20px 0 10px; color: var(--gold); font-size: 1.15rem; text-align: center; letter-spacing: 0.08em; }
+.ending-text { color: var(--text); }
+.ending-box {
+  margin-bottom: 12px; padding: 10px 12px;
+  border: 1px solid var(--gold); border-radius: 8px; background: var(--bg-panel); text-align: center;
+}
+.ending-kind { color: var(--gold); font-size: 0.9rem; margin-bottom: 4px; }
+.ending-stat { color: var(--text-dim); font-size: 0.8rem; }
+
+/* 판정 플래시가 본문을 오래 가리지 않도록 — 겹쳐 쌓이면 글이 안 읽힌다 */
+#check-flash-container { pointer-events: none; }
+.check-flash + .check-flash { display: none; }

@@ -1,33 +1,34 @@
 /* ===================== 드랍 테이블 · 지팡이 뽑기 ===================== */
 
-/* 전투 승리 시 전리품 산출 (지역 위험도 × 적 등급 × 행운) */
-function rollCombatLoot(enemyId, locationId) {
-  const enemy = ENEMIES[enemyId];
-  const loc = LOCATIONS[locationId] || {};
-  const risk = loc.risk || 0;
-  const tier = enemy.tier || 1;
+/* 전투 승리 시 전리품 산출.
+ * 장소(구역) 개념이 사라졌으므로 적 등급과 행운만으로 계산한다.
+ * 반환은 화면에 한 줄씩 찍기 좋게 평평한 배열. */
+function rollLoot(tier, bonusPct) {
+  tier = Math.max(1, tier || 1);
+  bonusPct = bonusPct || 0;
   const luck = getStatValue('luck');
+  const drops = [];
 
-  const drops = { gold: randInt(enemy.gold[0], enemy.gold[1]), materials: [], scroll: null, equip: null };
-
-  if (Math.random() < 0.22 + risk * 0.05 + luck * 0.005) {
-    drops.materials.push({ id: 'magicStone', qty: randInt(1, 2) });
+  if (Math.random() < 0.22 + tier * 0.04 + luck * 0.005) {
+    drops.push({ kind: 'item', itemId: 'magicStone', qty: randInt(1, 2) });
   }
 
-  const equipChance = enemy.boss ? 1.0 : clamp(0.16 + tier * 0.05 + risk * 0.05 + luck * 0.01, 0, 0.7);
+  const equipChance = clamp(0.16 + tier * 0.08 + luck * 0.01 + bonusPct / 100, 0, 0.75);
   if (Math.random() < equipChance) {
     const slot = ['wand', 'robe', 'accessory'][randInt(0, 2)];
     const pool = EQUIP_TEMPLATES_BY_SLOT[slot];
-    const candidates = pool.filter((t) => t.tier <= Math.max(1, tier));
-    const tpl = (candidates.length ? candidates : pool)[randInt(0, (candidates.length ? candidates : pool).length - 1)];
-    const bonusPct = (tier + risk) * 4 + luck;
-    drops.equip = createEquipInstance(tpl.id, null, bonusPct);
+    const candidates = pool.filter((t) => t.tier <= tier);
+    const list = candidates.length ? candidates : pool;
+    const tpl = list[randInt(0, list.length - 1)];
+    drops.push({ kind: 'equip', instance: createEquipInstance(tpl.id, null, tier * 5 + luck + bonusPct) });
   }
 
-  if (!enemy.boss && Math.random() < 0.07 + luck * 0.003) {
+  if (Math.random() < 0.09 + luck * 0.004) {
     const scrollIds = Object.values(ITEMS).filter((i) => i.type === 'scroll' && i.price > 0).map((i) => i.id);
-    if (scrollIds.length) drops.scroll = scrollIds[randInt(0, scrollIds.length - 1)];
+    if (scrollIds.length) drops.push({ kind: 'item', itemId: scrollIds[randInt(0, scrollIds.length - 1)], qty: 1 });
   }
+
+  if (Math.random() < 0.18) drops.push({ kind: 'item', itemId: 'healPotion', qty: 1 });
 
   return drops;
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>호그와트: 그림자의 잔영</title>
-<meta name="description" content="해리포터 세계관의 텍스트 RPG — 판정, 성장, 파밍이 있는 모바일 웹 게임" />
+<meta name="description" content="해리포터 세계관의 텍스트 로그라이크 — 진행도, 랜덤 인카운터, 주문 사슬 전투" />
 <meta name="theme-color" content="#0e0c1a" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -15,30 +15,32 @@
 <div id="app">
 
   <section id="setup-screen">
-    <h2>당신의 이야기가 시작됩니다</h2>
-    <p class="setup-desc">호그와트 전투로부터 이십오 년. 편입생 윤영운의 이야기가 시작됩니다.</p>
+    <h2>호그와트: 그림자의 잔영</h2>
+    <p class="setup-desc">호그와트 전투로부터 이십오 년. 무언가가 이름을 먹고 있다.</p>
     <div id="house-select"></div>
     <div class="setup-buttons">
-      <button id="btn-start" class="btn btn-primary">여정 시작</button>
+      <button id="btn-start" class="btn btn-primary">시작</button>
       <button id="btn-continue" class="btn hidden">이어하기</button>
     </div>
   </section>
 
   <div id="game-shell" class="hidden">
     <header id="topbar">
+      <div id="progress-wrap">
+        <div id="progress-track">
+          <div id="progress-fill"></div>
+          <div id="progress-ticks"></div>
+        </div>
+      </div>
       <div id="topbar-main">
-        <span id="topbar-name"></span>
-        <span id="topbar-day"></span>
-        <span id="topbar-deadline"></span>
+        <span id="topbar-progress"></span>
+        <span id="topbar-warn" class="hidden"></span>
+        <span id="topbar-points" class="hidden"></span>
       </div>
-      <div id="topbar-vitals" class="hidden">
-        <div class="mini-bar-row"><span class="mini-bar-label">HP</span><div class="mini-bar-track"><div id="mini-hp-fill" class="mini-bar-fill mini-hp"></div></div></div>
-        <div class="mini-bar-row"><span class="mini-bar-label">MP</span><div class="mini-bar-track"><div id="mini-mp-fill" class="mini-bar-fill mini-mp"></div></div></div>
-      </div>
+      <div id="topbar-vitals"></div>
       <div id="topbar-buttons">
         <button id="btn-settings" class="btn btn-tiny">⚙️</button>
-        <button id="btn-save" class="btn btn-tiny">저장</button>
-        <button id="btn-reset" class="btn btn-tiny btn-danger">초기화</button>
+        <button id="btn-reset" class="btn btn-tiny btn-danger">포기</button>
       </div>
     </header>
 
@@ -46,29 +48,21 @@
       <section id="panel-adventure" class="tab-panel">
         <div id="scene-page">
           <div id="scene-chapter" class="hidden"></div>
-          <div id="scene-place" class="hidden"></div>
           <div id="scene-body"></div>
           <div id="scene-choices" class="hidden"></div>
         </div>
       </section>
 
-      <section id="panel-character" class="tab-panel hidden"></section>
       <section id="panel-register" class="tab-panel hidden"></section>
-      <section id="panel-inventory" class="tab-panel hidden"></section>
-      <section id="panel-codex" class="tab-panel hidden"></section>
-
-      <section id="panel-log" class="tab-panel hidden">
-        <div id="log-full"></div>
-      </section>
+      <section id="panel-prepare" class="tab-panel hidden"></section>
+      <section id="panel-record" class="tab-panel hidden"></section>
     </main>
 
     <nav id="bottom-tabs">
-      <button class="tab-btn" data-tab="adventure"><span class="tab-icon">🗺️</span><span class="tab-label">모험</span></button>
-      <button class="tab-btn" data-tab="character"><span class="tab-icon">🧙</span><span class="tab-label">캐릭터</span></button>
+      <button class="tab-btn" data-tab="adventure"><span class="tab-icon">🕯️</span><span class="tab-label">모험</span></button>
       <button class="tab-btn" data-tab="register"><span class="tab-icon">📖</span><span class="tab-label">명부</span></button>
-      <button class="tab-btn" data-tab="inventory"><span class="tab-icon">🎒</span><span class="tab-label">소지품</span></button>
-      <button class="tab-btn" data-tab="codex"><span class="tab-icon">📖</span><span class="tab-label">도감</span></button>
-      <button class="tab-btn" data-tab="log"><span class="tab-icon">📜</span><span class="tab-label">기록</span></button>
+      <button class="tab-btn" data-tab="prepare"><span class="tab-icon">🪄</span><span class="tab-label">준비</span></button>
+      <button class="tab-btn" data-tab="record"><span class="tab-icon">✒️</span><span class="tab-label">기록</span></button>
     </nav>
   </div>
 
@@ -83,24 +77,34 @@
 </div>
 
 <script src="js/data/houses.js"></script>
+<script src="js/data/backgrounds.js"></script>
+<script src="js/data/traits.js"></script>
 <script src="js/data/rarity.js"></script>
 <script src="js/data/spells.js"></script>
 <script src="js/data/enemies.js"></script>
-<script src="js/data/locations.js"></script>
+<script src="js/data/people.js"></script>
+<script src="js/data/fragments.js"></script>
 <script src="js/data/endings.js"></script>
 <script src="js/data/achievements.js"></script>
-<script src="js/data/companions.js"></script>
-<script src="js/data/people.js"></script>
-<script src="js/data/scenes.js"></script>
-<script src="js/data/memories.js"></script>
+<script src="js/data/beats.js"></script>
+<script src="js/data/encounters/common.js"></script>
+<script src="js/data/encounters/search.js"></script>
+<script src="js/data/encounters/combat.js"></script>
+<script src="js/data/encounters/eerie.js"></script>
+<script src="js/data/encounters/special.js"></script>
+
+<script src="js/systems/settings.js"></script>
+<script src="js/systems/ledger.js"></script>
 <script src="js/systems/check.js"></script>
 <script src="js/systems/item.js"></script>
 <script src="js/systems/loot.js"></script>
 <script src="js/systems/spell.js"></script>
+<script src="js/systems/loadout.js"></script>
+<script src="js/systems/duel.js"></script>
 <script src="js/systems/achievement.js"></script>
-<script src="js/systems/settings.js"></script>
 <script src="js/systems/register.js"></script>
-<script src="js/systems/scene.js"></script>
+<script src="js/systems/progress.js"></script>
+
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/ui.js"></script>

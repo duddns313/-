@@ -30,6 +30,47 @@ const SUFFIXES = [
 
 const AFFIX_BY_ID = Object.fromEntries([...PREFIXES, ...SUFFIXES].map((a) => [a.id, a]));
 
+/* ── 어빌리티 (전투 패시브) ──
+ * 원작에서 "어떤 어빌리티를 가진 장비를 얻느냐가 캐릭터의 전투력을 결정한다".
+ * 단순 스탯 증가와 달리 주문 사슬의 작동 방식 자체를 바꾼다.
+ * minRarity 이상 등급의 장비에서 접미사 자리에 대신 붙을 수 있다. */
+const ABILITIES = {
+  firstBlood: {
+    id: 'firstBlood', name: '선취점', minRarity: 'rare',
+    desc: '사슬의 첫 주문이 반드시 대성공한다.',
+  },
+  echoBack: {
+    id: 'echoBack', name: '되울림', minRarity: 'epic',
+    desc: '사슬의 마지막 주문이 한 번 더 발동한다.',
+  },
+  pickpocket: {
+    id: 'pickpocket', name: '소매치기', minRarity: 'uncommon',
+    desc: '전투에서 져도 갈레온을 챙긴다.',
+  },
+  inkWard: {
+    id: 'inkWard', name: '잉크의 가호', minRarity: 'rare',
+    desc: '전투에 이기면 침식이 한 턴 늦춰진다.',
+  },
+  steadyCore: {
+    id: 'steadyCore', name: '굳은 심지', minRarity: 'epic',
+    desc: '주사위가 7 이하로 나와도 10으로 친다.',
+  },
+  resonance: {
+    id: 'resonance', name: '메아리', minRarity: 'rare',
+    desc: '같은 계열 주문이 연달아 발동하면 뒤엣것의 위력이 절반만큼 늘어난다.',
+  },
+  mastersHand: {
+    id: 'mastersHand', name: '대가의 손', minRarity: 'legendary',
+    desc: '한 전투에 주문을 하나 더 쓸 수 있다.',
+  },
+  worthOfNames: {
+    id: 'worthOfNames', name: '이름값', minRarity: 'epic',
+    desc: '명부에 온전히 남은 이름 하나당 위력이 2씩 오른다.',
+  },
+};
+
+const ABILITY_LIST = Object.values(ABILITIES);
+
 /* 전설 등급 고유 각인 (모든 전설 장비에 하나씩 랜덤 부여) */
 const LEGENDARY_MARKS = [
   { id: 'mark_fate', label: '운명의 각인', stat: 'luck', value: 6 },

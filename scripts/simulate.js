@@ -29,13 +29,13 @@ const FILES = [
   'js/data/encounters/search.js',
   'js/data/encounters/combat.js',
   'js/data/encounters/eerie.js',
+  'js/data/encounters/deep.js',
   'js/data/encounters/special.js',
   'js/systems/ledger.js',
   'js/systems/check.js',
   'js/systems/item.js',
   'js/systems/loot.js',
   'js/systems/spell.js',
-  'js/systems/loadout.js',
   'js/systems/duel.js',
   'js/systems/achievement.js',
   'js/systems/register.js',
@@ -77,17 +77,46 @@ function tryHold() {
   holdName(ids[0], 'courage');
 }
 
+/* 턴제 전투를 무난하게 굴리는 정책 —
+ * 체력이 낮으면 회복, 마력이 남으면 제일 센 공격, 없으면 지팡이. */
+function simCombatTurn() {
+  const list = castableSpells();
+  const affordable = list.filter((sp) => state.mp >= spellMpCost(sp));
+
+  if (state.hp < getMaxHp() * 0.35) {
+    const heal = affordable.filter((sp) => sp.type === 'heal')[0];
+    if (heal) { combatCast(heal.id); return; }
+    const potion = Object.keys(state.itemStacks).filter((id) => ITEMS[id] && ITEMS[id].type === 'potion')[0];
+    if (potion) { combatUseItemAction(potion); return; }
+  }
+  if (state.mp < 4 && state.hp > getMaxHp() * 0.5) { combatDefendAction(); return; }
+
+  const attacks = affordable.filter((sp) => sp.type === 'attack' || sp.id === '_wand');
+  attacks.sort((a, b) => estimateDamageSim(b) - estimateDamageSim(a));
+  combatCast((attacks[0] || WAND_STRIKE).id);
+}
+
+function estimateDamageSim(sp) {
+  const info = sp.id === '_wand' ? { power: WAND_STRIKE.power } : getSpellCastInfo(sp.id);
+  const enemy = currentEnemy();
+  let power = info.power + getAtk() + getStatValue('intelligence') * 0.3;
+  if (enemy && sp.bonusVs && sp.bonusVs.indexOf(enemy.id) >= 0) power *= sp.bonusMult || 2;
+  if (enemy && enemy.weakness === sp.id) power *= 1.5;
+  return power - (sp.pierce ? 0 : ((enemy && enemy.def) || 0));
+}
+
 function runOnce(bgId, houseId, traitId, holdMode) {
   HOLD_MODE = !!holdMode;
   EMITTED = [];
   state = newRun(houseId, bgId, traitId, {});
-  const trace = { encounters: 0, combats: 0, holds: 0, beats: 0, maxProgress: 0 };
+  const trace = { encounters: 0, combats: 0, holds: 0, beats: 0, maxProgress: 0, combatTurns: 0, stages: 0 };
 
   nextEncounter();
 
   let guard = 0;
-  while (state.mode !== 'ending' && guard < 600) {
+  while (state.mode !== 'ending' && guard < 1200) {
     guard += 1;
+    if (state.mode === 'combat') { trace.combatTurns += 1; simCombatTurn(); continue; }
     if (state.phase === 'body') {
       if (HOLD_MODE) tryHold();
       const enc = currentEncounter();
@@ -95,6 +124,7 @@ function runOnce(bgId, houseId, traitId, holdMode) {
       const list = visibleChoices(enc);
       trace.encounters += 1;
       if (state.isBeat) trace.beats += 1;
+      if ((state.stageIndex || 0) > 0) trace.stages += 1;
       if (!list.length) { finishEncounter(enc.gain || 2); continue; }
       const pick = list[randInt(0, list.length - 1)];
       if (pick.c.combat || (pick.c.outcomes && Object.values(pick.c.outcomes).some((o) => o.combat))) trace.combats += 1;
@@ -122,6 +152,16 @@ function runOnce(bgId, houseId, traitId, holdMode) {
     fragments: fragmentCount(),
     gold: state.gold,
     combatWins: state.statsTrack.combatWins || 0,
+    combatTurns: trace.combatTurns,
+    combatLoss: EMITTED.filter((l) => l.text.indexOf('무릎이 꺾였다') >= 0).length,
+    combatFled: EMITTED.filter((l) => l.text.indexOf('물러섰다. 뒤에서') >= 0).length,
+    hpFromCombat: EMITTED.filter((l) => /의 공격 — 체력 −/.test(l.text))
+      .reduce((s2, l) => s2 + (parseInt((l.text.match(/−(\d+)/) || [])[1], 10) || 0), 0),
+    hpFromEnc: EMITTED.filter((l) => l.cls === 'log-effect-chip' && /체력 -/.test(l.text))
+      .reduce((s2, l) => s2 + (parseInt((l.text.match(/체력 -(\d+)/) || [])[1], 10) || 0), 0),
+    deepStages: trace.stages,
+    equips: state.equipment.length,
+    seenEnemies: Object.keys(state.seenEnemies).length,
     holds: state.statsTrack.holds || 0,
     maxMastery: Math.max.apply(null, Object.values(state.spells)),
     missedBeats: BEAT_LIST.filter((b) => !state.beatsDone[b.id]).map((b) => b.order + ':' + b.title).join(','),
@@ -233,7 +273,9 @@ console.log('  고정 비트  평균 ' + avg('beats').toFixed(2) + '  (88%까지
 console.log('  최종 레벨  평균 ' + avg('level').toFixed(1) + '  (목표 8~10)');
 console.log('  습득 주문  평균 ' + avg('spells').toFixed(1) + '  (목표 6~10)');
 console.log('  최고 숙련  평균 ' + avg('maxMastery').toFixed(0));
-console.log('  전투 승리  평균 ' + avg('combatWins').toFixed(1));
+console.log('  전투 승리  평균 ' + avg('combatWins').toFixed(1) + '  ·  본 몬스터 ' + avg('seenEnemies').toFixed(1) + '종  ·  전투 턴 ' + avg('combatTurns').toFixed(0));
+console.log('  전투 패배  평균 ' + avg('combatLoss').toFixed(1) + '  ·  전투로 잃은 체력 ' + avg('hpFromCombat').toFixed(0) + '  ·  인카운터로 잃은 체력 ' + avg('hpFromEnc').toFixed(0));
+console.log('  얻은 장비  평균 ' + avg('equips').toFixed(1) + '개  ·  깊이 들어간 단계 ' + avg('deepStages').toFixed(1));
 console.log('  붙들기     평균 ' + avg('holds').toFixed(1));
 console.log('  남은 이름  평균 ' + avg('held').toFixed(1));
 console.log('  갈레온     평균 ' + avg('gold').toFixed(0));

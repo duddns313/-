@@ -5,13 +5,14 @@
  *   hp_ledger_v1 — 「기록」. 회차를 넘어 남는다 (systems/ledger.js)
  *
  * v10에서 허브·이동·시간대·마감을 버리고 진행도 단일 축으로 전환했다.
- * 구조가 근본적으로 달라 하위 호환을 끊는다. */
+ * v11에서 전투를 사슬 편성에서 턴제로 되돌리며 state.chain을 없앴다.
+ * 둘 다 구조가 근본적으로 달라 하위 호환을 끊는다. */
 
 const FIXED_PLAYER_NAME = '윤영운';
-const SAVE_KEY = 'hp_run_v10';
-const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2'];
-const CURRENT_SAVE_VERSION = 10;
-const MIN_COMPATIBLE_VERSION = 10;
+const SAVE_KEY = 'hp_run_v11';
+const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2', 'hp_run_v10'];
+const CURRENT_SAVE_VERSION = 11;
+const MIN_COMPATIBLE_VERSION = 11;
 
 let state = null;
 
@@ -43,6 +44,7 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     turn: 0,
     sinceErosion: 0,
     sinceClass: 0,
+    sinceCombat: 0,
     warnedAt: -1,
 
     /* ── 지금 보고 있는 인카운터 ── */
@@ -51,6 +53,8 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     phase: 'body',
     pendingGain: null,
     pendingChain: null,
+    pendingDeepen: false,
+    stageIndex: 0,
     seenEncounters: {},
     recent: [],
     beatsDone: {},
@@ -65,7 +69,6 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     equipped: { wand: null, robe: null, accessory: null },
     itemCounter: 0,
     spells: { lumos: 40, expelliarmus: 30 },
-    chain: [],
 
     /* ── 도감 · 기타 ── */
     seenEnemies: {},
@@ -125,9 +128,6 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
   /* 시작 명부 — 기록에 남은 이름은 한 단계 버틴다 */
   (bg ? bg.startRegister : []).forEach((id) => registerPerson(id));
   registerPerson('lavinia');
-
-  /* 시작 주문을 사슬에 꽂아둔다. 편성 화면을 안 열어도 전투가 성립해야 한다. */
-  Object.keys(base.spells).forEach((id) => autoSlotSpell(id));
 
   return base;
 }

@@ -420,6 +420,7 @@ function renderStage() {
   stage.innerHTML = '';
 
   if (state.mode === 'ending') { renderEndingStage(stage); stage.classList.remove('hidden'); return; }
+  if (state.mode === 'combat') { renderCombatStage(stage); stage.classList.remove('hidden'); return; }
 
   if (state.phase === 'result') {
     const gain = state.pendingGain || 0;
@@ -438,6 +439,101 @@ function renderStage() {
   const list = visibleChoices(enc);
   if (!list.length) { stage.appendChild(button('계속 ▸', () => finishEncounter(enc.gain || 2), { cls: 'btn btn-primary btn-continue' })); return; }
   list.forEach(({ c, i }) => stage.appendChild(choiceCard(c, i)));
+}
+
+/* ---------------- 전투 화면 ----------------
+ * 매 턴 직접 고른다. 무엇이 얼마나 나가는지 버튼에 다 적어둔다. */
+function renderCombatStage(stage) {
+  const c = state.combat;
+  const enemy = currentEnemy();
+  if (!c || !enemy) return;
+
+  const board = el('div', 'combat-board');
+
+  const head = el('div', 'combat-enemy');
+  head.appendChild(el('span', 'combat-enemy-name', enemy.name));
+  head.appendChild(el('span', 'combat-turn', `${c.turn}턴`));
+  board.appendChild(head);
+
+  const track = el('div', 'combat-hp-track');
+  const fill = el('div', 'combat-hp-fill');
+  fill.style.width = clamp((c.enemyHp / c.enemyMaxHp) * 100, 0, 100) + '%';
+  track.appendChild(fill);
+  board.appendChild(track);
+  board.appendChild(el('div', 'combat-hp-text', `${c.enemyHp} / ${c.enemyMaxHp}`));
+
+  const st = enemyStatuses();
+  if (st.length) {
+    const row = el('div', 'combat-status-row');
+    st.forEach((id) => {
+      const chip = el('span', 'combat-status', `${STATUSES[id].name} ${c.statuses[id]}`);
+      chip.title = STATUSES[id].desc;
+      row.appendChild(chip);
+    });
+    board.appendChild(row);
+  }
+
+  const mine = el('div', 'combat-mine');
+  mine.appendChild(el('span', '', `체력 ${state.hp}/${getMaxHp()}`));
+  mine.appendChild(el('span', '', `마력 ${state.mp}/${getMaxMp()}`));
+  if (c.shield > 0) mine.appendChild(el('span', 'combat-shield', `방어막 ${c.shield}`));
+  board.appendChild(mine);
+  stage.appendChild(board);
+
+  /* 주문 */
+  castableSpells().forEach((sp) => {
+    const cost = spellMpCost(sp);
+    const card = document.createElement('button');
+    card.className = 'btn spell-card' + (state.mp < cost ? ' spell-out' : '');
+    card.appendChild(el('span', 'choice-label', sp.name));
+
+    const meta = el('span', 'choice-meta');
+    if (sp.type === 'heal') {
+      meta.appendChild(el('span', 'spell-eff', `회복 ${Math.round(getSpellCastInfo(sp.id).healAmount)}`));
+    } else if (sp.type === 'defense') {
+      meta.appendChild(el('span', 'spell-eff', `방어막 ${Math.round(getMaxHp() * (sp.shieldMult || 0.2)) + getDef()}`));
+    } else {
+      meta.appendChild(el('span', 'spell-eff', `위력 ${estimateDamage(sp)}`));
+    }
+    meta.appendChild(el('span', 'spell-mp', ` · 마력 ${cost}`));
+    if (sp.status && STATUSES[sp.status.id]) {
+      meta.appendChild(el('span', 'spell-status', ` · ${STATUSES[sp.status.id].name}`));
+    }
+    if (sp.pierce) meta.appendChild(el('span', 'spell-status', ' · 방어 무시'));
+    if (sp.bonusVs && sp.bonusVs.indexOf(enemy.id) >= 0) meta.appendChild(el('span', 'spell-boon', ' · 특효!'));
+    if (enemy.weakness === sp.id) meta.appendChild(el('span', 'spell-boon', ' · 약점!'));
+    if (sp.id !== '_wand') {
+      const m = state.spells[sp.id] || 0;
+      meta.appendChild(el('span', 'spell-mastery-inline', `  ${getMasteryTier(m).label}`));
+    }
+    card.appendChild(meta);
+
+    if (state.mp >= cost) card.addEventListener('click', () => combatCast(sp.id));
+    else card.disabled = true;
+    stage.appendChild(card);
+  });
+
+  /* 그 밖의 행동 */
+  const row = el('div', 'combat-actions');
+  row.appendChild(button('자세를 낮춘다  (방어 · 마력 회복)', combatDefendAction, { cls: 'btn-small' }));
+  Object.keys(state.itemStacks).forEach((id) => {
+    const it = ITEMS[id];
+    if (!it || it.type !== 'potion') return;
+    row.appendChild(button(`${it.name} ×${state.itemStacks[id]}`, () => combatUseItemAction(id), { cls: 'btn-small' }));
+  });
+  row.appendChild(button('물러선다', combatFleeAction, { cls: 'btn-small btn-danger' }));
+  stage.appendChild(row);
+}
+
+/* 버튼에 표시할 예상 피해 — 실제 계산과 같은 식을 쓴다 */
+function estimateDamage(sp) {
+  const enemy = currentEnemy();
+  const info = sp.id === '_wand' ? { power: WAND_STRIKE.power } : getSpellCastInfo(sp.id);
+  let power = info.power + getAtk() + getStatValue('intelligence') * 0.3;
+  if (sp.bonusVs && enemy && sp.bonusVs.indexOf(enemy.id) >= 0) power *= sp.bonusMult || 2;
+  if (enemy && enemy.weakness === sp.id) power *= 1.5;
+  const def = sp.pierce ? 0 : ((enemy && enemy.def) || 0);
+  return Math.max(1, Math.round(power - def));
 }
 
 /* 모험 화면 위쪽의 붙들기 패널 — 흐려진 이름이 있을 때만 나타난다 */
@@ -595,34 +691,35 @@ function renderPrepareTab() {
   const traitNames = (state.traits || []).map((t) => TRAITS[t] && TRAITS[t].name).filter(Boolean);
   if (traitNames.length) panel.appendChild(el('p', 'panel-desc', '특성 · ' + traitNames.join(' · ')));
 
-  /* ── 주문 사슬 ── */
-  panel.appendChild(el('h3', 'panel-title', `주문 사슬  ·  AP ${chainAP(state.level)}`));
-  panel.appendChild(el('p', 'panel-desc', '위에서부터 조건을 검사해 AP만큼만 발동한다. 앞 주문이 바꾼 상황이 뒤 주문의 조건에 반영된다.'));
+  /* ── 익힌 주문 ── */
+  panel.appendChild(el('h3', 'panel-title', `익힌 주문 ${Object.keys(state.spells).length}개`));
+  panel.appendChild(el('p', 'panel-desc', '전투에서는 매 턴 직접 고른다. 숙련도가 오르면 위력이 커지고 마력이 덜 든다.'));
 
-  const chain = getChain();
-  chain.forEach((slot, i) => {
-    const row = el('div', 'chain-row' + (i < chainAP(state.level) ? ' in-ap' : ''));
-    row.appendChild(el('span', 'chain-index', String(i + 1)));
-
-    const main = el('div', 'chain-main');
-    if (slot) {
-      main.appendChild(el('span', 'chain-spell', SPELLS[slot.spellId].name));
-      main.appendChild(el('span', 'chain-cond', '[' + conditionLabel(slot.cond) + ']'));
-      const m = state.spells[slot.spellId] || 0;
-      main.appendChild(el('span', 'chain-mastery', `숙련 ${m} · ${getMasteryTier(m).label}`));
-    } else {
-      main.appendChild(el('span', 'chain-empty', '(비어 있음)'));
-    }
-    main.addEventListener('click', () => openSlotSheet(i));
-    row.appendChild(main);
-
-    const ctrl = el('div', 'chain-ctrl');
-    ctrl.appendChild(button('↑', () => { moveChainSlot(i, -1); render(); }, { cls: 'btn-tiny', disabled: i === 0 }));
-    ctrl.appendChild(button('↓', () => { moveChainSlot(i, 1); render(); }, { cls: 'btn-tiny', disabled: i === chain.length - 1 }));
-    row.appendChild(ctrl);
-
-    panel.appendChild(row);
-  });
+  Object.keys(state.spells)
+    .map((id) => SPELLS[id])
+    .sort((a, b) => (a.tier || 0) - (b.tier || 0))
+    .forEach((sp) => {
+      const m = state.spells[sp.id];
+      const tier = getMasteryTier(m);
+      const row = el('div', 'spell-detail');
+      const top = el('div', 'spell-detail-top');
+      top.appendChild(el('span', 'spell-name', sp.name));
+      top.appendChild(el('span', 'spell-mastery', `${tier.label} ${m}`));
+      row.appendChild(top);
+      const bar = el('div', 'mastery-track');
+      const bfill = el('div', 'mastery-fill');
+      bfill.style.width = clamp(m, 0, 100) + '%';
+      bar.appendChild(bfill);
+      row.appendChild(bar);
+      row.appendChild(el('p', 'spell-desc', sp.desc));
+      const tags = [];
+      if (sp.status && STATUSES[sp.status.id]) tags.push(`${STATUSES[sp.status.id].name} — ${STATUSES[sp.status.id].desc}`);
+      if (sp.pierce) tags.push('방어 무시');
+      if (sp.cleanse) tags.push('몸에 걸린 것을 씻어낸다');
+      if (sp.reflect) tags.push('막아낸 충격을 되돌린다');
+      if (tags.length) row.appendChild(el('p', 'spell-tag', '◆ ' + tags.join(' · ')));
+      panel.appendChild(row);
+    });
 
   /* ── 장비 ── */
   panel.appendChild(el('h3', 'panel-title', '장비'));
@@ -658,44 +755,6 @@ function renderPrepareTab() {
   });
   if (!items.childNodes.length) items.appendChild(el('p', 'panel-desc', '가진 것이 없다.'));
   panel.appendChild(items);
-}
-
-function openSlotSheet(idx) {
-  openSheet((content) => {
-    content.appendChild(el('h3', 'sheet-item-name', `${idx + 1}번 슬롯`));
-
-    content.appendChild(el('p', 'settings-label', '주문'));
-    const spellRow = el('div', 'settings-row');
-    spellRow.appendChild(button('비우기', () => { setChainSlot(idx, null); closeSheet(); render(); }, { cls: 'btn-small' }));
-    Object.keys(state.spells).forEach((id) => {
-      const cur = getChain()[idx];
-      spellRow.appendChild(button(SPELLS[id].name, () => {
-        setChainSlot(idx, id, cur ? cur.cond : null);
-        openSlotSheet(idx); render();
-      }, { cls: 'btn-small' + (cur && cur.spellId === id ? ' btn-primary' : '') }));
-    });
-    content.appendChild(spellRow);
-
-    const slot = getChain()[idx];
-    if (slot) {
-      const sp = SPELLS[slot.spellId];
-      content.appendChild(el('p', 'settings-desc', sp.desc));
-
-      content.appendChild(el('p', 'settings-label', '발동 조건'));
-      const condRow = el('div', 'settings-row');
-      CONDITION_LIST.forEach((c) => {
-        condRow.appendChild(button(c.label, () => {
-          setChainSlot(idx, slot.spellId, c.id);
-          openSlotSheet(idx); render();
-        }, { cls: 'btn-small' + (slot.cond === c.id ? ' btn-primary' : '') }));
-      });
-      content.appendChild(condRow);
-    }
-
-    const row = el('div', 'sheet-actions');
-    row.appendChild(button('닫기', closeSheet, { cls: 'btn' }));
-    content.appendChild(row);
-  });
 }
 
 function openItemSheet(uid) {

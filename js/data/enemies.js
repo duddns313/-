@@ -15,5 +15,8 @@ const ENEMIES = {
   werewolfShade: { id: 'werewolfShade', name: '늑대인간의 그림자', hp: 85, atk: 20, def: 6, exp: 48, gold: [15, 30], tier: 3 },
   riddleShade: { id: 'riddleShade', name: '톰 리들의 환영', hp: 115, atk: 26, def: 10, exp: 90, gold: [25, 45], tier: 3, boss: true },
   basilisk: { id: 'basilisk', name: '바실리스크', hp: 150, atk: 28, def: 12, exp: 150, gold: [40, 70], tier: 4, boss: true },
-  voldemortShadow: { id: 'voldemortShadow', name: '볼드모트의 잔영', hp: 195, atk: 36, def: 15, exp: 250, gold: [100, 200], tier: 4, boss: true, finalBoss: true },
+    /* turnLimit: 이 턴을 넘기면 스스로 물러난다.
+   * 잔영은 죽는 것이 아니라 배가 부르면 가는 것이다 — 이름을 부르지 않는 한
+   * 아무것도 해결되지 않는다(「반복되는 자」). 전투로는 끝이 나지 않아야 한다. */
+  voldemortShadow: { id: 'voldemortShadow', name: '볼드모트의 잔영', hp: 195, atk: 36, def: 15, exp: 250, gold: [100, 200], tier: 4, boss: true, finalBoss: true, turnLimit: 6, eats: true, withdrawText: '그것이 물러섰다.\n\n이긴 것이 아니다. 배가 부른 것이다. 명부에서 무언가 조용해졌고, 그게 무엇인지 확인하기가 무서웠다.' },
 };

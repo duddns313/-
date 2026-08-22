@@ -72,8 +72,20 @@ function removeItemStack(itemId, qty) {
 function receiveEquipment(inst) {
   state.equipment.push(inst);
   state.seenItemBases[inst.baseId] = true;
-  if ((inst.rarity === 'legendary' || inst.rarity === 'artifact') && typeof toast === 'function') {
-    toast(`✨ ${RARITY_BY_ID[inst.rarity].name} 등급 아이템을 얻었다!`, { duration: 3200 });
+  state.newEquipment = (state.newEquipment || 0) + 1;
+
+  /* 빈 칸이면 바로 채운다. 준비 탭을 한 번도 안 열어본 플레이어가
+   * 장신구 칸을 비운 채 끝까지 가는 일이 없도록. */
+  if (inst.identified && !state.equipped[inst.slot]) {
+    state.equipped[inst.slot] = inst.uid;
+    addLog(`[${getItemDisplayName(inst)}]${josa(getItemDisplayName(inst), '을', '를')} 바로 착용했다. (${slotLabel(inst.slot)} 칸이 비어 있었다)`, 'log-win');
+  }
+
+  if (typeof toast === 'function') {
+    const r = RARITY_BY_ID[inst.rarity];
+    const high = inst.rarity === 'legendary' || inst.rarity === 'artifact';
+    toast(`${high ? '✨' : '🎒'} ${r.name} 장비 — ${inst.identified ? getItemDisplayName(inst) : '미확인'}`,
+      { duration: high ? 3400 : 2400 });
   }
   return inst;
 }
@@ -121,7 +133,6 @@ function applyLearnSpellEffect(spellId) {
    * 한 판에 계통이 두 칸도 못 자란다 (시뮬레이션 습득 5.6 → 6.1). */
   const result = learnSpell(spellId, 40);
   if (result.ok) {
-    autoSlotSpell(spellId);
     addLog(`새로운 주문을 익혔다 — [${sp.name}]`, 'log-spell');
     return;
   }
@@ -156,7 +167,6 @@ function practiceSubject(subjectId, amount) {
     const entry = nextSpellForSubject(subjectId);
     if (entry && canLearnSpell(entry.id).ok) {
       learnSpell(entry.id, 5);
-      autoSlotSpell(entry.id);
       addLog(`제대로 되진 않았지만 [${entry.name}]의 모양만은 손에 남았다.`, 'log-spell');
       return;
     }
@@ -243,7 +253,6 @@ function useScroll(itemId) {
   const result = runCheck('intelligence', dc, 0, { search: true });
   if (result.tier === 'success' || result.tier === 'critical') {
     learnSpell(item.spellId, 15);
-    autoSlotSpell(item.spellId);
     addLog(`주문서를 해독했다 — [${sp.name}]`, 'log-spell');
   } else {
     addLog('글자가 눈앞에서 흩어졌다. 주문서는 재가 되었다.', 'log-warn');

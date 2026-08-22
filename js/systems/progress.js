@@ -12,6 +12,7 @@ const ALL_ENCOUNTERS = Object.assign(
   typeof ENCOUNTERS_SEARCH !== 'undefined' ? ENCOUNTERS_SEARCH : {},
   typeof ENCOUNTERS_COMBAT !== 'undefined' ? ENCOUNTERS_COMBAT : {},
   typeof ENCOUNTERS_EERIE !== 'undefined' ? ENCOUNTERS_EERIE : {},
+  typeof ENCOUNTERS_DEEP !== 'undefined' ? ENCOUNTERS_DEEP : {},
   typeof ENCOUNTERS_SPECIAL !== 'undefined' ? ENCOUNTERS_SPECIAL : {}
 );
 
@@ -24,7 +25,8 @@ const POOL_WEIGHTS = [
 ];
 
 const RECENT_MEMORY = 8;   /* 최근 이만큼은 다시 뽑지 않는다 */
-const CLASS_INTERVAL = 5;  /* 이만큼 지나면 다음은 반드시 수업 */
+const CLASS_INTERVAL = 5;   /* 이만큼 지나면 다음은 반드시 수업 */
+const COMBAT_INTERVAL = 7;  /* 이만큼 지나면 다음은 반드시 전투 — 안 그러면 몬스터를 못 본다 */
 
 function poolWeights() {
   return POOL_WEIGHTS.find((b) => state.progress < b.max) || POOL_WEIGHTS[POOL_WEIGHTS.length - 1];
@@ -169,14 +171,21 @@ function nextEncounter() {
     if (cls.length) { presentEncounter(cls[randInt(0, cls.length - 1)]); return; }
   }
 
-  /* 4. 침식 경보 */
+  /* 4. 전투 — 전리품과 몬스터 도감이 전투에만 달려 있는데, 풀이 커지면서
+   *    한 판에 전투가 한두 번밖에 안 잡혔다. 수업과 같은 방식으로 주기를 보장한다. */
+  if (state.sinceCombat >= COMBAT_INTERVAL) {
+    const fights = Object.values(ALL_ENCOUNTERS).filter((e) => e.pool === 'combat' && encounterAvailable(e));
+    if (fights.length) { presentEncounter(fights[randInt(0, fights.length - 1)]); return; }
+  }
+
+  /* 5. 침식 경보 */
   if (shouldWarnErosion() && ALL_ENCOUNTERS.warn_fading) {
     state.warnedAt = state.turn;
     presentEncounter(ALL_ENCOUNTERS.warn_fading);
     return;
   }
 
-  /* 5. 가중 랜덤 */
+  /* 6. 가중 랜덤 */
   const enc = drawEncounter();
   if (!enc) { addLog('(더 이상 남은 인카운터가 없습니다)', 'log-warn'); render(); return; }
   presentEncounter(enc);
@@ -193,6 +202,8 @@ function presentEncounter(enc) {
   while (state.recent.length > RECENT_MEMORY) state.recent.shift();
 
   state.sinceClass = enc.kind === 'class' ? 0 : (state.sinceClass || 0) + 1;
+  state.sinceCombat = enc.pool === 'combat' ? 0 : (state.sinceCombat || 0) + 1;
+  state.stageIndex = 0;
 
   (enc.registers || []).forEach((pid) => { registerPerson(pid); markSeen(pid); });
   if (enc.onEnter) enc.onEnter(state);
@@ -219,7 +230,8 @@ function presentBeat(beat) {
   render();
 }
 
-/* 현재 제시 중인 것 (인카운터든 비트든) */
+/* 현재 제시 중인 것 (인카운터든 비트든) ──
+ * stages를 가진 인카운터는 지금 단계의 본문·선택지를 대신 돌려준다. */
 function currentEncounter() {
   if (state.isBeat) {
     const beat = BEATS[state.encounterId];
@@ -227,7 +239,27 @@ function currentEncounter() {
     const v = beat.variants[state.backgroundId] || beat.variants.transfer;
     return { ...beat, text: v.text, choices: v.choices || beat.choices, afterText: v.afterText };
   }
-  return ALL_ENCOUNTERS[state.encounterId] || null;
+  const enc = ALL_ENCOUNTERS[state.encounterId];
+  if (!enc) return null;
+  if (!enc.stages) return enc;
+  const st = enc.stages[Math.min(state.stageIndex || 0, enc.stages.length - 1)];
+  return {
+    ...enc,
+    text: st.text,
+    choices: st.choices,
+    afterText: st.afterText,
+    gain: st.gain != null ? st.gain : enc.gain,
+  };
+}
+
+/* 다음 단계로 들어간다 — 같은 인카운터 안에서 이어진다 */
+function presentStage() {
+  state.phase = 'body';
+  const enc = currentEncounter();
+  if (!enc) { nextEncounter(); return; }
+  uiStartEncounter(enc);
+  sceneEmit(resolveText(enc.text), 'scene-para');
+  render();
 }
 
 /* 본문의 함수형 텍스트 지원 — 상태에 따라 문장이 달라져야 할 때 */
@@ -288,6 +320,7 @@ function resolveChoice(idx) {
     sceneEmit(resolveText(out.text), 'scene-para result' + (bad ? ' bad' : ''));
     emitEffectChip(out.effect, exp);
     if (out.chain) state.pendingChain = out.chain;
+    if (out.deepen) state.pendingDeepen = true;
     if (out.gain != null) gain = out.gain;
     if (out.combat) { startDuel(out.combat, gain); return; }
     if (out.ending) { triggerEnding(out.ending); return; }
@@ -296,6 +329,7 @@ function resolveChoice(idx) {
     sceneEmit(resolveText(choice.resultText), 'scene-para result');
     emitEffectChip(choice.effect);
     if (choice.chain) state.pendingChain = choice.chain;
+    if (choice.deepen) state.pendingDeepen = true;
     if (choice.combat) { startDuel(choice.combat, gain); return; }
     if (choice.ending) { triggerEnding(choice.ending); return; }
   }
@@ -324,6 +358,14 @@ function continueRun() {
   state.pendingGain = null;
   advanceProgress(gain);
   if (checkRunEnd()) return;
+
+  /* 더 들어가기로 했다면 같은 인카운터의 다음 단계로 — 새 인카운터를 뽑지 않는다 */
+  if (state.pendingDeepen) {
+    state.pendingDeepen = false;
+    state.stageIndex = (state.stageIndex || 0) + 1;
+    presentStage();
+    return;
+  }
   nextEncounter();
 }
 

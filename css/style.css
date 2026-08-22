@@ -788,3 +788,78 @@ body {
   border-color: var(--gold); color: var(--gold); font-size: 0.85rem;
 }
 .hold-foot { color: var(--text-dim); font-size: 0.76rem; line-height: 1.5; word-break: keep-all; }
+
+/* ═════════════════════════════════════════════════
+   턴제 전투 (v11)
+   ═════════════════════════════════════════════════ */
+
+.combat-board {
+  margin-bottom: 14px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: linear-gradient(180deg, #241f42, var(--bg-panel));
+}
+.combat-enemy { display: flex; justify-content: space-between; align-items: baseline; }
+.combat-enemy-name { color: var(--text); font-size: 1rem; }
+.combat-turn { color: var(--text-dim); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+.combat-hp-track {
+  margin-top: 8px; height: 9px; border-radius: 5px; overflow: hidden;
+  background: #0a0814; border: 1px solid var(--border);
+}
+.combat-hp-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #7a2530, var(--red));
+  transition: width 0.35s ease;
+}
+.combat-hp-text {
+  margin-top: 3px; color: var(--text-dim); font-size: 0.76rem;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+
+.combat-status-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.combat-status {
+  padding: 2px 8px; border-radius: 10px; font-size: 0.74rem;
+  border: 1px solid var(--purple); color: var(--purple);
+  font-variant-numeric: tabular-nums;
+}
+
+.combat-mine {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 9px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+  color: var(--text-dim); font-size: 0.84rem; font-variant-numeric: tabular-nums;
+}
+.combat-shield { color: var(--blue); }
+
+.spell-card { display: block; width: 100%; text-align: left; margin-bottom: 6px; }
+.spell-card .choice-label { display: block; margin-bottom: 3px; }
+.spell-card .choice-meta { display: block; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.spell-card.spell-out { opacity: 0.4; }
+.spell-eff { color: var(--text); }
+.spell-mp { color: var(--blue); }
+.spell-status { color: var(--purple); }
+.spell-boon { color: var(--gold); font-weight: bold; }
+.spell-mastery-inline { color: var(--text-dim); font-size: 0.74rem; }
+
+.combat-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+
+.duel-cast { margin: 8px 0 2px; color: var(--gold); font-size: 0.9rem; }
+.duel-flavor { color: var(--text); font-style: italic; }
+.duel-good { color: var(--green); }
+.duel-bad { color: var(--red); }
+.duel-miss { color: var(--text-dim); }
+.duel-status { color: var(--purple); }
+.duel-loot { color: var(--gold); }
+.duel-crit { color: var(--gold); font-weight: bold; }
+
+/* ── 준비 탭: 주문 목록 ── */
+.spell-detail {
+  padding: 9px 11px; margin-bottom: 6px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg-panel);
+}
+.spell-detail-top { display: flex; justify-content: space-between; align-items: baseline; }
+.mastery-track {
+  margin: 6px 0; height: 4px; border-radius: 2px; overflow: hidden; background: #0a0814;
+}
+.mastery-fill { height: 100%; background: linear-gradient(90deg, #4a3f8a, var(--gold)); }
+.spell-desc { margin: 0; color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; word-break: keep-all; }
+.spell-tag { margin: 4px 0 0; color: var(--purple); font-size: 0.76rem; word-break: keep-all; }

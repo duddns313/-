@@ -105,6 +105,20 @@ function estimateDamageSim(sp) {
   return power - (sp.pierce ? 0 : ((enemy && enemy.def) || 0));
 }
 
+/* 인카운터에 들어가기 전에 몸을 추스른다.
+ * 이게 없으면 시뮬레이터는 체력 15%로 다음 판정에 걸어 들어가고,
+ * 그 결과 사망률이 실제 플레이보다 훨씬 높게 나온다.
+ * 가진 회복 수단을 쓰는 건 사람이라면 누구나 하는 일이므로 정책에 넣는다. */
+function simTendWounds() {
+  if (state.hp >= getMaxHp() * 0.5) return;
+  const potion = Object.keys(state.itemStacks)
+    .filter((id) => ITEMS[id] && ITEMS[id].type === 'potion' && ITEMS[id].effect && ITEMS[id].effect.hp)
+    .sort((a, b) => ITEMS[a].effect.hp - ITEMS[b].effect.hp)[0];
+  if (potion) { useItemOutOfCombat(potion); return; }
+  /* 물약이 없고 갈레온이 있으면 다음 호그스미드에서 산다 —
+   * 그건 상점 선택지가 알아서 하므로 여기서는 아무것도 하지 않는다. */
+}
+
 function runOnce(bgId, houseId, traitId, holdMode) {
   HOLD_MODE = !!holdMode;
   EMITTED = [];
@@ -118,6 +132,7 @@ function runOnce(bgId, houseId, traitId, holdMode) {
     guard += 1;
     if (state.mode === 'combat') { trace.combatTurns += 1; simCombatTurn(); continue; }
     if (state.phase === 'body') {
+      simTendWounds();
       if (HOLD_MODE) tryHold();
       const enc = currentEncounter();
       if (!enc) { finishEncounter(2); continue; }

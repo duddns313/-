@@ -25,8 +25,11 @@ const POOL_WEIGHTS = [
 ];
 
 const RECENT_MEMORY = 8;   /* 최근 이만큼은 다시 뽑지 않는다 */
-const CLASS_INTERVAL = 5;   /* 이만큼 지나면 다음은 반드시 수업 */
-const COMBAT_INTERVAL = 7;  /* 이만큼 지나면 다음은 반드시 전투 — 안 그러면 몬스터를 못 본다 */
+/* 주기는 인카운터가 아니라 「단계」로 센다.
+ * 인카운터로 세면 3단계짜리 에피소드가 한 번으로 계산돼서,
+ * 에피소드를 늘릴수록 수업과 전투가 체감상 뜸해진다. */
+const CLASS_INTERVAL = 8;   /* 이만큼 지나면 다음은 반드시 수업 */
+const COMBAT_INTERVAL = 11; /* 이만큼 지나면 다음은 반드시 전투 — 안 그러면 몬스터를 못 본다 */
 
 function poolWeights() {
   return POOL_WEIGHTS.find((b) => state.progress < b.max) || POOL_WEIGHTS[POOL_WEIGHTS.length - 1];
@@ -38,6 +41,8 @@ function advanceProgress(amount) {
   if (!amount) return;
   state.progress = clamp(state.progress + amount, 0, 100);
   state.turn += 1;
+  state.sinceClass = (state.sinceClass || 0) + 1;
+  state.sinceCombat = (state.sinceCombat || 0) + 1;
   tickErosion();
 }
 
@@ -197,12 +202,14 @@ function presentEncounter(enc) {
   state.encounterId = enc.id;
   state.isBeat = false;
   state.phase = 'body';
-  state.seenEncounters[enc.id] = true;
+  /* 몇 번째로 이 자리에 왔는지 — 되풀이되는 인카운터(수업 등)가
+   * 방문 횟수에 따라 다른 장면을 쓸 수 있게 센다. */
+  state.seenEncounters[enc.id] = (state.seenEncounters[enc.id] || 0) + 1;
   state.recent.push(enc.id);
   while (state.recent.length > RECENT_MEMORY) state.recent.shift();
 
-  state.sinceClass = enc.kind === 'class' ? 0 : (state.sinceClass || 0) + 1;
-  state.sinceCombat = enc.pool === 'combat' ? 0 : (state.sinceCombat || 0) + 1;
+  if (enc.kind === 'class') state.sinceClass = 0;
+  if (enc.pool === 'combat') state.sinceCombat = 0;
   state.stageIndex = 0;
   /* 에피소드 안에서만 사는 기억. 앞 단계에서 무엇을 했는지가
    * 뒤 단계의 본문과 선택지를 바꾼다 — 이게 없으면 여러 단계여도

@@ -303,13 +303,13 @@ duel_challenge: {
         ? `상대가 세 걸음 물러섰다.\n\n구경꾼 넷이 동시에 팔짱을 풀었다. 같은 순간에.\n\n영운은 상대의 눈을 봤다. 그 애도 무서워하고 있었다.`
         : `상대가 세 걸음 물러서고 지팡이를 들었다.\n\n"준비."\n\n영운은 발을 옮겼다. 마룻바닥이 미끄러웠다.`,
       choices: [
-        { label: '지팡이를 든다', combat: 'rivalStudent', branch: { win: 2, lose: 3, flee: 3 },
+        { label: '지팡이를 든다', combat: 'rivalStudent', branch: { win: 2, lose: 2, flee: 2 },
           resultText: '영운도 지팡이를 들었다. 손이 차가웠다.' },
         {
           label: '말로 넘긴다',
           check: { stat: 'charm', dc: 12 },
           gain: 2,
-          branch: { win: 2, lose: 3 },
+          branch: { win: 2, lose: 2 },
           outcomes: {
             critical: { effect: { charm: 2, exp: 34, mark: 'talkedDown' },
               text:
@@ -334,7 +334,7 @@ duel_challenge: {
       gain: 2,
       text: (s) => (s.episode && s.episode.talkedDown)
         ? `구경꾼이 흩어진 뒤에도 그 애는 남아 있었다.\n\n"야."\n\n영운이 돌아봤다.\n\n"…아까 그거. 왜 걸었는지 진짜로 모르겠어." 그 애가 자기 손을 내려다봤다. "아침에 일어났을 때는 알았던 것 같은데."`
-        : `상대는 벽에 기대 앉아 있었다. 코피를 닦으면서도 영운을 보고 있었다.\n\n"야."\n\n영운이 돌아봤다.\n\n"…내가 왜 너한테 결투를 걸었지?" 그 애가 물었다. 비꼬는 말투가 아니었다. 정말로 묻는 말투였다.`,
+        : `구경꾼이 흩어졌다. 둘 다 마룻바닥에 앉아 있었다.\n\n누가 이겼는지는 이제 아무래도 상관없어 보였다. 둘 다 코피가 났으니까.\n\n"야."\n\n영운이 돌아봤다.\n\n"…내가 왜 너한테 결투를 걸었지?" 그 애가 물었다. 비꼬는 말투가 아니었다. 정말로 묻는 말투였다.`,
       choices: [
         {
           label: '같이 생각해본다',

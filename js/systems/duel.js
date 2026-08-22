@@ -9,7 +9,10 @@
 const WAND_STRIKE = { id: '_wand', name: '지팡이로 친다', type: 'attack', mpCost: 0, power: 5,
   flavor: '주문 없이 지팡이를 휘둘렀다.' };
 
-function startDuel(enemyId, gain) {
+/* branch — 전투 결과에 따라 어느 단계로 이어질지.
+ * { win: n, lose: n, flee: n } 중 있는 것만 쓴다.
+ * 없으면 그 결과에서는 에피소드가 거기서 끝난다. */
+function startDuel(enemyId, gain, branch) {
   const enemy = ENEMIES[enemyId];
   if (!enemy) { finishEncounter(gain); return; }
 
@@ -25,6 +28,7 @@ function startDuel(enemyId, gain) {
     turn: 1,
     gain: gain != null ? gain : 4,
     fled: false,
+    branch: branch || null,
   };
 
   sceneEmit(`── ${enemy.name} · 위험도 ${enemy.tier || 1} ──`, 'duel-head');
@@ -316,8 +320,17 @@ function endCombat(win) {
   const enemy = currentEnemy();
   const gain = c.gain;
   const fled = c.fled;
+  const branch = c.branch;
   state.combat = null;
   state.mode = 'run';
+
+  /* 이긴 뒤와 진 뒤는 같은 장면이 아니다. 이긴 자리에는 남은 것이 있고,
+   * 진 자리에는 깨어난 자리가 있다. 어느 쪽으로도 이어지지 않는 전투는
+   * 여기서 그냥 끝난다. */
+  if (branch) {
+    const to = fled ? branch.flee : (win ? branch.win : branch.lose);
+    state.pendingDeepen = to != null ? to : false;
+  }
 
   if (win) {
     const goldGain = randInt(enemy.gold[0], enemy.gold[1]);

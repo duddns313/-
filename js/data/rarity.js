@@ -138,6 +138,11 @@ const ITEMS = {
 
   magicStone: { id: 'magicStone', name: '마법석', type: 'material', price: 20, sell: 7, desc: '장비 강화에 사용하는 결정석.' },
 
+  /* 세계 규칙 3 — 손으로 쓴 잉크는 남는다.
+   * 이름을 다시 덧쓰면 잊히는 속도가 한 걸음 늦춰진다. */
+  inkBottle: { id: 'inkBottle', name: '잉크병', type: 'potion', effect: { slowErosion: 2 }, price: 22, sell: 9,
+    desc: '쓰면 수첩의 이름들을 다시 덧쓴다. 잊히는 시계가 두 걸음 뒤로 간다.' },
+
   scrollStupefy: { id: 'scrollStupefy', name: '주문서 : 스터닝 스펠', type: 'scroll', spellId: 'stupefy', dc: 6, price: 70, sell: 20, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
   scrollExpectoPatronum: { id: 'scrollExpectoPatronum', name: '주문서 : 익스펙토 패트로눔', type: 'scroll', spellId: 'expectoPatronum', dc: 9, price: 120, sell: 35, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },
   scrollConfringo: { id: 'scrollConfringo', name: '주문서 : 콘프린고', type: 'scroll', spellId: 'confringo', dc: 10, price: 140, sell: 40, desc: '사용 시 지식 판정에 성공하면 주문을 습득한다.' },

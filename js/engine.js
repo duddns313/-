@@ -113,6 +113,12 @@ function applyEffect(effect) {
   if (effect.equipDrop) applyEquipDropEffect(effect.equipDrop);
   if (effect.register) (Array.isArray(effect.register) ? effect.register : [effect.register]).forEach(registerPerson);
   if (effect.fadingTarget) state.flags.fadingTarget = effect.fadingTarget;
+  /* 잉크로 덧쓰기 — 잊히는 시계를 뒤로 돌린다 (세계 규칙 3) */
+  if (effect.slowErosion) {
+    state.sinceErosion = Math.max(0, (state.sinceErosion || 0) - effect.slowErosion);
+    addLog('이름들을 다시 덧썼다. 잉크가 마르는 동안은 아무것도 흐려지지 않는다.', 'log-result');
+  }
+
   if (effect.erosion) bumpErosion(effect.erosion);
 
   /* 이름 조각은 판이 아니라 「기록」에 남는다 */

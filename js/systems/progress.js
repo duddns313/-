@@ -328,7 +328,7 @@ function resolveChoice(idx) {
     if (out.chain) state.pendingChain = out.chain;
     if (out.deepen) state.pendingDeepen = true;
     if (out.gain != null) gain = out.gain;
-    if (out.combat) { startDuel(out.combat, gain); return; }
+    if (out.combat) { startDuel(out.combat, gain, out.branch || choice.branch); return; }
     if (out.ending) { triggerEnding(out.ending); return; }
   } else {
     applyEffect(choice.effect);
@@ -336,7 +336,7 @@ function resolveChoice(idx) {
     emitEffectChip(choice.effect);
     if (choice.chain) state.pendingChain = choice.chain;
     if (choice.deepen) state.pendingDeepen = true;
-    if (choice.combat) { startDuel(choice.combat, gain); return; }
+    if (choice.combat) { startDuel(choice.combat, gain, choice.branch); return; }
     if (choice.ending) { triggerEnding(choice.ending); return; }
   }
 
@@ -353,7 +353,8 @@ function finishEncounter(gain) {
    * 한 인카운터가 3단계라고 해서 시계가 세 배로 도는 건 아니다 —
    * 그러면 깊은 판일수록 수업도 전투도 못 만나고 판이 짧게 끝난다.
    * 값은 마지막 단계에서 한꺼번에 나간다. */
-  state.pendingGain = state.pendingDeepen ? Math.min(declared, 1) : declared;
+  const deepening = state.pendingDeepen != null && state.pendingDeepen !== false;
+  state.pendingGain = deepening ? Math.min(declared, 1) : declared;
   /* 경험치는 시계와 분리한다. 깊이 들어간 대가는 중간 단계에서도 받는다.
    * 겪은 것 자체가 남긴다 — 판정에 다 실패해도 조금씩은 자란다. */
   gainExp(declared * 3);
@@ -371,9 +372,12 @@ function continueRun() {
   if (checkRunEnd()) return;
 
   /* 더 들어가기로 했다면 같은 인카운터의 다음 단계로 — 새 인카운터를 뽑지 않는다 */
-  if (state.pendingDeepen) {
+  /* pendingDeepen이 숫자면 그 단계로 건너뛴다 — 전투의 승패처럼
+   * 다음 장면이 갈라져야 할 때 쓴다. true면 그냥 다음 단계. */
+  if (state.pendingDeepen != null && state.pendingDeepen !== false) {
+    const to = state.pendingDeepen;
     state.pendingDeepen = false;
-    state.stageIndex = (state.stageIndex || 0) + 1;
+    state.stageIndex = typeof to === 'number' ? to : (state.stageIndex || 0) + 1;
     presentStage();
     return;
   }

@@ -204,6 +204,10 @@ function presentEncounter(enc) {
   state.sinceClass = enc.kind === 'class' ? 0 : (state.sinceClass || 0) + 1;
   state.sinceCombat = enc.pool === 'combat' ? 0 : (state.sinceCombat || 0) + 1;
   state.stageIndex = 0;
+  /* 에피소드 안에서만 사는 기억. 앞 단계에서 무엇을 했는지가
+   * 뒤 단계의 본문과 선택지를 바꾼다 — 이게 없으면 여러 단계여도
+   * 서로 무관한 장면 몇 개를 이어 붙인 것에 지나지 않는다. */
+  state.episode = {};
 
   (enc.registers || []).forEach((pid) => { registerPerson(pid); markSeen(pid); });
   if (enc.onEnter) enc.onEnter(state);
@@ -272,6 +276,8 @@ function resolveText(t) {
 function choiceAvailable(ch) {
   if (ch.requiresFlag && !state.flags[ch.requiresFlag]) return false;
   if (ch.notFlag && state.flags[ch.notFlag]) return false;
+  if (ch.requiresMark && !(state.episode || {})[ch.requiresMark]) return false;
+  if (ch.notMark && (state.episode || {})[ch.notMark]) return false;
   if (ch.requiresItem && !(state.itemStacks[ch.requiresItem] > 0)) return false;
   if (ch.requiresTrait && !hasTrait(ch.requiresTrait)) return false;
   if (ch.requiresSpell && state.spells[ch.requiresSpell] == null) return false;
@@ -342,10 +348,15 @@ function resolveChoice(idx) {
 /* 선택 결과까지 보여준 뒤 [계속] 버튼을 띄우는 상태로 넘어간다 */
 function finishEncounter(gain) {
   state.phase = 'result';
-  state.pendingGain = gain != null ? gain : 2;
-  /* 겪은 것 자체가 남긴다. 판정에 다 실패해도 조금씩은 자란다 —
-   * 그러지 않으면 초반에 운이 나쁜 판이 회복 불가능해진다. */
-  gainExp(state.pendingGain * 4);
+  const declared = gain != null ? gain : 2;
+  /* 에피소드 중간 단계는 진행도를 거의 먹지 않는다.
+   * 한 인카운터가 3단계라고 해서 시계가 세 배로 도는 건 아니다 —
+   * 그러면 깊은 판일수록 수업도 전투도 못 만나고 판이 짧게 끝난다.
+   * 값은 마지막 단계에서 한꺼번에 나간다. */
+  state.pendingGain = state.pendingDeepen ? Math.min(declared, 1) : declared;
+  /* 경험치는 시계와 분리한다. 깊이 들어간 대가는 중간 단계에서도 받는다.
+   * 겪은 것 자체가 남긴다 — 판정에 다 실패해도 조금씩은 자란다. */
+  gainExp(declared * 3);
   /* 죽음은 여기서 판정한다. [계속]을 누른 뒤에 죽으면
    * 플레이어는 자기가 언제 죽었는지 알 수 없다. */
   if (checkLethal()) return;

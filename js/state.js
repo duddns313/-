@@ -55,6 +55,7 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     pendingChain: null,
     pendingDeepen: false,
     stageIndex: 0,
+    episode: {},
     seenEncounters: {},
     recent: [],
     beatsDone: {},
@@ -132,8 +133,10 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
   return base;
 }
 
+/* 인카운터가 에피소드로 깊어지면서 판정 횟수 자체가 늘었다.
+ * 곡선을 그대로 두면 한 판에 Lv.12까지 올라가 계획서(§7 Lv.8~10)를 벗어난다. */
 function expToNextFor(level) {
-  return 20 + (level - 1) * 15;
+  return 20 + (level - 1) * 19;
 }
 
 function getAtk() { return state.baseAtk + getEquippedTotal('atk'); }

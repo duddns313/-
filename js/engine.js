@@ -104,6 +104,7 @@ function applyEffect(effect) {
   if (effect.item) addItemStack(effect.item, effect.itemQty || 1);
   if (effect.consume) removeItemStack(effect.consume, 1);
   if (effect.flag) state.flags[effect.flag] = true;
+  if (effect.mark) { state.episode = state.episode || {}; state.episode[effect.mark] = true; }
   if (effect.clearFlag) delete state.flags[effect.clearFlag];
   if (effect.exp) gainExp(effect.exp);
   if (effect.learnSpell) applyLearnSpellEffect(effect.learnSpell);

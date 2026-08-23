@@ -13,6 +13,11 @@ const ENEMIES = {
   acromantula: { id: 'acromantula', name: '아크로만툴라', hp: 72, atk: 17, def: 5, exp: 42, gold: [10, 26], tier: 3 },
   deathEater: { id: 'deathEater', name: '죽음을 먹는 자', hp: 80, atk: 19, def: 7, exp: 55, gold: [20, 40], tier: 3 },
   werewolfShade: { id: 'werewolfShade', name: '늑대인간의 그림자', hp: 85, atk: 20, def: 6, exp: 48, gold: [15, 30], tier: 3 },
+  /* 시나리오 전용 — 마흔한 겹으로 겹친 것.
+   * eats: 체력이 아니라 명부를 먹는다. 이기려고 붙는 상대가 아니다. */
+  shadeRemnant: { id: 'shadeRemnant', name: '겹쳐 선 것', hp: 96, atk: 21, def: 8, exp: 70, gold: [10, 30], tier: 3, turnLimit: 9, eats: true,
+    withdrawText: '그것이 물러섰다.\n\n밀어낸 게 아니라 흥미를 잃은 것이다. 마흔한 겹이 천천히 어둠으로 되돌아갔다.\n\n명부에서 무언가 조용해졌다.' },
+
   riddleShade: { id: 'riddleShade', name: '톰 리들의 환영', hp: 115, atk: 26, def: 10, exp: 90, gold: [25, 45], tier: 3, boss: true },
   basilisk: { id: 'basilisk', name: '바실리스크', hp: 150, atk: 28, def: 12, exp: 150, gold: [40, 70], tier: 4, boss: true },
     /* turnLimit: 이 턴을 넘기면 스스로 물러난다.

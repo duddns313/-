@@ -13,6 +13,7 @@ const ALL_ENCOUNTERS = Object.assign(
   typeof ENCOUNTERS_COMBAT !== 'undefined' ? ENCOUNTERS_COMBAT : {},
   typeof ENCOUNTERS_EERIE !== 'undefined' ? ENCOUNTERS_EERIE : {},
   typeof ENCOUNTERS_DEEP !== 'undefined' ? ENCOUNTERS_DEEP : {},
+  typeof ENCOUNTERS_SAGA !== 'undefined' ? ENCOUNTERS_SAGA : {},
   typeof ENCOUNTERS_SPECIAL !== 'undefined' ? ENCOUNTERS_SPECIAL : {}
 );
 

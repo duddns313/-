@@ -207,6 +207,10 @@ function uiAppendLogEntry(entry) {
 
 let setupChoice = { houseId: null, backgroundId: null, traitId: null, alloc: {} };
 
+/* 주문 자리 바꾸기 UI 상태 — 자리를 먼저 골랐나, 수첩을 먼저 골랐나 */
+let spellSwapFrom = null;
+let spellSwapPick = null;
+
 function showSetupScreen() {
   $('setup-screen').classList.remove('hidden');
   $('game-shell').classList.add('hidden');
@@ -218,7 +222,10 @@ function showSetupScreen() {
   $('btn-continue').classList.toggle('hidden', !hasSave());
 
   setupChoice = { houseId: null, backgroundId: null, traitId: null, alloc: {} };
+  setupStep = 0;
   renderSetup();
+
+  $('btn-start').onclick = () => startFromSetup();
 
   $('btn-continue').onclick = () => {
     const result = loadGame();
@@ -238,9 +245,46 @@ function showSetupScreen() {
   };
 }
 
+/* ── 시작 화면 ──────────────────────────────────────────
+ * 예전에는 카드 열두 장을 한 화면에 세로로 쌓아놨다. 스크롤이 길고,
+ * 지금 무엇을 고르는 중인지도, 무엇을 골랐는지도 안 보이고,
+ * 「시작」 버튼은 저 아래 어딘가에 있었다.
+ *
+ * 이제 한 번에 한 가지만 묻는다. 위에 몇 단계 중 몇 번째인지 띄우고,
+ * 아래에 지금까지 고른 것을 붙박이로 두고, 다음 단계로 넘어가는 버튼을 거기 둔다. */
+
+const SETUP_STEPS = [
+  { key: 'backgroundId', title: '어떻게 이 성에 왔는가', sub: '판이 끝날 때까지 못 바꾼다. 이야기의 입구이자 전용 엔딩이 걸린다.' },
+  { key: 'houseId',      title: '분류 모자',           sub: '기숙사는 능력치와 시작 특전을 준다.' },
+  { key: 'traitId',      title: '타고난 것',           sub: '판정 하나를 쭉 유리하게 만드는 버릇.' },
+  { key: 'alloc',        title: '능력치 배분',          sub: '남은 점수를 어디에 넣을지 정한다.' },
+];
+
+let setupStep = 0;
+
+function setupFreeTotal() {
+  const bg = BACKGROUNDS[setupChoice.backgroundId];
+  return (bg ? bg.freePoints : 0) + ledgerStartingBonus().points;
+}
+
+/* 배분할 점수가 없는 배경은 4단계를 건너뛴다 */
+function setupStepCount() { return setupFreeTotal() > 0 ? 4 : 3; }
+
+function setupStepDone(i) {
+  if (i === 3) {
+    const used = Object.values(setupChoice.alloc).reduce((a, b) => a + b, 0);
+    return used >= setupFreeTotal();
+  }
+  return !!setupChoice[SETUP_STEPS[i].key];
+}
+
 function renderSetup() {
   const box = $('house-select');
   box.innerHTML = '';
+
+  const total = setupStepCount();
+  if (setupStep >= total) setupStep = total - 1;
+  const step = SETUP_STEPS[setupStep];
 
   /* 「기록」 요약 — 회차를 거듭한 흔적 */
   if (ledger.runs > 0) {
@@ -251,9 +295,31 @@ function renderSetup() {
     box.appendChild(rec);
   }
 
-  /* 1. 배경 */
-  box.appendChild(el('h3', 'setup-section', '어떻게 이 성에 왔는가'));
-  const bgRow = el('div', 'card-grid');
+  /* 단계 표시 — 점 네 개. 다녀온 단계는 눌러서 되돌아갈 수 있다. */
+  const dots = el('div', 'step-dots');
+  for (let i = 0; i < total; i++) {
+    const d = el('button', 'step-dot'
+      + (i === setupStep ? ' now' : '')
+      + (setupStepDone(i) ? ' done' : ''), String(i + 1));
+    d.type = 'button';
+    d.addEventListener('click', () => { setupStep = i; renderSetup(); });
+    dots.appendChild(d);
+  }
+  box.appendChild(dots);
+
+  box.appendChild(el('h3', 'step-title', step.title));
+  box.appendChild(el('p', 'step-sub', step.sub));
+
+  if (setupStep === 0) renderSetupBackgrounds(box);
+  else if (setupStep === 1) renderSetupHouses(box);
+  else if (setupStep === 2) renderSetupTraits(box);
+  else renderSetupAlloc(box);
+
+  renderSetupBar();
+}
+
+function renderSetupBackgrounds(box) {
+  const row = el('div', 'card-grid');
   BACKGROUND_LIST.forEach((bg) => {
     const card = el('div', 'pick-card' + (setupChoice.backgroundId === bg.id ? ' selected' : ''));
     card.appendChild(el('h4', 'pick-name', bg.name));
@@ -261,27 +327,32 @@ function renderSetup() {
     card.appendChild(el('p', 'pick-desc', bg.desc));
     card.appendChild(el('p', 'pick-perk', '＋ ' + bg.perk));
     card.appendChild(el('p', 'pick-cost', '− ' + bg.cost));
-    card.addEventListener('click', () => { setupChoice.backgroundId = bg.id; setupChoice.alloc = {}; renderSetup(); });
-    bgRow.appendChild(card);
+    card.addEventListener('click', () => {
+      setupChoice.backgroundId = bg.id;
+      setupChoice.alloc = {};
+      setupStep = 1;
+      renderSetup();
+    });
+    row.appendChild(card);
   });
-  box.appendChild(bgRow);
+  box.appendChild(row);
+}
 
-  /* 2. 기숙사 */
-  box.appendChild(el('h3', 'setup-section', '분류 모자'));
-  const houseRow = el('div', 'card-grid');
+function renderSetupHouses(box) {
+  const row = el('div', 'card-grid');
   Object.values(HOUSES).forEach((house) => {
     const card = el('div', 'pick-card' + (setupChoice.houseId === house.id ? ' selected' : ''));
     card.appendChild(el('h4', 'pick-name', house.name));
     card.appendChild(el('p', 'pick-tag', house.trait));
     card.appendChild(el('p', 'pick-desc', house.desc));
-    card.addEventListener('click', () => { setupChoice.houseId = house.id; renderSetup(); });
-    houseRow.appendChild(card);
+    card.addEventListener('click', () => { setupChoice.houseId = house.id; setupStep = 2; renderSetup(); });
+    row.appendChild(card);
   });
-  box.appendChild(houseRow);
+  box.appendChild(row);
+}
 
-  /* 3. 특성 — 기록에 남은 상위 특성도 고를 수 있다 */
-  box.appendChild(el('h3', 'setup-section', '타고난 것'));
-  const traitRow = el('div', 'card-grid');
+function renderSetupTraits(box) {
+  const row = el('div', 'card-grid');
   const traitIds = STARTER_TRAITS.concat(Object.keys(ledger.traits || {}));
   traitIds.forEach((tid) => {
     const t = TRAITS[tid];
@@ -290,41 +361,90 @@ function renderSetup() {
     card.appendChild(el('h4', 'pick-name', t.name + (t.tier === 2 ? ' ★' : '')));
     card.appendChild(el('p', 'pick-desc', t.desc));
     card.appendChild(el('p', 'pick-perk', t.effect));
-    card.addEventListener('click', () => { setupChoice.traitId = tid; renderSetup(); });
-    traitRow.appendChild(card);
-  });
-  box.appendChild(traitRow);
-
-  /* 4. 편입생 자유 분배 */
-  const bg = BACKGROUNDS[setupChoice.backgroundId];
-  const freeTotal = (bg ? bg.freePoints : 0) + ledgerStartingBonus().points;
-  if (freeTotal > 0) {
-    const used = Object.values(setupChoice.alloc).reduce((s, v) => s + v, 0);
-    box.appendChild(el('h3', 'setup-section', `능력치 배분 (${freeTotal - used} 남음)`));
-    const allocBox = el('div', 'alloc-box');
-    Object.keys(STAT_META).forEach((k) => {
-      const row = el('div', 'alloc-row');
-      row.appendChild(el('span', 'alloc-label', STAT_META[k].label));
-      row.appendChild(el('span', 'alloc-value', String(5 + (setupChoice.alloc[k] || 0))));
-      row.appendChild(button('−', () => {
-        if ((setupChoice.alloc[k] || 0) > 0) { setupChoice.alloc[k] -= 1; renderSetup(); }
-      }, { cls: 'btn-tiny' }));
-      row.appendChild(button('＋', () => {
-        if (used < freeTotal) { setupChoice.alloc[k] = (setupChoice.alloc[k] || 0) + 1; renderSetup(); }
-      }, { cls: 'btn-tiny' }));
-      allocBox.appendChild(row);
+    card.addEventListener('click', () => {
+      setupChoice.traitId = tid;
+      if (setupStepCount() > 3) setupStep = 3;
+      renderSetup();
     });
-    box.appendChild(allocBox);
-  }
+    row.appendChild(card);
+  });
+  box.appendChild(row);
+}
 
-  $('btn-start').onclick = () => {
-    if (!setupChoice.backgroundId) { toast('배경을 골라주세요.', { cls: 'toast-warn' }); return; }
-    if (!setupChoice.houseId) { toast('기숙사를 골라주세요.', { cls: 'toast-warn' }); return; }
-    if (!setupChoice.traitId) { toast('특성을 골라주세요.', { cls: 'toast-warn' }); return; }
-    state = newRun(setupChoice.houseId, setupChoice.backgroundId, setupChoice.traitId, setupChoice.alloc);
-    startGameScreen();
-    openingText();
-  };
+function renderSetupAlloc(box) {
+  const freeTotal = setupFreeTotal();
+  const used = Object.values(setupChoice.alloc).reduce((a, b) => a + b, 0);
+  box.appendChild(el('p', 'alloc-left' + (used >= freeTotal ? ' done' : ''), `남은 점수 ${freeTotal - used}`));
+  const allocBox = el('div', 'alloc-box');
+  Object.keys(STAT_META).forEach((k) => {
+    const row = el('div', 'alloc-row');
+    row.appendChild(el('span', 'alloc-label', STAT_META[k].label));
+    row.appendChild(el('span', 'alloc-value', String(5 + (setupChoice.alloc[k] || 0))));
+    row.appendChild(button('−', () => {
+      if ((setupChoice.alloc[k] || 0) > 0) { setupChoice.alloc[k] -= 1; renderSetup(); }
+    }, { cls: 'btn-tiny' }));
+    row.appendChild(button('＋', () => {
+      if (used < freeTotal) { setupChoice.alloc[k] = (setupChoice.alloc[k] || 0) + 1; renderSetup(); }
+    }, { cls: 'btn-tiny' }));
+    allocBox.appendChild(row);
+  });
+  box.appendChild(allocBox);
+}
+
+/* 화면 아래 붙박이 — 지금까지 고른 것과, 다음으로 가는 버튼 하나 */
+function renderSetupBar() {
+  const bar = $('setup-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const picks = el('div', 'setup-picks');
+  const bg = BACKGROUNDS[setupChoice.backgroundId];
+  const hs = HOUSES[setupChoice.houseId];
+  const tr = TRAITS[setupChoice.traitId];
+  [
+    ['배경', bg && bg.name, 0],
+    ['기숙사', hs && hs.name, 1],
+    ['특성', tr && tr.name, 2],
+  ].forEach(([label, value, idx]) => {
+    const chip = el('button', 'setup-pick' + (value ? ' filled' : ''));
+    chip.type = 'button';
+    chip.appendChild(el('span', 'setup-pick-label', label));
+    chip.appendChild(el('span', 'setup-pick-value', value || '고르기'));
+    chip.addEventListener('click', () => { setupStep = idx; renderSetup(); });
+    picks.appendChild(chip);
+  });
+  bar.appendChild(picks);
+
+  const total = setupStepCount();
+  const ready = setupChoice.backgroundId && setupChoice.houseId && setupChoice.traitId;
+  const acts = el('div', 'setup-actions');
+
+  if (setupStep > 0) {
+    acts.appendChild(button('← 뒤로', () => { setupStep -= 1; renderSetup(); }, { cls: 'btn' }));
+  }
+  if (setupStep < total - 1) {
+    const nextBtn = button('다음 →', () => {
+      if (!setupStepDone(setupStep)) { toast('먼저 하나 고르세요.', { cls: 'toast-warn' }); return; }
+      setupStep += 1; renderSetup();
+    }, { cls: 'btn' + (setupStepDone(setupStep) ? ' btn-primary' : '') });
+    acts.appendChild(nextBtn);
+  } else {
+    acts.appendChild(button('시작한다', () => startFromSetup(),
+      { cls: 'btn' + (ready ? ' btn-primary' : '') }));
+  }
+  bar.appendChild(acts);
+
+  /* 예전 「시작」 버튼은 마지막 단계 전에는 숨긴다 — 두 개가 보이면 헷갈린다 */
+  $('btn-start').classList.add('hidden');
+}
+
+function startFromSetup() {
+  if (!setupChoice.backgroundId) { toast('배경을 골라주세요.', { cls: 'toast-warn' }); setupStep = 0; renderSetup(); return; }
+  if (!setupChoice.houseId) { toast('기숙사를 골라주세요.', { cls: 'toast-warn' }); setupStep = 1; renderSetup(); return; }
+  if (!setupChoice.traitId) { toast('특성을 골라주세요.', { cls: 'toast-warn' }); setupStep = 2; renderSetup(); return; }
+  state = newRun(setupChoice.houseId, setupChoice.backgroundId, setupChoice.traitId, setupChoice.alloc);
+  startGameScreen();
+  openingText();
 }
 
 function openingText() {
@@ -622,7 +742,14 @@ function renderRegisterTab() {
   panel.innerHTML = '';
 
   panel.appendChild(el('h3', 'panel-title', '명부'));
-  panel.appendChild(el('p', 'panel-desc', '잊는 것은 세계가 하고, 붙드는 것은 내가 한다. 붙들기는 체력을 8 쓴다.'));
+  panel.appendChild(el('p', 'panel-desc', '잊는 것은 세계가 하고, 붙드는 것은 내가 한다. 붙들기는 체력을 4 쓴다.'));
+
+  /* 만나야 적힌다. 처음에는 거의 비어 있는 것이 정상이다. */
+  const erodibleHere = Object.keys(state.register).filter((id) => PEOPLE[id] && PEOPLE[id].erodible);
+  if (!erodibleHere.length) {
+    panel.appendChild(el('p', 'panel-desc',
+      '아직 적어둔 이름이 없다. 사람을 만나면 이름을 묻고, 물으면 여기 적힌다.\n적히지 않은 이름은 잊혀도 알 수 없다.'));
+  }
 
   const left = turnsUntilErosion();
   if (left !== Infinity) {
@@ -691,7 +818,71 @@ function renderPrepareTab() {
   const traitNames = (state.traits || []).map((t) => TRAITS[t] && TRAITS[t].name).filter(Boolean);
   if (traitNames.length) panel.appendChild(el('p', 'panel-desc', '특성 · ' + traitNames.join(' · ')));
 
-  /* ── 익힌 주문 ── */
+  /* ── 손에 익힌 주문 네 자리 ── */
+  panel.appendChild(el('h3', 'panel-title', `손에 익힌 주문 ${equippedSpellIds().length}/${SPELL_SLOTS}`));
+  panel.appendChild(el('p', 'panel-desc',
+    '전투에 들고 갈 수 있는 건 넷까지다. 나머지는 잃은 게 아니라 수첩에 적혀 있다 — 여기서 언제든 바꿔 낀다. 숙련도는 그대로 남는다.'));
+
+  const slotBox = el('div', 'slot-grid');
+  spellSlots().forEach((id, i) => {
+    const sp = id ? SPELLS[id] : null;
+    const cell = el('div', 'slot-cell' + (sp ? '' : ' empty') + (spellSwapFrom === i ? ' picking' : ''));
+    cell.appendChild(el('span', 'slot-index', String(i + 1)));
+    if (sp) {
+      cell.appendChild(el('span', 'slot-name', sp.name));
+      const m = state.spells[sp.id];
+      cell.appendChild(el('span', 'slot-meta', `${getMasteryTier(m).label} ${m} · 마력 ${getSpellCastInfo(sp.id).mpCost}`));
+    } else {
+      cell.appendChild(el('span', 'slot-name slot-blank', '— 빈자리 —'));
+      cell.appendChild(el('span', 'slot-meta', '아래 수첩에서 하나 고르면 여기 들어간다'));
+    }
+    cell.addEventListener('click', () => {
+      /* 수첩에서 하나 고른 상태면 그 자리에 끼운다. 아니면 이 자리를 고른다. */
+      if (spellSwapPick) { equipSpell(spellSwapPick, i); spellSwapPick = null; spellSwapFrom = null; }
+      else if (spellSwapFrom === i) { spellSwapFrom = null; }
+      else if (spellSwapFrom != null) { const slots = spellSlots(); const t = slots[i]; slots[i] = slots[spellSwapFrom]; slots[spellSwapFrom] = t; spellSwapFrom = null; }
+      else if (sp) { spellSwapFrom = i; }
+      renderPrepareTab();
+    });
+    slotBox.appendChild(cell);
+  });
+  panel.appendChild(slotBox);
+
+  if (spellSwapFrom != null) {
+    panel.appendChild(el('p', 'panel-hint', `${spellSlots()[spellSwapFrom] ? SPELLS[spellSlots()[spellSwapFrom]].name : ''} 를 옮길 자리를 고르세요. 아래 수첩에서 고르면 바꿔 낍니다.`));
+  }
+
+  /* ── 수첩 — 익혔지만 지금 손에 없는 것 ── */
+  const bench = benchedSpellIds();
+  panel.appendChild(el('h3', 'panel-title', `수첩에 적어둔 주문 ${bench.length}개`));
+  if (!bench.length) {
+    panel.appendChild(el('p', 'panel-desc', '아직 넘치는 것이 없다. 다섯 번째를 배우면 여기로 온다.'));
+  } else {
+    const benchBox = el('div', 'bench-grid');
+    bench.map((id) => SPELLS[id]).sort((a, b) => (a.tier || 0) - (b.tier || 0)).forEach((sp) => {
+      const m = state.spells[sp.id];
+      const chip = el('div', 'bench-chip' + (spellSwapPick === sp.id ? ' picking' : ''));
+      chip.appendChild(el('span', 'bench-name', sp.name));
+      chip.appendChild(el('span', 'bench-meta', `${getMasteryTier(m).label} ${m}`));
+      chip.addEventListener('click', () => {
+        if (spellSwapFrom != null) { equipSpell(sp.id, spellSwapFrom); spellSwapFrom = null; spellSwapPick = null; }
+        else if (spellSwapPick === sp.id) { spellSwapPick = null; }
+        else {
+          const free = freeSlotIndex();
+          if (free >= 0) { equipSpell(sp.id, free); spellSwapPick = null; }
+          else { spellSwapPick = sp.id; }
+        }
+        renderPrepareTab();
+      });
+      benchBox.appendChild(chip);
+    });
+    panel.appendChild(benchBox);
+    if (spellSwapPick) {
+      panel.appendChild(el('p', 'panel-hint', `[${SPELLS[spellSwapPick].name}]${josa(SPELLS[spellSwapPick].name, '을', '를')} 어느 자리에 끼울지 위에서 고르세요.`));
+    }
+  }
+
+  /* ── 익힌 주문 전체 ── */
   panel.appendChild(el('h3', 'panel-title', `익힌 주문 ${Object.keys(state.spells).length}개`));
   panel.appendChild(el('p', 'panel-desc', '전투에서는 매 턴 직접 고른다. 숙련도가 오르면 위력이 커지고 마력이 덜 든다.'));
 
@@ -701,9 +892,9 @@ function renderPrepareTab() {
     .forEach((sp) => {
       const m = state.spells[sp.id];
       const tier = getMasteryTier(m);
-      const row = el('div', 'spell-detail');
+      const row = el('div', 'spell-detail' + (isEquippedSpell(sp.id) ? ' equipped' : ''));
       const top = el('div', 'spell-detail-top');
-      top.appendChild(el('span', 'spell-name', sp.name));
+      top.appendChild(el('span', 'spell-name', (isEquippedSpell(sp.id) ? '◆ ' : '') + sp.name));
       top.appendChild(el('span', 'spell-mastery', `${tier.label} ${m}`));
       row.appendChild(top);
       const bar = el('div', 'mastery-track');

@@ -109,6 +109,26 @@ function estimateDamageSim(sp) {
  * 이게 없으면 시뮬레이터는 체력 15%로 다음 판정에 걸어 들어가고,
  * 그 결과 사망률이 실제 플레이보다 훨씬 높게 나온다.
  * 가진 회복 수단을 쓰는 건 사람이라면 누구나 하는 일이므로 정책에 넣는다. */
+/* 손에 익힌 넷을 정비한다 — 사람이라면 「준비」를 열어 더 센 걸 끼운다.
+ * 이걸 안 하면 시뮬레이터는 처음 배운 넷으로 판을 끝까지 간다. */
+function simArrangeSpells() {
+  const bench = benchedSpellIds();
+  if (!bench.length) return;
+  const worth = (id) => {
+    const sp = SPELLS[id];
+    return (sp.tier || 0) * 10 + (state.spells[id] || 0) / 10 + (sp.type === 'attack' ? 3 : 0);
+  };
+  bench.sort((a, b) => worth(b) - worth(a));
+  spellSlots().forEach((id, i) => {
+    if (!bench.length) return;
+    if (id && worth(bench[0]) <= worth(id) + 5) return;
+    /* 회복 주문 하나는 남겨둔다 — 전부 공격으로 갈아끼우면 오래 못 버틴다 */
+    const heals = equippedSpellIds().filter((x) => SPELLS[x].type === 'heal');
+    if (id && SPELLS[id].type === 'heal' && heals.length <= 1) return;
+    equipSpell(bench.shift(), i);
+  });
+}
+
 function simTendWounds() {
   if (state.hp >= getMaxHp() * 0.5) return;
   const potion = Object.keys(state.itemStacks)
@@ -133,6 +153,7 @@ function runOnce(bgId, houseId, traitId, holdMode) {
     if (state.mode === 'combat') { trace.combatTurns += 1; simCombatTurn(); continue; }
     if (state.phase === 'body') {
       simTendWounds();
+      simArrangeSpells();
       if (HOLD_MODE) tryHold();
       const enc = currentEncounter();
       if (!enc) { finishEncounter(2); continue; }

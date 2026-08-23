@@ -139,8 +139,24 @@ function applyLearnSpellEffect(spellId) {
   /* 초기 숙련도 40 = '능숙'. 25로 두면 다음 단계 선행(40)을 못 넘겨
    * 한 판에 계통이 두 칸도 못 자란다 (시뮬레이션 습득 5.6 → 6.1). */
   const result = learnSpell(spellId, 40);
-  if (result.ok) {
+  if (result.ok && result.replaced) {
+    const old = SPELLS[result.replaced];
+    addLog(`새로운 주문을 익혔다 — [${sp.name}]. 손이 [${old.name}] 자리를 내주었다.`, 'log-spell');
+    if (typeof toast === 'function') {
+      toast(`[${sp.name}] ← [${old.name}] 자리를 대신했다. 「준비」에서 도로 바꿀 수 있다.`, { duration: 3400 });
+    }
+    return;
+  }
+  if (result.ok && result.equipped) {
     addLog(`새로운 주문을 익혔다 — [${sp.name}]`, 'log-spell');
+    return;
+  }
+  if (result.ok) {
+    /* 손에 익힐 자리는 넷뿐이다. 넘치는 것은 잃지 않고 수첩으로 간다. */
+    addLog(`새로운 주문을 익혔다 — [${sp.name}]. 다만 손에 익힐 자리가 넷뿐이라 수첩에 적어두었다.`, 'log-spell');
+    if (typeof toast === 'function') {
+      toast(`[${sp.name}]${josa(sp.name, '을', '를')} 수첩에 적어두었다 — 「준비」에서 바꿔 낄 수 있다.`, { cls: 'toast-warn', duration: 3600 });
+    }
     return;
   }
   if (result.reason === 'prereq') {

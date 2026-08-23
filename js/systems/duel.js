@@ -87,8 +87,10 @@ function tickStatuses() {
 
 /* ---------------- 플레이어 행동 ---------------- */
 
+/* 전투에 나오는 건 손에 익힌 넷뿐이다. 수첩에 적어둔 나머지는
+ * 싸우는 도중에 펴볼 수 없다 — 그럴 시간이 있으면 그건 전투가 아니다. */
 function castableSpells() {
-  const list = Object.keys(state.spells).map((id) => SPELLS[id]).filter(Boolean);
+  const list = equippedSpellIds().map((id) => SPELLS[id]).filter(Boolean);
   list.sort((a, b) => (a.tier || 0) - (b.tier || 0));
   return [WAND_STRIKE].concat(list);
 }

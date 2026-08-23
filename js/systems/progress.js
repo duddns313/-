@@ -428,10 +428,10 @@ function finalEndingId() {
   if (state.flags.beatShadeWithoutName) return 'repeating';
   if (fragmentCount() >= 5) return 'record_only';
   if (state.alignment <= -60) return 'darkened';
-  const bg = BACKGROUNDS[state.backgroundId];
-  if (bg) {
-    const started = bg.startRegister.filter((id) => PEOPLE[id] && PEOPLE[id].erodible);
-    if (started.length && started.every((id) => erosionOf(id) === 0)) return 'kept';
-  }
+  /* 「지킨 자」는 시작 명부가 아니라 이 판에서 실제로 적은 이름으로 판정한다.
+   * 배경에 따라 시작 명부가 비어 있으므로, 예전 기준으로는 편입생이
+   * 이 엔딩에 영영 닿지 못했다. 만난 사람을 하나도 안 잃은 것이 조건이다. */
+  const kept = Object.keys(state.register).filter((id) => PEOPLE[id] && PEOPLE[id].erodible);
+  if (kept.length >= 3 && kept.every((id) => erosionOf(id) === 0)) return 'kept';
   return 'finish_' + state.backgroundId;
 }

@@ -9,9 +9,9 @@
  * 둘 다 구조가 근본적으로 달라 하위 호환을 끊는다. */
 
 const FIXED_PLAYER_NAME = '윤영운';
-const SAVE_KEY = 'hp_run_v11';
-const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2', 'hp_run_v10'];
-const CURRENT_SAVE_VERSION = 11;
+const SAVE_KEY = 'hp_run_v12';
+const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2', 'hp_run_v10', 'hp_run_v11'];
+const CURRENT_SAVE_VERSION = 12;
 const MIN_COMPATIBLE_VERSION = 11;
 
 let state = null;
@@ -63,6 +63,9 @@ function newRun(houseId, backgroundId, traitId, freeAlloc) {
     /* ── 명부 ── */
     register: {},
     lastSeen: {},
+
+    /* 손에 익힌 주문 네 자리. 나머지는 수첩에 적혀 있다 (systems/spell.js) */
+    spellSlots: [null, null, null, null],
 
     /* ── 소지품 · 주문 ── */
     itemStacks: { healPotion: 2 },

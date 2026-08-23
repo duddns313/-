@@ -863,3 +863,94 @@ body {
 .mastery-fill { height: 100%; background: linear-gradient(90deg, #4a3f8a, var(--gold)); }
 .spell-desc { margin: 0; color: var(--text-dim); font-size: 0.8rem; line-height: 1.5; word-break: keep-all; }
 .spell-tag { margin: 4px 0 0; color: var(--purple); font-size: 0.76rem; word-break: keep-all; }
+
+/* ── 손에 익힌 주문 네 자리 ── */
+.slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
+.slot-cell {
+  border: 1px solid var(--border); border-radius: 8px; background: var(--bg-panel-alt);
+  padding: 9px 10px 8px 26px; position: relative; cursor: pointer; text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.slot-cell.empty { background: var(--bg); border-style: dashed; }
+.slot-cell.picking { border-color: var(--gold); background: #2a2350; }
+.slot-index {
+  position: absolute; left: 8px; top: 9px;
+  color: var(--purple); font-size: 0.72rem; font-weight: bold;
+}
+.slot-name { display: block; color: var(--gold); font-size: 0.92rem; }
+.slot-name.slot-blank { color: var(--text-dim); font-style: italic; }
+.slot-meta { display: block; color: var(--text-dim); font-size: 0.74rem; margin-top: 2px; }
+
+.bench-grid { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.bench-chip {
+  border: 1px solid var(--border); border-radius: 999px; background: var(--bg-panel-alt);
+  padding: 6px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.bench-chip.picking { border-color: var(--gold); background: #2a2350; }
+.bench-name { color: var(--text); font-size: 0.85rem; }
+.bench-meta { color: var(--text-dim); font-size: 0.72rem; margin-left: 6px; }
+
+.panel-hint { margin: 4px 0 10px; color: var(--gold); font-size: 0.8rem; }
+.spell-detail.equipped { border-left: 2px solid var(--gold); }
+
+/* ── 시작 화면: 단계 진행 ──
+ * 카드 열두 장을 한 화면에 쌓으면 아무것도 안 읽힌다. 한 번에 한 가지만 묻는다. */
+.step-dots { display: flex; gap: 8px; justify-content: center; margin: 4px 0 16px; }
+.step-dot {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-dim); font-family: inherit; font-size: 0.85rem;
+  cursor: pointer; padding: 0; line-height: 1;
+}
+.step-dot.done { border-color: var(--green); color: var(--green); }
+.step-dot.now { border-color: var(--gold); color: var(--gold); background: #2a2350; font-weight: bold; }
+
+.step-title {
+  margin: 0 0 4px; color: var(--gold); font-size: 1.15rem; text-align: center; letter-spacing: 0.02em;
+}
+.step-sub {
+  margin: 0 0 16px; color: var(--text-dim); font-size: 0.86rem; text-align: center;
+  line-height: 1.6; word-break: keep-all;
+}
+
+/* 카드를 크고 밝게 — 예전 0.82rem / #a89fc9 조합은 어두운 화면에서 잘 안 읽혔다 */
+.pick-card { padding: 14px 16px; }
+.pick-card.selected { box-shadow: inset 3px 0 0 var(--gold); }
+.pick-name { font-size: 1.08rem; margin-bottom: 3px; }
+.pick-tag { font-size: 0.86rem; margin-bottom: 7px; }
+.pick-desc { font-size: 0.9rem; color: #c9c1e4; line-height: 1.65; }
+.pick-perk { font-size: 0.84rem; }
+.pick-cost { font-size: 0.84rem; }
+
+.alloc-left { text-align: center; color: var(--gold); font-size: 0.95rem; margin: 0 0 10px; }
+.alloc-left.done { color: var(--green); }
+.alloc-row { padding: 7px 0; }
+.alloc-label { font-size: 0.95rem; color: var(--text); }
+.alloc-value { font-size: 1.05rem; }
+
+/* 아래 붙박이 — 고른 것과 다음 버튼 */
+#setup-bar {
+  position: sticky; bottom: 0; z-index: 5;
+  margin: 18px -16px -20px; padding: 10px 16px calc(12px + var(--safe-bottom));
+  background: linear-gradient(to top, var(--bg-panel) 78%, rgba(23, 20, 42, 0));
+  border-top: 1px solid var(--border);
+}
+.setup-picks { display: flex; gap: 6px; margin-bottom: 8px; }
+.setup-pick {
+  flex: 1; min-width: 0; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
+  padding: 5px 8px; font-family: inherit;
+}
+.setup-pick.filled { border-color: var(--gold); }
+.setup-pick-label { display: block; color: var(--text-dim); font-size: 0.68rem; }
+.setup-pick-value {
+  display: block; color: var(--text-dim); font-size: 0.84rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.setup-pick.filled .setup-pick-value { color: var(--gold); }
+.setup-actions { display: flex; gap: 8px; }
+.setup-actions .btn { flex: 1; min-height: 46px; font-size: 0.95rem; }
+.alloc-row .btn-tiny {
+  background: var(--bg); border-color: var(--border); color: var(--text);
+  min-width: 38px; font-size: 1rem;
+}

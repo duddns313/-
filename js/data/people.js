@@ -2,6 +2,8 @@
  * 장면 본문에서는 {{id}} 자리표시자를 쓰고, 렌더 시 veilName()으로 치환한다.
  * 그래야 침식(잊힘)이 이미 쓰인 문장에도 소급 적용된다. */
 
+/* erodible — 잔영이 먹을 수 있는 이름.
+ * 기념비의 이름도 먹힌다. 라비니아가 그렇게 먹혔다(startErosion: 3). */
 const PEOPLE = {
   /* ── 동료 ── */
   albus: {
@@ -39,10 +41,10 @@ const PEOPLE = {
     memorial: true, startErosion: 3,
     note: '기념비 세 번째 줄. 이름이 있어야 할 자리가 비어 있다.',
   },
-  fred: { id: 'fred', name: '프레드 위즐리', given: '프레드', surname: '위즐리', memorial: true },
-  lupin: { id: 'lupin', name: '리머스 루핀', given: '리머스', surname: '루핀', memorial: true },
+  fred: { id: 'fred', name: '프레드 위즐리', given: '프레드', surname: '위즐리', memorial: true, erodible: true },
+  lupin: { id: 'lupin', name: '리머스 루핀', given: '리머스', surname: '루핀', memorial: true, erodible: true },
   tonks: { id: 'tonks', name: '님파도라 통스', given: '님파도라', surname: '통스', memorial: true },
-  colin: { id: 'colin', name: '콜린 크리비', given: '콜린', surname: '크리비', memorial: true },
+  colin: { id: 'colin', name: '콜린 크리비', given: '콜린', surname: '크리비', memorial: true, erodible: true },
   lavender: { id: 'lavender', name: '라벤더 브라운', given: '라벤더', surname: '브라운', memorial: true },
 };
 

@@ -13,7 +13,7 @@ const ASSETS = [
   './js/data/achievements.js', './js/data/beats.js',
   './js/data/encounters/common.js', './js/data/encounters/search.js',
   './js/data/encounters/combat.js', './js/data/encounters/eerie.js',
-  './js/data/encounters/deep.js', './js/data/encounters/saga.js',
+  './js/data/encounters/deep.js', './js/data/encounters/prologue.js', './js/data/encounters/saga.js',
   './js/data/encounters/special.js',
 
   './js/systems/settings.js', './js/systems/ledger.js', './js/systems/check.js',

@@ -27,6 +27,15 @@ const PEOPLE = {
     note: '모든 것을 수첩에 적는다. 잉크는 잊지 않는다.',
   },
 
+  /* 프롤로그에서 처음 적는 이름.
+   * 이 게임에서 플레이어가 제일 먼저 수첩에 쓰는 사람이고,
+   * 첫날 밤에 제일 먼저 흐려지는 사람이다. 배우는 자리이자 잃는 자리다. */
+  morag: {
+    id: 'morag', name: '모라그 던바', given: '모라그', surname: '던바',
+    year: 1, erodible: true,
+    note: '마차를 같이 타고 온 1학년. 손등에 자기 이름을 적고 다닌다.',
+  },
+
   /* ── 성 안의 어른 ── */
   mcgonagall: { id: 'mcgonagall', name: '미네르바 맥고나걸', given: '미네르바', surname: '맥고나걸', note: '교장.' },
   dumbledore: { id: 'dumbledore', name: '알버스 덤블도어', given: '알버스', surname: '덤블도어', note: '교장실의 초상화.' },

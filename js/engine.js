@@ -119,7 +119,13 @@ function applyEffect(effect) {
     addLog('이름들을 다시 덧썼다. 잉크가 마르는 동안은 아무것도 흐려지지 않는다.', 'log-result');
   }
 
-  if (effect.erosion) bumpErosion(effect.erosion);
+  /* 문자열이면 그 사람, 함수면 상태를 보고 정한다.
+   * 프롤로그는 「플레이어가 실제로 적은 이름」을 흐리게 해야 하는데
+   * 그게 누구인지는 플레이어의 선택에 달려 있다. */
+  if (effect.erosion) {
+    const who = typeof effect.erosion === 'function' ? effect.erosion(state) : effect.erosion;
+    if (who) bumpErosion(who);
+  }
 
   /* 이름 조각은 판이 아니라 「기록」에 남는다 */
   if (effect.fragment) recordFragment(effect.fragment);

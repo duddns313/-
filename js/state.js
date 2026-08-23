@@ -9,9 +9,9 @@
  * 둘 다 구조가 근본적으로 달라 하위 호환을 끊는다. */
 
 const FIXED_PLAYER_NAME = '윤영운';
-const SAVE_KEY = 'hp_run_v12';
-const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2', 'hp_run_v10', 'hp_run_v11'];
-const CURRENT_SAVE_VERSION = 12;
+const SAVE_KEY = 'hp_run_v13';
+const OLD_SAVE_KEYS = ['hp_text_game_save_v1', 'hp_text_game_save_v2', 'hp_run_v10', 'hp_run_v11', 'hp_run_v12'];
+const CURRENT_SAVE_VERSION = 13;
 const MIN_COMPATIBLE_VERSION = 11;
 
 let state = null;

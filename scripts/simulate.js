@@ -30,6 +30,7 @@ const FILES = [
   'js/data/encounters/combat.js',
   'js/data/encounters/eerie.js',
   'js/data/encounters/deep.js',
+  'js/data/encounters/prologue.js',
   'js/data/encounters/saga.js',
   'js/data/encounters/special.js',
   'js/systems/ledger.js',

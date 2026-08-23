@@ -14,6 +14,7 @@ const ALL_ENCOUNTERS = Object.assign(
   typeof ENCOUNTERS_EERIE !== 'undefined' ? ENCOUNTERS_EERIE : {},
   typeof ENCOUNTERS_DEEP !== 'undefined' ? ENCOUNTERS_DEEP : {},
   typeof ENCOUNTERS_SAGA !== 'undefined' ? ENCOUNTERS_SAGA : {},
+  typeof ENCOUNTERS_PROLOGUE !== 'undefined' ? ENCOUNTERS_PROLOGUE : {},
   typeof ENCOUNTERS_SPECIAL !== 'undefined' ? ENCOUNTERS_SPECIAL : {}
 );
 
@@ -159,7 +160,15 @@ function weightedPick(list, weights) {
 function nextEncounter() {
   if (state.mode === 'ending') return;
 
-  /* 1. 고정 스토리 비트가 문턱을 넘었는가 (최우선) */
+  /* 0. 프롤로그 — 판의 제일 처음, 딱 한 번.
+   *    랜덤 인카운터들은 명부와 침식을 이미 아는 사람처럼 쓰여 있다.
+   *    처음 하는 사람에게 그걸 먼저 겪게 하지 않으면 무슨 말인지 모른다. */
+  if (!state.flags.prologueDone && ALL_ENCOUNTERS.prologue) {
+    presentEncounter(ALL_ENCOUNTERS.prologue);
+    return;
+  }
+
+  /* 1. 고정 스토리 비트가 문턱을 넘었는가 */
   const beat = pendingBeat();
   if (beat) { presentBeat(beat); return; }
 

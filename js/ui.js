@@ -447,15 +447,16 @@ function startFromSetup() {
   openingText();
 }
 
+/* 프롤로그가 마차 안에서 시작하므로, 여기서는 판을 여는 표지만 띄운다.
+ * 도착 장면은 프롤로그 두 번째 단계에 있다 — 예전에는 여기 있었다. */
 function openingText() {
   const bg = BACKGROUNDS[state.backgroundId];
   uiStartEncounter({ title: '' }, false);
+  sceneEmit('── 1998년 5월 2일로부터 이십오 년 ──', 'beat-head');
   sceneEmit(
-`마차에서 내리자 제일 먼저 느껴진 건 냄새였다. 젖은 돌, 이끼, 그리고 어디선가 타고 있는 장작.
+`이 성에서 무언가가 이름을 먹고 있다.
 
-성은 사진에서 본 것보다 컸다. 그리고 사진에서는 보이지 않던 것이 하나 있었다. 동쪽 벽 아래쪽, 돌의 색이 다르다. 위쪽은 오래 비를 맞아 거무스름한데 아래 세 줄은 아직 밝다. 이십오 년 전에 이 자리가 무너졌고, 다시 쌓았다는 뜻이다.
-
-같이 온 학생들은 아무도 그쪽을 보지 않았다.
+아무도 그걸 모른다. 모르는 것이 그것의 방식이기 때문이다.
 
 ${bg.desc}`, 'scene-para');
   state.phase = 'result';

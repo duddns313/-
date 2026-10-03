@@ -1,3 +1,4 @@
 'use strict';
 /* 진입점 */
-document.addEventListener('DOMContentLoaded', () => UI.boot());
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => UI.boot());
+else UI.boot();

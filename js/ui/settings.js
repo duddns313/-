@@ -11,7 +11,9 @@ const Settings = (() => {
     const root = document.documentElement;
     root.dataset.font = cur.fontSize;
     root.dataset.motion = cur.reduceMotion ? 'reduce' : 'full';
-    if (cur.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = cur.theme;
+    // 'auto'일 때는 바깥(뷰어·OS)이 정한 테마를 건드리지 않는다
+    if (cur.theme !== 'auto') { root.dataset.theme = cur.theme; root.dataset.themeByGame = '1'; }
+    else if (root.dataset.themeByGame) { delete root.dataset.theme; delete root.dataset.themeByGame; }
   }
   function set(k, v) {
     cur[k] = v;

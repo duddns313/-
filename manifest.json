@@ -1,12 +1,12 @@
 {
-  "name": "호그와트: 그림자의 잔영",
-  "short_name": "그림자의 잔영",
-  "description": "해리포터 세계관의 텍스트 RPG — 판정, 성장, 파밍이 있는 모바일 웹 게임",
+  "name": "호그와트 7년",
+  "short_name": "호그와트 7년",
+  "description": "해리 포터와 같은 해에 입학한 윤영운의 호그와트 7년 — 사건 카드로 겪는 텍스트 어드벤처",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0e0c1a",
-  "theme_color": "#0e0c1a",
+  "background_color": "#f4ecdc",
+  "theme_color": "#f4ecdc",
   "orientation": "portrait-primary",
   "lang": "ko",
   "icons": [

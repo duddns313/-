@@ -1,44 +1,25 @@
-/* ===================== 서비스 워커 (오프라인 캐시) ===================== */
-
-const CACHE_NAME = 'hogwarts-shadow-v14';
-const ASSETS = [
-  './', './index.html', './manifest.json',
-  './css/style.css',
-  './js/data/houses.js', './js/data/rarity.js', './js/data/spells.js', './js/data/enemies.js',
-  './js/data/locations.js', './js/data/endings.js',
-  './js/data/achievements.js', './js/data/companions.js', './js/data/memories.js',
-  './js/data/people.js', './js/data/scenes.js',
-  './js/systems/check.js', './js/systems/item.js', './js/systems/loot.js', './js/systems/spell.js',
-  './js/systems/achievement.js', './js/systems/settings.js',
-  './js/systems/register.js', './js/systems/scene.js',
-  './js/state.js', './js/engine.js', './js/ui.js', './js/pwa.js', './js/main.js',
-  './icons/icon-192.png', './icons/icon-512.png',
+/* 오프라인 캐시 — 파일을 바꾸면 VERSION을 올린다 */
+const VERSION = 'hp7-v2';
+const FILES = [
+  './', 'index.html', 'manifest.json', 'css/style.css', 'icons/icon-192.png', 'icons/icon-512.png',
+  'js/data/meta.js', 'js/core/state.js', 'js/core/rules.js', 'js/core/game.js',
+  'js/data/year1/prologue.js', 'js/data/year1/canon_autumn.js', 'js/data/year1/canon_spring.js',
+  'js/data/year1/places_castle.js', 'js/data/year1/places_grounds.js',
+  'js/ui/settings.js', 'js/ui/ui.js', 'js/main.js', 'js/pwa.js',
 ];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
-  self.skipWaiting();
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
-  );
-  self.clients.claim();
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((resp) => {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return resp;
-        })
-        .catch(() => cached);
-    })
-  );
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    if (res.ok && new URL(e.request.url).origin === location.origin) {
+      const copy = res.clone();
+      caches.open(VERSION).then(c => c.put(e.request, copy));
+    }
+    return res;
+  }).catch(() => hit)));
 });

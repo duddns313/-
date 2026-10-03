@@ -89,13 +89,12 @@ const UI = (() => {
     $('#dateline').innerHTML = `<span class="year">${S.year}학년</span><span class="date">${esc(date)}</span>${h ? `<span class="house" style="--house:${h.color}">${h.name}</span>` : ''}`;
     const r = S.res;
     const items = [
-      ['hp', `${RESOURCES.hp.icon}`, r.hp], ['heart', RESOURCES.heart.icon, r.heart], ['galleon', RESOURCES.galleon.icon, r.galleon],
-      ['notice', RESOURCES.notice.icon, r.notice], ['points', RESOURCES.points.icon, (r.points > 0 ? '+' : '') + r.points],
+      ['heart', RESOURCES.heart.icon, r.heart], ['galleon', RESOURCES.galleon.icon, r.galleon], ['notice', RESOURCES.notice.icon, r.notice],
     ];
     const bar = $('#resbar');
     bar.innerHTML = items.map(([k, icon, v]) => {
       const changed = lastRes && lastRes[k] !== r[k] ? (r[k] > lastRes[k] ? (k === 'notice' ? 'down' : 'up') : (k === 'notice' ? 'up' : 'down')) : '';
-      const low = (k === 'hp' || k === 'heart') && r[k] <= 25 ? ' low' : (k === 'notice' && r[k] >= 70 ? ' low' : '');
+      const low = k === 'heart' && r[k] <= 25 ? ' low' : (k === 'notice' && r[k] >= 20 ? ' low' : '');
       return `<button class="res ${changed}${low}" data-res="${k}" aria-label="${RESOURCES[k].name} ${v}"><span>${icon}</span><b>${v}</b></button>`;
     }).join('');
     lastRes = Object.assign({}, r);
@@ -174,11 +173,11 @@ const UI = (() => {
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
       const nums = Settings.get('showNumbers');
-      const voice = key ? innerVoice(S, ev.id, i, key, chance, bon) : null;
+      const voice = key ? innerVoice(S, ev, i, c, key, chance, bon) : null;
       const st = Rules.stakes(S, c);
       const helpers = bon.filter(x => x.value > 0);
       const burdens = bon.filter(x => x.value < 0);
-      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${c.sneak ? '<span class="tag sneak">👣 몰래</span>' : ''}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
         <div class="choice-label">${esc(T(c.label))}</div>
         ${voice ? `<div class="voice v-${voice.tier}">${esc(voice.text)}</div>` : ''}
         ${helpers.length || burdens.length ? `<div class="bonus">${helpers.map(x => `<span>${esc(x.label)}${nums ? ' +' + x.value : ''}</span>`).join('')}${burdens.map(x => `<span class="neg">${esc(x.label)}${nums ? ' ' + x.value : ''}</span>`).join('')}</div>` : ''}
@@ -293,7 +292,10 @@ const UI = (() => {
       list.appendChild(b);
     }
     wrap.appendChild(list);
-    wrap.appendChild(el('p', 'legend', '⭐ 이어지는 이야기 · 💛 누군가 기다린다 · 🔁 연속 도전 · ⚠️ 들킬 수도 있다'));
+    wrap.appendChild(el('p', 'legend', `⭐ 이어지는 이야기 · 💛 누군가 기다린다 · 🔁 연속 도전 · ⚠️ 들킬 수도 있다${S.curfewUntil >= S.turn ? ' · 🌙 지금은 밤 외출 금지' : ''}`));
+    const shop = el('button', 'secondary shop-open', `🦉 부엉이 주문서 <small>${RESOURCES.galleon.icon} ${S.res.galleon}</small>`);
+    shop.addEventListener('click', () => openSheet('bag'));
+    wrap.appendChild(shop);
     st.appendChild(wrap);
   }
 
@@ -395,6 +397,38 @@ const UI = (() => {
     $('#sheet-backdrop').hidden = true;
   }
 
+  /* 🦉 부엉이 주문서 — 갈레온으로 물건을 산다 */
+  function shopPanel() {
+    const S = Game.state();
+    const wrap = el('div', 'shop');
+    wrap.appendChild(el('h3', null, '🦉 부엉이 주문서'));
+    wrap.appendChild(el('p', 'hint', `가진 돈 ${RESOURCES.galleon.icon} ${S.res.galleon}갈레온. 주문하면 다음 날 아침 부엉이가 가져다준다. 물건은 선택지의 열쇠나 도움이 된다.`));
+    for (const sid of Object.keys(SHOPS)) {
+      const sh = SHOPS[sid];
+      const open = Game.shopOpen(sid);
+      wrap.appendChild(el('h4', null, `${sh.icon} ${esc(sh.name)}`));
+      if (!open) { wrap.appendChild(el('p', 'hint locked-shop', '🔒 아직 모르는 곳. 프레드와 조지와 친해지거나, 성의 비밀 하나를 알아내면 열린다.')); continue; }
+      const ul = el('ul', 'items');
+      for (const [id, it] of Object.entries(ITEMS)) {
+        if (it.shop !== sid) continue;
+        const have = S.items[id] || 0;
+        const li = el('li', null, `<span class="ic">${it.icon}</span><div><b>${esc(it.name)}${have ? ` <em class="have">가진 것 ${have}</em>` : ''}</b><small>${esc(it.hint || it.desc)}</small></div>`);
+        const b = el('button', 'use buy', `${RESOURCES.galleon.icon} ${it.price}`);
+        if (S.res.galleon < it.price) b.disabled = true;
+        b.addEventListener('click', () => {
+          const chips = Game.buy(id);
+          if (chips) toast(`${it.icon} ${it.name} — 주문 완료. 다음 날 아침, 부엉이가 꾸러미를 떨어뜨렸다.`);
+          renderTop();
+          openSheet('bag');
+        });
+        li.appendChild(b);
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+    return wrap;
+  }
+
   const SHEETS = {
     log() {
       const S = Game.state();
@@ -434,6 +468,7 @@ const UI = (() => {
       }
       if (!items.length) ul.appendChild(el('li', 'empty', '주머니가 비어 있다.'));
       box.appendChild(ul);
+      box.appendChild(shopPanel());
       box.appendChild(el('h3', null, '🪄 익힌 주문'));
       const sp = el('ul', 'items');
       S.spells.forEach(id => sp.appendChild(el('li', null, `<span class="ic">✨</span><div><b>${esc(SPELLS[id].name)}</b><small>${esc(SPELLS[id].desc)}</small></div>`)));
@@ -450,9 +485,9 @@ const UI = (() => {
       box.appendChild(grid);
       box.appendChild(el('p', 'kv', `<span>성장 단계</span><b>${S.level}단계 · 다음까지 ${60 - (S.xp % 60)}</b>`));
       if (S.statPoints > 0) box.appendChild(levelPanel(() => openSheet('me')));
-      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 같은 방법만 거듭 쓰면 상대가 예상해 성공률이 떨어진다. 판정 성공률은 스탯이 높을수록, 기억·주문·소지품의 도움을 받을수록 올라갑니다. 마음이 무너지거나 몸이 지치면 내려갑니다.'));
+      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 한동안 안 쓴 방법을 쓰면 「새로운 접근」 보너스가 붙는다. 판정은 능력치가 높을수록, 기억·주문·소지품의 도움을 받을수록 쉬워진다. 기운이 바닥나면 어려워진다.'));
       const res = el('ul', 'kvlist');
-      res.innerHTML = Object.keys(RESOURCES).map(k => `<li><span>${RESOURCES[k].icon} ${RESOURCES[k].name}</span><b>${S.res[k]}${RESOURCES[k].max ? ' / ' + RESOURCES[k].max : ''}</b></li>`).join('');
+      res.innerHTML = Object.keys(RESOURCES).filter(k => !RESOURCES[k].hidden).map(k => `<li><span>${RESOURCES[k].icon} ${RESOURCES[k].name}</span><b>${S.res[k]}${RESOURCES[k].max ? ' / ' + RESOURCES[k].max : ''}</b></li>`).join('');
       box.appendChild(res);
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
@@ -525,6 +560,12 @@ const UI = (() => {
     },
   };
 
+  const RES_HELP = {
+    heart: '매주 10씩 닳는다. 25 이하면 모든 판정이 어려워지고, 0이 되면 의무실에 실려 간다. 쉬기·먹기·친구와 웃기로 채운다.',
+    galleon: '부엉이 주문서(🎒 소지품)에서 물건을 산다. 집에서 오는 소포, 심부름, 내기로 모인다.',
+    notice: '말썽을 피우면 오른다. 12 이상이면 몰래 하는 행동(👣)이 어려워지고, 20을 넘기면 밤 외출이 금지되고, 40을 넘기면 사감실에 불려 간다. 매주 조금씩 내려간다.',
+  };
+
   let toastTimer = null;
   function toast(msg) {
     const t = $('#toast');
@@ -540,7 +581,7 @@ const UI = (() => {
     $('#sheet-backdrop').addEventListener('click', closeSheet);
     $('#resbar').addEventListener('click', e => {
       const b = e.target.closest('.res');
-      if (b) toast(`${RESOURCES[b.dataset.res].icon} ${RESOURCES[b.dataset.res].name}: ${{ hp: '0이 되면 의무실 신세', heart: '낮으면 모든 판정이 불리해진다', galleon: '마법사 세계의 돈', notice: '높을수록 교수들과 필치가 주시한다', points: '1년 동안 기숙사에 보탠 점수' }[b.dataset.res]}`);
+      if (b) toast(`${RESOURCES[b.dataset.res].icon} ${RESOURCES[b.dataset.res].name}: ${RES_HELP[b.dataset.res]}`);
     });
     stage().addEventListener('click', e => { if (!e.target.closest('button')) skipTyping(); });
     renderTitle();

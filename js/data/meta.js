@@ -10,8 +10,8 @@ const STATS = {
 };
 
 const RESOURCES = {
-  hp:      { name: '체력',   icon: '❤️', max: 100 },
-  heart:   { name: '마음',   icon: '💗', max: 100 },
+  hp:      { name: '기운',   icon: '🕯️', max: 100, hidden: true },   /* 예전 체력 — 기운으로 합쳐 처리한다 */
+  heart:   { name: '기운',   icon: '🕯️', max: 100 },
   galleon: { name: '갈레온', icon: '🪙' },
   notice:  { name: '주목도', icon: '👁️', max: 100 },
   points:  { name: '기숙사 점수', icon: '🏆' },
@@ -36,11 +36,11 @@ const PLACES = {
   pitch:      { name: '퀴디치 경기장',     icon: '🧹', desc: '빗자루와 바람' },
   owlery:     { name: '부엉이장',          icon: '🦉', desc: '집으로 편지를 보낸다' },
   greenhouse: { name: '온실',              icon: '🌱', desc: '흙냄새와 이상한 식물들' },
-  astronomy:  { name: '천문탑',            icon: '🔭', desc: '성에서 가장 높은 곳' },
+  astronomy:  { name: '천문탑',            icon: '🔭', desc: '성에서 가장 높은 곳', night: true },
   dungeons:   { name: '지하 감옥',         icon: '🧪', desc: '스네이프 교수의 영역', danger: true },
   kitchen:    { name: '주방',              icon: '🍐', desc: '배 그림을 간지럽히면…' },
   myrtle:     { name: '2층 여자 화장실',   icon: '🚿', desc: '아무도 쓰지 않는 화장실' },
-  trophy:     { name: '트로피 진열실',     icon: '🏆', desc: '먼지 쌓인 영광들', danger: true },
+  trophy:     { name: '트로피 진열실',     icon: '🏆', desc: '먼지 쌓인 영광들', danger: true, night: true },
 };
 
 const SPELLS = {
@@ -52,20 +52,38 @@ const SPELLS = {
 };
 
 /* use: 소지품 탭에서 쓸 수 있는 1회용 효과 */
+/* use: 소지품에서 쓰는 1회용 효과 · price/shop: 부엉이 주문서에서 살 수 있음 · hint: 어디에 쓰이는지 */
 const ITEMS = {
-  frog:        { name: '개구리 초콜릿',       icon: '🐸', desc: '한 번 뛰어오르니 재빨리 잡을 것. 안에는 유명한 마법사 카드가 들어 있다.', use: { heart: 10, card: 'random' } },
-  beans:       { name: '버티 보트의 온갖 맛이 나는 젤리', icon: '🫘', desc: '정말로 온갖 맛이 난다. 정말로.', use: { beans: true } },
-  pasty:       { name: '호박 파이',           icon: '🥧', desc: '아직 따뜻하다.', use: { hp: 15, heart: 5 } },
-  gimbap:      { name: '엄마의 김밥',         icon: '🍙', desc: '은박지에 싼 김밥 한 줄. 참기름 냄새가 난다.', use: { hp: 20, heart: 15 } },
-  rockcake:    { name: '해그리드의 바위과자', icon: '🪨', desc: '이름 그대로다. 이가 성할 때 먹을 것.', use: { hp: 5, heart: 5 } },
-  hogwarts_history: { name: '『호그와트의 역사』', icon: '📕', desc: '헤르미온느가 강력히 추천한 책. 성에 대한 거의 모든 것이 들어 있다.' },
-  dungbomb:    { name: '똥폭탄',             icon: '💩', desc: '프레드와 조지가 쥐여 준 것. 주의를 돌리는 데는 이만한 게 없다.' },
+  frog:        { name: '개구리 초콜릿',       icon: '🐸', desc: '한 번 뛰어오르니 재빨리 잡을 것. 안에는 유명한 마법사 카드가 들어 있다.', use: { heart: 10, card: 'random' }, price: 1, shop: 'honeydukes', hint: '기운 회복 · 카드 수집' },
+  beans:       { name: '버티 보트의 온갖 맛이 나는 젤리', icon: '🫘', desc: '정말로 온갖 맛이 난다. 정말로.', use: { beans: true }, price: 1, shop: 'honeydukes', hint: '운에 맡기는 간식' },
+  pasty:       { name: '호박 파이',           icon: '🥧', desc: '아직 따뜻하다.', use: { heart: 18 }, price: 1, shop: 'honeydukes', hint: '기운 회복' },
+  pepperup:    { name: '페퍼업 물약',         icon: '🧪', desc: '마시면 귀에서 김이 난다. 대신 기운이 펄펄 난다.', use: { heart: 40 }, price: 5, shop: 'apothecary', hint: '기운 크게 회복' },
+  gimbap:      { name: '엄마의 김밥',         icon: '🍙', desc: '은박지에 싼 김밥 한 줄. 참기름 냄새가 난다.', use: { heart: 25 } },
+  rockcake:    { name: '해그리드의 바위과자', icon: '🪨', desc: '이름 그대로다. 이가 성할 때 먹을 것. 던지면 무기도 된다.', use: { heart: 6 } },
+  yakgwa:      { name: '약과',               icon: '🍯', desc: '엄마가 보낸 약과. 누군가와 나눠 먹기 좋다.', use: { heart: 15 } },
+  hogwarts_history: { name: '『호그와트의 역사』', icon: '📕', desc: '헤르미온느가 강력히 추천한 책. 성에 대한 거의 모든 것이 들어 있다.', price: 2, shop: 'owl', hint: '성의 비밀·조사 판정에 도움' },
+  dungbomb:    { name: '똥폭탄',             icon: '💩', desc: '터지면 지독한 냄새가 난다. 주의를 돌리는 데는 이만한 게 없다.', price: 2, shop: 'twins', hint: '주의 돌리기 · 들키지 않기' },
+  fireworks:   { name: '필리버스터 폭죽',     icon: '🎆', desc: '물에 젖어도, 열이 없어도 터지는 폭죽. 소리가 아주 크다.', price: 4, shop: 'twins', hint: '신호 보내기 · 크게 시선 끌기' },
+  gum:         { name: '드루블의 풍선껌',     icon: '🫧', desc: '절대 터지지 않는 블루벨색 풍선껌. 무엇에든 끈질기게 들러붙는다.', price: 1, shop: 'honeydukes', hint: '붙이고 막기' },
+  gloves:      { name: '용가죽 장갑',         icon: '🧤', desc: '불에도 이빨에도 끄떡없는 장갑. 약초학 필수품.', price: 6, shop: 'owl', hint: '물고 뜨거운 것 다루기' },
+  bezoar:      { name: '베조아르',            icon: '🟤', desc: '염소 위장에서 나온 돌. 대부분의 독을 해독한다.', price: 5, shop: 'apothecary', hint: '독 · 마법약' },
+  spellotape:  { name: '스펠로테이프',        icon: '🩹', desc: '마법사용 접착테이프. 부러진 것도 일단은 붙여 준다.', price: 2, shop: 'owl', hint: '망가진 것 고치기' },
+  biscuits:    { name: '개 비스킷 한 봉지',   icon: '🦴', desc: '해그리드가 팽에게 주는 것과 같은 비스킷. 큰 개일수록 좋아한다.', price: 1, shop: 'owl', hint: '개 달래기' },
+  wintercloak: { name: '두꺼운 겨울 망토',    icon: '🧥', desc: '안감에 양털을 덧댄 망토. 한겨울 탑 위에서도 따뜻하다.', price: 4, shop: 'owl', hint: '추운 곳 · 밤의 바깥' },
+  dragon_book: { name: '『취미와 이익을 위한 용 사육』', icon: '📗', desc: '도서관에서 빌린 책. 반납일이 한참 지났다.' },
   invite_card: { name: '해그리드의 쪽지',     icon: '✉️', desc: '“금요일 오후에 차 마시러 오거라. —해그리드”' },
   sweater:     { name: '손뜨개 스웨터',       icon: '🧶', desc: '엄마가 서툰 솜씨로 떠서 보낸 스웨터. 소매 길이가 서로 다르다.' },
-  yakgwa:      { name: '약과', icon: '🍯', desc: '엄마가 보낸 약과. 누군가와 나눠 먹기 좋다.', use: { hp: 10, heart: 12 } },
-  chess_knight:{ name: '론의 체스 기사', icon: '♞', desc: '론이 할아버지에게 물려받은 마법사 체스의 기사 말. "작전 짤 때 쥐고 있어. 머리가 잘 돌아가."' },
-  hohyeon_cap: { name: '서울 마트 병뚜껑', icon: '🪙', desc: '호현이 늘 주머니에 넣고 다니던 식혜 병뚜껑. 기차에서 영운 손에 쥐여 주었다. "부적이야."' },
-  cloak_note:  { name: '해리의 쪽지', icon: '📝', desc: '"필요하면 말해. —H" 투명 망토를 한 번 빌릴 수 있다는 뜻이다.' },
+  chess_knight:{ name: '론의 체스 기사',      icon: '♞', desc: '론이 할아버지에게 물려받은 마법사 체스의 기사 말. "작전 짤 때 쥐고 있어. 머리가 잘 돌아가."' },
+  hohyeon_cap: { name: '서울 마트 병뚜껑',    icon: '🪙', desc: '호현이 늘 주머니에 넣고 다니던 식혜 병뚜껑. 기차에서 영운 손에 쥐여 주었다. "부적이야."' },
+  cloak_note:  { name: '해리의 쪽지',         icon: '📝', desc: '"필요하면 말해. —H" 투명 망토를 한 번 빌릴 수 있다는 뜻이다.' },
+};
+
+/* 부엉이 주문서의 가게들 */
+const SHOPS = {
+  owl:        { name: '다이애건 앨리 부엉이 주문', icon: '🦉', desc: '학교 부엉이에게 주문서를 묶어 보내면 다음 날 아침 우편으로 온다.' },
+  honeydukes: { name: '허니듀크스 과자 주문',     icon: '🍬', desc: '호그스미드의 과자 가게. 1학년도 부엉이 주문은 된다.' },
+  apothecary: { name: '슬러그 앤 지거스 약재상',  icon: '⚗️', desc: '다이애건 앨리의 약재상. 냄새는 지독하지만 물건은 확실하다.' },
+  twins:      { name: '쌍둥이의 가방',            icon: '🎒', desc: '프레드와 조지가 휴게실 구석에서 몰래 파는 물건들.', needs: { any: [{ rel: { twins: 10 } }, { flag: 'kitchen_known' }] } },
 };
 
 const PETS = {
@@ -157,6 +175,12 @@ const MEMORIES = {
   flamel_known:   { name: '카드 뒷면의 이름', desc: '덤블도어 카드에서 니콜라스 플라멜이라는 이름을 읽었다.' },
   squid_toast:    { name: '오징어에게 토스트를', desc: '검은 호수의 대왕오징어에게 토스트를 던져 주었다.' },
   flyer:          { name: '바람을 탄 날', desc: '빗자루 위에서 처음으로 무섭지 않았다.' },
+  quirrell_office: { name: '터번 아래의 목소리', desc: '퀴렐의 연구실에서 터번 속 두 번째 목소리를 들었다. 그리고 지워지지 않고 빠져나왔다.' },
+  norbert_night:  { name: '자정의 탑', desc: '노버트가 떠나던 밤, 탑 아래에서 해리와 헤르미온느를 도왔다. 결말을 바꾸지는 못했지만.' },
+  neville_freed:  { name: '굳어 버린 네빌 곁에서', desc: '마지막 밤, 통나무처럼 굳은 네빌을 혼자 두지 않았다.' },
+  lullaby:        { name: '섬집아기', desc: '머리 셋 달린 개 앞에서 엄마의 자장가를 불렀다. 목이 쉴 때까지.' },
+  dumbledore_thanks: { name: '반달 안경 너머의 윙크', desc: '마지막 밤, 덤블도어가 아무도 모르게 고맙다고 했다.' },
+  cup_points:     { name: '모래시계 속의 내 몫', desc: '1년 동안 기숙사에 보탠 점수가 그 우승 안에 섞여 있었다.' },
 };
 
 /* 1학년 달력. 0 = 입학 전, 13 = 학년말 */

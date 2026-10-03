@@ -25,16 +25,19 @@ const Game = (() => {
     return advance();
   }
 
+  /* 기운은 매주 닳고, 주목도는 천천히 식는다 */
+  const HEART_DRAIN = 10, NOTICE_CURFEW = 20, NOTICE_CALL = 40;
   function turnStart() {
     S.stage = S.turn <= TURNS_PER_YEAR ? 'travel' : 'done';
     if (S.turn > 1) {
-      S.res.notice = Math.max(0, S.res.notice - 3);
-      S.res.hp = Math.min(100, S.res.hp + 5);
+      S.res.notice = Math.max(0, S.res.notice - 2);
+      S.res.heart = Math.max(0, S.res.heart - HEART_DRAIN);   /* 학교생활은 고단하다 — 쉬고 먹고 웃어야 채워진다 */
     }
     const q = [];
-    if (S.res.hp <= 0) q.push('sp_hospital');
+    if (S.res.heart <= 0) q.push('sp_hospital');
     else if (S.res.heart <= 15 && EVENTS.sp_lowheart) q.push('sp_lowheart');
-    if (S.res.notice >= 100) q.push('sp_notice');
+    if (S.res.notice >= NOTICE_CALL) q.push('sp_notice');
+    else if (S.res.notice >= NOTICE_CURFEW && !(S.curfewUntil >= S.turn) && EVENTS.sp_curfew) q.push('sp_curfew');
     const canon = Object.values(EVENTS)
       .filter(ev => ev.turn === S.turn && (ev.year || 1) === S.year && !S.seen.includes(ev.id) && Rules.meets(S, ev.needs))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -111,6 +114,11 @@ const Game = (() => {
     const statKey = Rules.statOf(S, choice);
     /* 판정에 쓴 능력치가 그 자리에서 바로 오르지는 않는다 — 대신 경험이 된다 (한 능력치만 키우는 것을 막는다) */
     let fx = typeof outcome.fx === 'function' ? outcome.fx(S) : outcome.fx;
+    /* 사건 속 작은 위로는 조금만 채운다 — 크게 채우는 건 쉬기·먹기·친구의 몫 */
+    if (fx && ev.type !== 'special') {
+      const up = (fx.heart > 0 ? fx.heart : 0) + (fx.hp > 0 ? fx.hp : 0);
+      if (up > 0) { fx = Object.assign({}, fx); if (fx.heart > 0) fx.heart = Math.max(1, Math.round(fx.heart * 0.6)); if (fx.hp > 0) fx.hp = Math.max(1, Math.round(fx.hp * 0.6)); }
+    }
     let bonusXp = 0;
     if (statKey && fx && fx[statKey] > 0) { fx = Object.assign({}, fx); bonusXp += 4 * fx[statKey]; delete fx[statKey]; }
     const thanks = Rules.thanksFor(choice.needs);
@@ -213,6 +221,7 @@ const Game = (() => {
   function eligiblePlaceEvents(pid) {
     return Object.values(EVENTS).filter(ev =>
       ev.place === pid && !ev.turn && ev.type !== 'special' && (ev.year || 1) === S.year &&
+      !(PLACES[pid].night && S.curfewUntil >= S.turn) &&
       (ev.repeat ? !(ev.streak && S.flags['streak_' + ev.streak.key]) : !S.seen.includes(ev.id)) &&
       Rules.meets(S, ev.needs));
   }
@@ -269,6 +278,16 @@ const Game = (() => {
     saveGame(S);
   }
 
+  /* 부엉이 주문서 */
+  function shopOpen(shopId) { return Rules.meets(S, SHOPS[shopId].needs); }
+  function buy(id) {
+    const it = ITEMS[id];
+    if (!it || !it.price || !shopOpen(it.shop) || S.res.galleon < it.price) return null;
+    const chips = Rules.apply(S, { galleon: -it.price, item: id }, rnd);
+    saveGame(S);
+    return chips;
+  }
+
   /* 소지품 사용 */
   function useItem(id) {
     const it = ITEMS[id];
@@ -279,5 +298,5 @@ const Game = (() => {
     return chips;
   }
 
-  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, retryOptions, retry, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
+  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, retryOptions, retry, buy, shopOpen, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
 })();

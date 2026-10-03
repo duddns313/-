@@ -50,8 +50,8 @@ const Rules = (() => {
       const recent = S.recent || [];
       if (recent.length >= 3 && !recent.slice(-4).includes(key)) out.push({ label: '✨ 새로운 접근', value: 6, kind: 'fresh' });
     }
-    if (S.res.heart <= 20) out.push({ label: '무너진 마음', value: -15 });
-    if (S.res.hp <= 20) out.push({ label: '지친 몸', value: -10 });
+    if (choice.sneak && S.res.notice >= 12) out.push({ label: '👁️ 필치가 지켜본다', value: -Math.min(25, Math.round(S.res.notice / 2)), kind: 'watched' });
+    if (S.res.heart <= 25) out.push({ label: '🕯️ 지친 몸과 마음', value: -10, kind: 'tired' });
     return out;
   }
   function labelFor(b) {
@@ -119,10 +119,12 @@ const Rules = (() => {
         if (fx.galleon > 0) gain.add('🪙 갈레온');
       } else {
         if (fx.notice > 0) risk.add('👁️ 들킬 수도');
-        if (fx.hp < 0) risk.add('❤️ 다칠 수도');
-        if (fx.heart < 0) risk.add('💗 마음 상할 수도');
+        if (fx.hp < 0) risk.add('🩹 다칠 수도');
+        if (fx.heart < 0 || fx.hp < 0) risk.add('🕯️ 기운 소모');
         if (fx.points < 0) risk.add('🏆 감점');
         if (fx.loseItem) risk.add('🎒 잃을 수도');
+        if (fx.loseMemory) risk.add('💭 기억을 잃을 수도');
+        if (fx.curfew) risk.add('🌙 외출 금지');
       }
     }
     return { gain: [...gain], risk: [...risk] };
@@ -176,6 +178,7 @@ const Rules = (() => {
     const chips = [];
     if (!fx) return chips;
     if (typeof fx === 'function') fx = fx(S) || {};
+    if (fx.hp) { fx = Object.assign({}, fx, { heart: (fx.heart || 0) + fx.hp }); delete fx.hp; }   /* 체력은 기운으로 합쳐졌다 */
     for (const k in STATS) if (fx[k]) {
       S.stats[k] = Math.max(0, S.stats[k] + fx[k]);
       chips.push({ t: `${STATS[k].icon} ${STATS[k].name} ${sign(fx[k])}`, good: fx[k] > 0 });
@@ -224,6 +227,14 @@ const Rules = (() => {
       const [f, h] = flavors[Math.floor(rnd() * flavors.length)];
       S.res.heart = clamp('heart', S.res.heart + h);
       chips.push({ t: `🫘 ${f}!${h ? ' ' + RESOURCES.heart.icon + ' ' + sign(h) : ''}`, good: h >= 0 });
+    }
+    if (fx.loseMemory) for (const id of asList(fx.loseMemory)) {
+      const i = S.memories.indexOf(id);
+      if (i >= 0) { S.memories.splice(i, 1); chips.push({ t: `💭 기억이 흐려졌다: ${MEMORIES[id].name}`, good: false, big: true }); }
+    }
+    if (fx.curfew) {
+      S.curfewUntil = S.turn + fx.curfew;
+      chips.push({ t: `🌙 밤 외출 금지 ${fx.curfew}주`, good: false });
     }
     if (fx.flag) for (const f of asList(fx.flag)) S.flags[f] = true;
     if (fx.unflag) for (const f of asList(fx.unflag)) delete S.flags[f];

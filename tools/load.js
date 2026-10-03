@@ -14,7 +14,7 @@ function loadGame() {
     localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } },
   });
   for (const src of scripts) vm.runInContext(fs.readFileSync(path.join(root, src), 'utf8'), ctx, { filename: src });
-  const expose = ['EVENTS', 'STATS', 'RESOURCES', 'HOUSES', 'PLACES', 'SPELLS', 'ITEMS', 'PETS', 'WANDS', 'PEOPLE', 'CARDS', 'MEMORIES', 'CALENDAR', 'TURNS_PER_YEAR', 'Rules', 'Game', 'newState'];
+  const expose = ['EVENTS', 'STATS', 'RESOURCES', 'HOUSES', 'PLACES', 'SPELLS', 'ITEMS', 'PETS', 'WANDS', 'PEOPLE', 'CARDS', 'MEMORIES', 'SHOPS', 'CALENDAR', 'TURNS_PER_YEAR', 'Rules', 'Game', 'newState'];
   const g = {};
   for (const k of expose) g[k] = vm.runInContext(k, ctx);
   g.sources = scripts.map(src => ({ src, code: fs.readFileSync(path.join(root, src), 'utf8') }));

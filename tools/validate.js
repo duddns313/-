@@ -60,6 +60,7 @@ function checkFx(id, fx) {
     let f = fx;
     if (typeof fx === 'function') { try { f = fx(s); } catch (e) { err(id, 'fx 함수 오류 ' + e.message); return; } }
     for (const m of list(f.memory)) if (!MEMORIES[m]) err(id, `없는 기억 ${m}`);
+    for (const m of list(f.loseMemory)) if (!MEMORIES[m]) err(id, `없는 기억 ${m}`);
     for (const i of list(f.item).concat(list(f.loseItem))) if (!ITEMS[i]) err(id, `없는 소지품 ${i}`);
     for (const sp of list(f.spell)) if (!SPELLS[sp]) err(id, `없는 주문 ${sp}`);
     for (const c of list(f.card)) if (c !== 'random' && !CARDS[c]) err(id, `없는 카드 ${c}`);
@@ -79,6 +80,7 @@ for (const h of Object.keys(HOUSES)) setFlags.add('lean_' + h);
 setFlags.add('year1_done');
 
 let words = 0;
+const itemUse = {};
 for (const ev of Object.values(EVENTS)) {
   const id = ev.id;
   CUR = fitting(ev.needs);
@@ -101,6 +103,7 @@ for (const ev of Object.values(EVENTS)) {
     CUR = c.needs ? evSamples.filter(s => Rules.meets(s, c.needs)) : evSamples;
     if (!CUR.length) CUR = evSamples;
     render(cid, 'label', c.label);
+    if (c.needs && typeof c.needs === 'object') for (const i of list(c.needs.item)) { if (!ITEMS[i]) err(cid, `needs 없는 소지품 ${i}`); itemUse[i] = (itemUse[i] || 0) + 1; }
     if (c.stat) {
       for (const s of SAMPLES) { const k = Rules.statOf(s, c); if (!g.STATS[k]) err(cid, `없는 스탯 ${k}`); statSet.add(k); }
       if (!c.outcomes || !c.outcomes.success || !c.outcomes.fail) err(cid, '판정 선택지에 success/fail 결과가 없음');
@@ -115,6 +118,7 @@ for (const ev of Object.values(EVENTS)) {
     for (const b of c.bonus || []) {
       if (b.memory && !MEMORIES[b.memory]) err(cid, `보정 없는 기억 ${b.memory}`);
       if (b.item && !ITEMS[b.item]) err(cid, `보정 없는 소지품 ${b.item}`);
+      if (b.item) itemUse[b.item] = (itemUse[b.item] || 0) + 1;
       if (b.flag && !setFlags.has(b.flag)) warn(cid, `보정 flag '${b.flag}'를 세우는 곳이 없음`);
     }
   });
@@ -129,6 +133,12 @@ for (const { src, code } of g.sources) for (const [bad, good] of Object.entries(
 
 const evs = Object.values(EVENTS);
 console.log(`사건 ${evs.length}개 (정사 ${evs.filter(e => e.type === 'canon').length} · 장소 ${evs.filter(e => e.type === 'place').length} · 위기 ${evs.filter(e => e.type === 'special').length}) · 총 분량 약 ${Math.round(words / 1000)}천 자`);
+console.log('물건이 열쇠·도움이 되는 선택지 수: ' + Object.keys(ITEMS).map(k => `${k} ${itemUse[k] || 0}`).join(' · '));
+const SHOP_IDS = Object.keys(g.SHOPS || {});
+for (const [k, it] of Object.entries(ITEMS)) {
+  if (it.price && !SHOP_IDS.includes(it.shop)) err('ITEMS.' + k, `없는 가게 ${it.shop}`);
+  if (it.price && !itemUse[k] && !it.use) warn('ITEMS.' + k, '팔기만 하고 쓰이는 곳이 없음');
+}
 warns.forEach(w => console.log(w));
 errors.forEach(e => console.log(e));
 console.log(errors.length ? `\n오류 ${errors.length}건` : '\n오류 없음');

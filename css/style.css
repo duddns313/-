@@ -388,3 +388,14 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   padding: 12px 14px; font-family: var(--serif); font-size: 15.5px; font-weight: 700; color: var(--ink);
 }
 .retry small { display: block; font-family: var(--sans); font-size: 12px; font-weight: 400; color: var(--ink3); margin-top: 2px; }
+
+/* 부엉이 주문서 */
+.shop { margin-top: 18px; padding-top: 6px; border-top: 2px double var(--rule); }
+.shop h4 { margin: 14px 0 2px; font-family: var(--serif); font-size: 15px; color: var(--ink); }
+.shop .locked-shop { opacity: .75; }
+.items .buy { background: var(--leather); color: var(--leather-ink); white-space: nowrap; }
+.items .buy:disabled { opacity: .4; }
+.items .have { font-style: normal; font-size: 12px; color: var(--ink3); font-weight: 400; margin-left: 4px; }
+.travel .shop-open { display: block; margin: 14px auto 0; }
+.travel .shop-open small { margin-left: 6px; opacity: .8; }
+.tag.sneak { background: transparent; color: var(--ink2); border: 1px dashed var(--rule); }

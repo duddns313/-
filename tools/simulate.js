@@ -25,7 +25,16 @@ for (let r = 0; r < RUNS; r++) {
       steps++;
       const sc = S.screen;
       if (sc.kind === 'yearEnd') break;
-      if (sc.kind === 'travel') { Game.pickPlace(sc.hand[Math.floor(rnd() * sc.hand.length)].id); continue; }
+      if (sc.kind === 'travel') {
+        /* 가끔 부엉이 주문서에서 물건을 산다 */
+        if (rnd() < 0.6) {
+          const can = Object.keys(g.ITEMS).filter(k => g.ITEMS[k].price && g.ITEMS[k].price <= S.res.galleon && Game.shopOpen(g.ITEMS[k].shop));
+          if (can.length) { const k = can[Math.floor(rnd() * can.length)]; Game.buy(k); stats.bought = (stats.bought || 0) + 1; }
+        }
+        /* 기운이 낮으면 먹을 것을 먹는다 */
+        if (S.res.heart <= 30) for (const k of Object.keys(S.items)) if (S.items[k] > 0 && g.ITEMS[k].use && g.ITEMS[k].use.heart) { Game.useItem(k); break; }
+        Game.pickPlace(sc.hand[Math.floor(rnd() * sc.hand.length)].id); continue;
+      }
       const ev = EVENTS[sc.id];
       while (S.statPoints > 0) Game.allocate(Object.keys(g.STATS)[Math.floor(rnd() * 5)]);
       if (sc.stage === 'intro') {
@@ -63,6 +72,11 @@ for (let r = 0; r < RUNS; r++) {
   if (S.seen.includes('sp_hospital')) stats.hospital++;
   if (S.seen.includes('sp_lowheart')) stats.lowheart++;
   if (S.seen.includes('sp_notice')) stats.noticeCall++;
+  for (const id of ['sp_curfew', 'y1_quirrell', 'y1_norbert_night', 'fn_common', 'fn_trapdoor', 'fn_dumbledore']) if (S.seen.includes(id)) stats['c_' + id] = (stats['c_' + id] || 0) + 1;
+  for (const m of ['quirrell_office', 'lullaby', 'dumbledore_thanks', 'cup_points']) if (S.memories.includes(m)) stats['m_' + m] = (stats['m_' + m] || 0) + 1;
+  if (S.flags.obliviated) stats.obliviated = (stats.obliviated || 0) + 1;
+  stats.galleonEnd = (stats.galleonEnd || []).concat(S.res.galleon);
+  stats.heartLog = (stats.heartLog || []).concat(S.res.heart);
   for (const id of S.seen) seenCount[id] = (seenCount[id] || 0) + 1;
 }
 
@@ -73,6 +87,9 @@ console.log(`한 회차 화면 수 평균 ${avg(stats.steps)} · 만난 사건 �
 console.log(`기숙사 점수 기여 평균 ${avg(stats.points)} (${range(stats.points)}) · 주문 ${avg(stats.spells)} · 기억 ${avg(stats.memories)} · 카드 ${avg(stats.cards)}`);
 console.log(`의무실 ${stats.hospital}회 · 마음 위기 ${stats.lowheart}회 · 사감 호출 ${stats.noticeCall}회 · 기숙사 분포 ${JSON.stringify(stats.houses)}`);
 console.log(`레벨 평균 ${avg(stats.levels)} · 회차당 잠긴 선택지 ${(stats.locked / RUNS).toFixed(1)}개 / 열린 열쇠 선택지 ${(stats.opened / RUNS).toFixed(1)}개 · 호현의 이야기 도달 ${stats.hoStory}/${RUNS}`);
+console.log(`위기 도달: ${['sp_curfew', 'y1_quirrell', 'y1_norbert_night', 'fn_common', 'fn_trapdoor', 'fn_dumbledore'].map(k => k + ' ' + (stats['c_' + k] || 0)).join(' · ')}`);
+console.log(`위기 기억: ${['quirrell_office', 'lullaby', 'dumbledore_thanks', 'cup_points'].map(k => k + ' ' + (stats['m_' + k] || 0)).join(' · ')} · 망각 ${stats.obliviated || 0}`);
+console.log(`회차당 구입 ${((stats.bought || 0) / RUNS).toFixed(1)}개 · 학년말 갈레온 평균 ${avg(stats.galleonEnd || [])} · 학년말 기운 평균 ${avg(stats.heartLog || [])}`);
 console.log(`회차당 다시 해 보기 ${((stats.retries || 0) / RUNS).toFixed(1)}회`);
 console.log('최종 호감도 평균 ' + Object.entries(stats.rels).map(([k, v]) => `${k} ${avg(v)}`).join(' · '));
 const never = Object.keys(EVENTS).filter(id => !seenCount[id]);

@@ -130,7 +130,7 @@ const UI = (() => {
       st.innerHTML = '';
       art = el('article', 'scene');
       art.dataset.id = sc.id;
-      const head = el('div', 'scene-head', `<span>${esc(T(ev.place) || '')}</span>${sc.date ? `<span>${esc(sc.date)}</span>` : ''}`);
+      const head = el('div', 'scene-head', `<span>${esc(PLACES[ev.place] ? PLACES[ev.place].name : (T(ev.place) || ''))}</span>${sc.date ? `<span>${esc(sc.date)}</span>` : ''}`);
       art.appendChild(head);
       art.appendChild(el('h2', 'scene-title', esc(T(ev.title))));
       if (ev.recall && S.memories.includes(ev.recall.memory)) {
@@ -157,7 +157,7 @@ const UI = (() => {
 
   function choiceTag(S, c) {
     const key = Rules.statOf(S, c);
-    if (key) return `<span class="tag">${STATS[key].icon} ${STATS[key].name}</span>`;
+    if (key) return `<span class="tag s-${key}">${STATS[key].icon} ${STATS[key].name}</span>`;
     return '';
   }
 

@@ -36,6 +36,8 @@ for (let r = 0; r < RUNS; r++) {
           stats.locked += Game.lockedChoices(ev).length;
           stats.opened += vis.filter(v => v.c.needs && g.Rules.showableLock(v.c.needs)).length;
           Game.choose(pick.i);
+          const ro = Game.retryOptions();
+          if (ro.length && rnd() < 0.8) { Game.retry(ro[Math.floor(rnd() * ro.length)].kind); stats.retries = (stats.retries || 0) + 1; }
           continue;
         }
       }
@@ -71,6 +73,7 @@ console.log(`한 회차 화면 수 평균 ${avg(stats.steps)} · 만난 사건 �
 console.log(`기숙사 점수 기여 평균 ${avg(stats.points)} (${range(stats.points)}) · 주문 ${avg(stats.spells)} · 기억 ${avg(stats.memories)} · 카드 ${avg(stats.cards)}`);
 console.log(`의무실 ${stats.hospital}회 · 마음 위기 ${stats.lowheart}회 · 사감 호출 ${stats.noticeCall}회 · 기숙사 분포 ${JSON.stringify(stats.houses)}`);
 console.log(`레벨 평균 ${avg(stats.levels)} · 회차당 잠긴 선택지 ${(stats.locked / RUNS).toFixed(1)}개 / 열린 열쇠 선택지 ${(stats.opened / RUNS).toFixed(1)}개 · 호현의 이야기 도달 ${stats.hoStory}/${RUNS}`);
+console.log(`회차당 다시 해 보기 ${((stats.retries || 0) / RUNS).toFixed(1)}회`);
 console.log('최종 호감도 평균 ' + Object.entries(stats.rels).map(([k, v]) => `${k} ${avg(v)}`).join(' · '));
 const never = Object.keys(EVENTS).filter(id => !seenCount[id]);
 console.log(`한 번도 안 나온 사건 (${never.length}): ${never.join(', ') || '없음'}`);

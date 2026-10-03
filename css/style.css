@@ -261,3 +261,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #dock button.badge span::after { content: ''; position: absolute; top: -2px; right: -6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
 .thanks.failed { border-left-color: var(--ink3); color: var(--ink2); }
 .thanks .th-head { font-weight: 700; font-size: 12.5px; margin-bottom: 2px; }
+
+/* ── 속마음 · 걸린 것 · 다시 해 보기 ── */
+.voice { font-family: var(--serif); font-style: italic; font-size: 14px; margin-top: 6px; color: var(--ink2); }
+.voice::before { content: '💭 '; font-style: normal; }
+.voice.v-sure { color: var(--good); }
+.voice.v-scared { color: var(--bad); }
+.stakes { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 11.5px; }
+.stakes .g { color: var(--good); }
+.stakes .r { color: var(--bad); }
+.retry {
+  text-align: left; background: var(--card); border: 1px dashed color-mix(in srgb, var(--gold) 70%, var(--line));
+  border-radius: 14px; padding: 12px 14px; font-family: var(--serif); font-size: 15px;
+}
+.retry small { display: block; font-family: var(--sans); font-size: 11.5px; color: var(--ink3); margin-top: 2px; }

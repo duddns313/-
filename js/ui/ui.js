@@ -173,9 +173,16 @@ const UI = (() => {
       const bon = key ? Rules.bonuses(S, c) : [];
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
-      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
+      const nums = Settings.get('showNumbers');
+      const voice = key ? innerVoice(S, ev.id, i, key, chance, bon) : null;
+      const st = Rules.stakes(S, c);
+      const helpers = bon.filter(x => x.value > 0);
+      const burdens = bon.filter(x => x.value < 0);
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
         <div class="choice-label">${esc(T(c.label))}</div>
-        ${bon.length ? `<div class="bonus">${bon.map(x => `<span class="${x.value < 0 ? 'neg' : ''}">${esc(x.label)} ${x.value > 0 ? '+' : ''}${x.value}</span>`).join('')}</div>` : ''}`;
+        ${voice ? `<div class="voice v-${voice.tier}">${esc(voice.text)}</div>` : ''}
+        ${helpers.length || burdens.length ? `<div class="bonus">${helpers.map(x => `<span>${esc(x.label)}${nums ? ' +' + x.value : ''}</span>`).join('')}${burdens.map(x => `<span class="neg">${esc(x.label)}${nums ? ' ' + x.value : ''}</span>`).join('')}</div>` : ''}
+        ${st.gain.length || st.risk.length ? `<div class="stakes">${st.gain.length ? `<span class="g">얻을 수 있는 것 ${esc(st.gain.join(' · '))}</span>` : ''}${st.risk.length ? `<span class="r">위험 ${esc(st.risk.join(' · '))}</span>` : ''}</div>` : ''}`;
       b.addEventListener('click', () => {
         if (skipTyping()) return;
         box.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -202,7 +209,7 @@ const UI = (() => {
     const c = ev.choices[sc.choice];
     const res = el('div', 'result');
     res.appendChild(el('div', 'picked', `<span>›</span> ${esc(T(c.label))}`));
-    if (sc.grade) res.appendChild(el('div', `grade g-${sc.grade}`, `${Game.GRADE_NAME[sc.grade]} <small>${sc.chance}%</small>`));
+    if (sc.grade) res.appendChild(el('div', `grade g-${sc.grade}`, `${Game.GRADE_NAME[sc.grade]}${Settings.get('showNumbers') ? ` <small>${sc.chance}%</small>` : ''}`));
     if (sc.thanks && sc.thanks.length) {
       const failed = sc.grade === 'fail' || sc.grade === 'fumble';
       const head = failed ? '<div class="th-head">힘을 보탰지만, 이번엔 닿지 않았다</div>' : '';
@@ -219,7 +226,15 @@ const UI = (() => {
       const cr = chipRow(sc.chips);
       if (cr) res.appendChild(cr);
       if (S.statPoints > 0) res.appendChild(levelPanel());
-      if (box) { box.innerHTML = ''; box.appendChild(continueButton()); }
+      if (box) {
+        box.innerHTML = '';
+        for (const o of Game.retryOptions()) {
+          const rb = el('button', 'retry', `${esc(o.label)}<small>${esc(o.sub)}</small>`);
+          rb.addEventListener('click', () => { if (skipTyping()) return; Game.retry(o.kind); render(true); });
+          box.appendChild(rb);
+        }
+        box.appendChild(continueButton());
+      }
       renderTop();
     };
     if (animate) typeInto(prose, sc.text, null, after);
@@ -487,6 +502,7 @@ const UI = (() => {
       seg('글자 크기', 'fontSize', [['m', '보통'], ['l', '크게'], ['xl', '아주 크게']]);
       seg('화면', 'theme', [['auto', '자동'], ['light', '양피지'], ['dark', '밤']]);
       seg('연출 줄이기', 'reduceMotion', [[true, '켜기'], [false, '끄기']]);
+      seg('성공률 숫자', 'showNumbers', [[false, '숨기기'], [true, '보이기']]);
       box.appendChild(el('p', 'hint', '연출 줄이기를 켜 두면 화면이 흔들리거나 번쩍이는 효과가 모두 꺼집니다. 글이 나오는 중에 화면을 누르면 바로 전부 보입니다.'));
       if (Game.state()) {
         const b = el('button', 'danger-btn', '처음부터 다시 시작');

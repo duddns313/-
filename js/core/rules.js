@@ -46,11 +46,9 @@ const Rules = (() => {
     }
     const key = statOf(S, choice);
     if (key) {
-      /* 같은 방법만 고집하면 상대가 먼저 알아챈다 — 최근 세 번의 판정에서 겹친 만큼 감점 */
-      const recent = (S.recent || []).slice(-3);
-      const rep = recent.filter(k => k === key).length;
-      if (rep) out.push({ label: `🔁 또 ${STATS[key].name}로`, value: -7 * rep, kind: 'repeat' });
-      else if ((S.recent || []).length >= 3 && !(S.recent || []).slice(-6).includes(key)) out.push({ label: '✨ 새로운 접근', value: 6, kind: 'fresh' });
+      /* 오래 안 쓴 방법을 쓰면 보너스 — 벌은 주지 않는다 */
+      const recent = S.recent || [];
+      if (recent.length >= 3 && !recent.slice(-4).includes(key)) out.push({ label: '✨ 새로운 접근', value: 6, kind: 'fresh' });
     }
     if (S.res.heart <= 20) out.push({ label: '무너진 마음', value: -15 });
     if (S.res.hp <= 20) out.push({ label: '지친 몸', value: -10 });
@@ -95,6 +93,39 @@ const Rules = (() => {
     for (const c of asList(n.card)) out.push(`🃏 모아 둔 「${CARDS[c].name}」 카드`);
     if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 우정`);
     return out;
+  }
+
+  /* 선택지를 고르기 전에 보여 줄 "얻을 수 있는 것 / 위험" — 이름은 밝히되 기억 내용은 숨긴다 */
+  function stakes(S, choice) {
+    const gain = new Set(), risk = new Set();
+    const outs = choice.outcome ? [['success', choice.outcome]] : Object.entries(choice.outcomes || {});
+    for (const [grade, o] of outs) {
+      let fx = o.fx;
+      try { if (typeof fx === 'function') fx = fx(S); } catch (e) { fx = null; }
+      if (!fx) continue;
+      const good = grade === 'success' || grade === 'crit' || grade === 'result';
+      if (fx.rel) for (const k in fx.rel) {
+        if (k === 'housemate') continue;
+        const name = PEOPLE[k].short || PEOPLE[k].name;
+        if (fx.rel[k] >= 8 && good) gain.add(`💛 ${name}`);
+        if (fx.rel[k] < 0) risk.add(`💔 ${name}`);
+      }
+      if (good) {
+        if (fx.memory) gain.add('💭 기억');
+        if (fx.spell) gain.add('🪄 주문');
+        if (fx.item) gain.add('🎒 물건');
+        if (fx.card) gain.add('🃏 카드');
+        if (fx.points > 0) gain.add('🏆 점수');
+        if (fx.galleon > 0) gain.add('🪙 갈레온');
+      } else {
+        if (fx.notice > 0) risk.add('👁️ 들킬 수도');
+        if (fx.hp < 0) risk.add('❤️ 다칠 수도');
+        if (fx.heart < 0) risk.add('💗 마음 상할 수도');
+        if (fx.points < 0) risk.add('🏆 감점');
+        if (fx.loseItem) risk.add('🎒 잃을 수도');
+      }
+    }
+    return { gain: [...gain], risk: [...risk] };
   }
 
   const TIERS = [[70, '단짝'], [40, '가까운 친구'], [20, '친구'], [0, '아는 사이']];
@@ -234,5 +265,5 @@ const Rules = (() => {
       .replace(/\{petKind\}/g, p ? p.kind : '');
   }
 
-  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf, needLabels, showableLock, thanksFor, relTier };
+  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf, needLabels, showableLock, thanksFor, relTier, stakes };
 })();

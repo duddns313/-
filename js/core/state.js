@@ -9,8 +9,8 @@ function defineEvents(list) {
   }
 }
 
-const SAVE_KEY = 'hp7_save_v1';
-const SAVE_VERSION = 1;
+const SAVE_KEY = 'hp7_save_v2';
+const SAVE_VERSION = 2;
 
 function newState() {
   return {
@@ -20,6 +20,7 @@ function newState() {
     stage: 'prologue',        // prologue | travel | done
     house: null, wand: null, pet: null,
     stats: { courage: 2, wisdom: 2, diligence: 2, cunning: 2, magic: 1 },
+    xp: 0, level: 1, statPoints: 0, recent: [],
     res: { hp: 100, heart: 70, galleon: 0, notice: 0, points: 0 },
     spells: [], items: {}, memories: [], cards: [],
     flags: {}, marks: {}, rel: {}, streaks: {},

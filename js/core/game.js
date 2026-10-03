@@ -61,6 +61,35 @@ const Game = (() => {
   function visibleChoices(ev) {
     return (ev.choices || []).map((c, i) => ({ c, i })).filter(({ c }) => Rules.meets(S, c.needs));
   }
+  /* 조건이 모자라 잠긴 선택지 — 보여 주되 누를 수 없다 (도전 의식) */
+  function lockedChoices(ev) {
+    return (ev.choices || []).map((c, i) => ({ c, i }))
+      .filter(({ c }) => !c.secret && !Rules.meets(S, c.needs) && Rules.showableLock(c.needs))
+      .map(x => Object.assign(x, { need: Rules.needLabels(S, x.c.needs) }));
+  }
+
+  /* ── 성장: 경험이 쌓이면 레벨이 오르고, 능력치는 직접 고른다 ── */
+  const XP_PER_LEVEL = 60;
+  const XP_GAIN = { crit: 12, success: 10, fail: 14, fumble: 16 };
+  function gainXp(n) {
+    const chips = [];
+    const before = Math.floor(S.xp / XP_PER_LEVEL);
+    S.xp += n;
+    const after = Math.floor(S.xp / XP_PER_LEVEL);
+    if (after > before) {
+      S.level += after - before;
+      S.statPoints += after - before;
+      chips.push({ t: `⬆️ ${S.level}단계로 성장 — 능력치를 직접 올릴 수 있다`, good: true, big: true, levelUp: true });
+    }
+    return chips;
+  }
+  function allocate(stat) {
+    if (!(S.statPoints > 0) || !STATS[stat]) return false;
+    S.statPoints--;
+    S.stats[stat]++;
+    saveGame(S);
+    return true;
+  }
 
   function choose(index) {
     const ev = EVENTS[S.screen.id];
@@ -75,7 +104,17 @@ const Game = (() => {
       outcome = choice.outcome || Rules.pickOutcome(choice.outcomes, 'success');
     }
     const extraText = [];
-    let chips = Rules.apply(S, outcome.fx, rnd);
+    const statKey = Rules.statOf(S, choice);
+    /* 판정에 쓴 능력치가 그 자리에서 바로 오르지는 않는다 — 대신 경험이 된다 (한 능력치만 키우는 것을 막는다) */
+    let fx = typeof outcome.fx === 'function' ? outcome.fx(S) : outcome.fx;
+    let bonusXp = 0;
+    if (statKey && fx && fx[statKey] > 0) { fx = Object.assign({}, fx); bonusXp += 4 * fx[statKey]; delete fx[statKey]; }
+    const thanks = Rules.thanksFor(choice.needs);
+    if (statKey) {
+      for (const b of Rules.bonuses(S, choice)) if (b.value > 0 && b.kind !== 'fresh') thanks.push(`${b.label} 덕분에 성공률 +${b.value}`);
+      S.recent = (S.recent || []).concat(statKey).slice(-8);
+    }
+    let chips = Rules.apply(S, fx, rnd);
     if (choice.stat && !(choice.outcomes || {})[grade]) {
       if (grade === 'crit') chips = chips.concat(Rules.apply(S, { heart: 5 }, rnd));
       if (grade === 'fumble') chips = chips.concat(Rules.apply(S, { heart: -5 }, rnd));
@@ -90,8 +129,9 @@ const Game = (() => {
         chips = chips.concat(Rules.apply(S, ev.streak.done.fx, rnd));
       }
     }
+    chips = chips.concat(gainXp((grade ? XP_GAIN[grade] : 6) + bonusXp));
     S.screen = Object.assign({}, S.screen, {
-      stage: 'result', choice: index, grade, chance: c,
+      stage: 'result', choice: index, grade, chance: c, thanks,
       text: [Rules.text(S, outcome.text)].concat(extraText).filter(Boolean).join('\n\n'),
       chips: (S.screen.chips || []).concat(chips),
     });
@@ -183,5 +223,5 @@ const Game = (() => {
     return chips;
   }
 
-  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
+  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
 })();

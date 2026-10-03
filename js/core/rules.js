@@ -44,6 +44,14 @@ const Rules = (() => {
         (b.flag && S.flags[b.flag]);
       if (ok) out.push({ label: b.label || labelFor(b), value: b.value });
     }
+    const key = statOf(S, choice);
+    if (key) {
+      /* 같은 방법만 고집하면 상대가 먼저 알아챈다 — 최근 세 번의 판정에서 겹친 만큼 감점 */
+      const recent = (S.recent || []).slice(-3);
+      const rep = recent.filter(k => k === key).length;
+      if (rep) out.push({ label: `🔁 또 ${STATS[key].name}로`, value: -7 * rep, kind: 'repeat' });
+      else if ((S.recent || []).length >= 3 && !(S.recent || []).slice(-6).includes(key)) out.push({ label: '✨ 새로운 접근', value: 6, kind: 'fresh' });
+    }
     if (S.res.heart <= 20) out.push({ label: '무너진 마음', value: -15 });
     if (S.res.hp <= 20) out.push({ label: '지친 몸', value: -10 });
     return out;
@@ -56,6 +64,43 @@ const Rules = (() => {
     if (b.pet) return '🐾 ' + PETS[b.pet].name;
     if (b.rel) return '💛 ' + Object.keys(b.rel).map(k => PEOPLE[k].name).join(', ');
     return '보정';
+  }
+
+  /* 잠긴 선택지에 보여 줄 "필요한 것" 목록 */
+  function needLabels(S, n) {
+    const out = [];
+    if (!n || typeof n === 'function') return out;
+    for (const m of asList(n.memory)) if (!S.memories.includes(m)) out.push(`💭 기억 「${MEMORIES[m].name}」`);
+    for (const i of asList(n.item)) if (!(S.items[i] > 0)) out.push(`${ITEMS[i].icon} ${ITEMS[i].name}`);
+    for (const sp of asList(n.spell)) if (!S.spells.includes(sp)) out.push(`🪄 주문 「${SPELLS[sp].name}」`);
+    for (const c of asList(n.card)) if (!S.cards.includes(c)) out.push(`🃏 카드 「${CARDS[c].name}」`);
+    if (n.rel) for (const k in n.rel) if ((S.rel[k] || 0) < n.rel[k]) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 「${relTier(n.rel[k]).name}」 이상`);
+    if (n.stat) for (const k in n.stat) if ((S.stats[k] || 0) < n.stat[k]) out.push(`${STATS[k].icon} ${STATS[k].name} ${n.stat[k]} 이상`);
+    if (n.resMin) for (const k in n.resMin) if ((S.res[k] || 0) < n.resMin[k]) out.push(`${RESOURCES[k].icon} ${RESOURCES[k].name} ${n.resMin[k]} 이상`);
+    return out;
+  }
+  /* 잠겨 있을 때 보여 줄 만한 조건인가 (기억·소지품·주문·카드·관계·스탯·돈) */
+  function showableLock(n) {
+    if (!n || typeof n === 'function') return false;
+    if (n.flag || n.notFlag || n.notMemory || n.notSpell || n.any || n.fn || n.turnMin != null || n.turnMax != null) return false;
+    return !!(n.memory || n.item || n.spell || n.card || n.rel || n.stat || n.resMin);
+  }
+  /* 무엇 덕분에 열린 선택지인가 */
+  function thanksFor(n) {
+    const out = [];
+    if (!n || typeof n === 'function') return out;
+    for (const m of asList(n.memory)) out.push(`💭 「${MEMORIES[m].name}」의 기억`);
+    for (const i of asList(n.item)) out.push(`${ITEMS[i].icon} 챙겨 둔 ${ITEMS[i].name}`);
+    for (const sp of asList(n.spell)) out.push(`🪄 익혀 둔 「${SPELLS[sp].name}」`);
+    for (const c of asList(n.card)) out.push(`🃏 모아 둔 「${CARDS[c].name}」 카드`);
+    if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 우정`);
+    return out;
+  }
+
+  const TIERS = [[70, '단짝'], [40, '가까운 친구'], [20, '친구'], [0, '아는 사이']];
+  function relTier(v) {
+    for (const [min, name] of TIERS) if (v >= min) return { min, name };
+    return { min: 0, name: '아는 사이' };
   }
 
   function statOf(S, choice) {
@@ -127,8 +172,15 @@ const Rules = (() => {
       chips.push({ t: `💭 기억: ${MEMORIES[id].name}`, good: true, big: true });
     }
     if (fx.rel) for (const k in fx.rel) {
-      S.rel[k] = Math.max(0, Math.min(100, (S.rel[k] || 0) + fx.rel[k]));
-      chips.push({ t: `💛 ${PEOPLE[k].name} ${sign(fx.rel[k])}`, good: fx.rel[k] > 0 });
+      if (!fx.rel[k]) continue;
+      const before = S.rel[k] || 0;
+      /* 호현은 마음을 천천히 연다 */
+      const d = k === 'hohyeon' && fx.rel[k] > 0 ? Math.max(1, Math.round(fx.rel[k] * 0.7)) : fx.rel[k];
+      S.rel[k] = Math.max(0, Math.min(100, before + d));
+      const t0 = relTier(before), t1 = relTier(S.rel[k]);
+      const name = PEOPLE[k].short || PEOPLE[k].name;
+      chips.push({ t: `💛 ${name} ${sign(d)}`, good: d > 0 });
+      if (t1.min > t0.min && k !== 'housemate') chips.push({ t: `💛 ${name} — 이제 「${t1.name}」`, good: true, big: true });
     }
     for (const c of asList(fx.card)) {
       const id = c === 'random' ? randomCard(S, rnd) : c;
@@ -182,5 +234,5 @@ const Rules = (() => {
       .replace(/\{petKind\}/g, p ? p.kind : '');
   }
 
-  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf };
+  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf, needLabels, showableLock, thanksFor, relTier };
 })();

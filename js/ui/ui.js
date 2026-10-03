@@ -99,6 +99,8 @@ const UI = (() => {
       return `<button class="res ${changed}${low}" data-res="${k}" aria-label="${RESOURCES[k].name} ${v}"><span>${icon}</span><b>${v}</b></button>`;
     }).join('');
     lastRes = Object.assign({}, r);
+    const meBtn = document.querySelector('#dock button[data-sheet="me"]');
+    if (meBtn) meBtn.classList.toggle('badge', S.statPoints > 0);
   }
 
   /* ───────── 장면 ───────── */
@@ -156,9 +158,6 @@ const UI = (() => {
   function choiceTag(S, c) {
     const key = Rules.statOf(S, c);
     if (key) return `<span class="tag">${STATS[key].icon} ${STATS[key].name}</span>`;
-    const n = c.needs || {};
-    if (n.spell) return `<span class="tag key">🪄 주문</span>`;
-    if (n.item || n.resMin) return `<span class="tag key">🎒 소지품</span>`;
     return '';
   }
 
@@ -172,7 +171,9 @@ const UI = (() => {
       const chance = key ? Rules.chance(S, c) : null;
       const b = el('button', 'choice');
       const bon = key ? Rules.bonuses(S, c) : [];
-      b.innerHTML = `<div class="choice-top">${choiceTag(S, c)}${chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
+      const opened = Rules.thanksFor(c.needs);
+      if (opened.length) b.classList.add('opened');
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
         <div class="choice-label">${esc(T(c.label))}</div>
         ${bon.length ? `<div class="bonus">${bon.map(x => `<span class="${x.value < 0 ? 'neg' : ''}">${esc(x.label)} ${x.value > 0 ? '+' : ''}${x.value}</span>`).join('')}</div>` : ''}`;
       b.addEventListener('click', () => {
@@ -181,6 +182,13 @@ const UI = (() => {
         Game.choose(i);
         render(true);
       });
+      box.appendChild(b);
+    }
+    for (const { c, need } of Game.lockedChoices(ev)) {
+      const b = el('div', 'choice locked');
+      b.innerHTML = `<div class="choice-top"><span class="tag lock">🔒 아직 갈 수 없는 길</span></div>
+        <div class="choice-label">${esc(T(c.label))}</div>
+        <div class="need">필요: ${esc(need.join(' · '))}${c.lockHint ? `<br><small>${esc(T(c.lockHint))}</small>` : ''}</div>`;
       box.appendChild(b);
     }
     if (!Settings.get('reduceMotion')) box.classList.add('appear');
@@ -195,6 +203,11 @@ const UI = (() => {
     const res = el('div', 'result');
     res.appendChild(el('div', 'picked', `<span>›</span> ${esc(T(c.label))}`));
     if (sc.grade) res.appendChild(el('div', `grade g-${sc.grade}`, `${Game.GRADE_NAME[sc.grade]} <small>${sc.chance}%</small>`));
+    if (sc.thanks && sc.thanks.length) {
+      const failed = sc.grade === 'fail' || sc.grade === 'fumble';
+      const head = failed ? '<div class="th-head">힘을 보탰지만, 이번엔 닿지 않았다</div>' : '';
+      res.appendChild(el('div', `thanks${failed ? ' failed' : ''}`, head + sc.thanks.map(t => `<div>✨ ${esc(failed ? t.replace(' 덕분에', '') : t)}${failed || /덕분에/.test(t) ? '' : ' 덕분에'}</div>`).join('')));
+    }
     const prose = el('div', 'prose');
     res.appendChild(prose);
     art.appendChild(res);
@@ -205,11 +218,32 @@ const UI = (() => {
     const after = () => {
       const cr = chipRow(sc.chips);
       if (cr) res.appendChild(cr);
+      if (S.statPoints > 0) res.appendChild(levelPanel());
       if (box) { box.innerHTML = ''; box.appendChild(continueButton()); }
       renderTop();
     };
     if (animate) typeInto(prose, sc.text, null, after);
     else { typeInto(prose, sc.text, null, null); skipTyping(); after(); }
+  }
+
+  /* 레벨업: 능력치를 직접 고른다 */
+  function levelPanel(onDone) {
+    const S = Game.state();
+    const box = el('div', 'levelup');
+    const draw = () => {
+      box.innerHTML = '';
+      if (!(S.statPoints > 0)) { box.appendChild(el('p', 'done', '성장을 마쳤다.')); onDone && onDone(); return; }
+      box.appendChild(el('p', null, `<b>⬆️ 한 뼘 자랐다.</b> 어디에 힘을 줄까? <small>남은 점수 ${S.statPoints}</small>`));
+      const row = el('div', 'stat-pick');
+      for (const k of Object.keys(STATS)) {
+        const b = el('button', null, `<span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small>`);
+        b.addEventListener('click', () => { Game.allocate(k); toast(`${STATS[k].icon} ${STATS[k].name} ${S.stats[k]}`); draw(); });
+        row.appendChild(b);
+      }
+      box.appendChild(row);
+    };
+    draw();
+    return box;
   }
 
   function continueButton() {
@@ -399,14 +433,16 @@ const UI = (() => {
       const grid = el('div', 'stats-grid');
       grid.innerHTML = Object.keys(STATS).map(k => `<div><span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small></div>`).join('');
       box.appendChild(grid);
-      box.appendChild(el('p', 'hint', '판정 성공률은 스탯이 높을수록, 기억·주문·소지품의 도움을 받을수록 올라갑니다. 마음이 무너지거나 몸이 지치면 내려갑니다.'));
+      box.appendChild(el('p', 'kv', `<span>성장 단계</span><b>${S.level}단계 · 다음까지 ${60 - (S.xp % 60)}</b>`));
+      if (S.statPoints > 0) box.appendChild(levelPanel(() => openSheet('me')));
+      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 같은 방법만 거듭 쓰면 상대가 예상해 성공률이 떨어진다. 판정 성공률은 스탯이 높을수록, 기억·주문·소지품의 도움을 받을수록 올라갑니다. 마음이 무너지거나 몸이 지치면 내려갑니다.'));
       const res = el('ul', 'kvlist');
       res.innerHTML = Object.keys(RESOURCES).map(k => `<li><span>${RESOURCES[k].icon} ${RESOURCES[k].name}</span><b>${S.res[k]}${RESOURCES[k].max ? ' / ' + RESOURCES[k].max : ''}</b></li>`).join('');
       box.appendChild(res);
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
       const ru = el('ul', 'rels');
-      rels.forEach(([k, v]) => ru.appendChild(el('li', null, `<span>${esc(PEOPLE[k].name)}</span><i style="width:${v}%"></i>`)));
+      rels.forEach(([k, v]) => ru.appendChild(el('li', null, `<span>${esc(PEOPLE[k].name)}<small>${Rules.relTier(v).name}</small></span><i style="width:${v}%"></i>`)));
       if (!rels.length) ru.appendChild(el('li', 'empty', '아직 아는 사람이 없다.'));
       box.appendChild(ru);
       box.appendChild(el('h3', null, '💭 기억'));

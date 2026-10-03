@@ -3,6 +3,7 @@
    무작위로 선택지를 고르며 끝까지 진행해, 진행 불가·예외·자원 고갈·사건 노출률을 보고한다. */
 const { loadGame } = require('./load');
 const RUNS = Number(process.argv[2] || 300);
+const GREEDY = process.argv.includes('--greedy');
 
 function mulberry(seed) {
   return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -11,7 +12,7 @@ function mulberry(seed) {
 const g = loadGame();
 const { Game, EVENTS, newState } = g;
 const seenCount = {};
-const stats = { finished: 0, stuck: 0, errors: 0, steps: [], points: [], notice: [], hospital: 0, lowheart: 0, noticeCall: 0, houses: {}, spells: [], memories: [], cards: [], seen: [] };
+const stats = { finished: 0, stuck: 0, errors: 0, steps: [], points: [], notice: [], hospital: 0, lowheart: 0, noticeCall: 0, locked: 0, opened: 0, levels: [], hoStory: 0, rels: {}, houses: {}, spells: [], memories: [], cards: [], seen: [] };
 let firstError = null;
 
 for (let r = 0; r < RUNS; r++) {
@@ -26,9 +27,17 @@ for (let r = 0; r < RUNS; r++) {
       if (sc.kind === 'yearEnd') break;
       if (sc.kind === 'travel') { Game.pickPlace(sc.hand[Math.floor(rnd() * sc.hand.length)].id); continue; }
       const ev = EVENTS[sc.id];
+      while (S.statPoints > 0) Game.allocate(Object.keys(g.STATS)[Math.floor(rnd() * 5)]);
       if (sc.stage === 'intro') {
         const vis = Game.visibleChoices(ev);
-        if (vis.length) { Game.choose(vis[Math.floor(rnd() * vis.length)].i); continue; }
+        if (vis.length) {
+          let pick = vis[Math.floor(rnd() * vis.length)];
+          if (GREEDY) pick = vis.slice().sort((a, b) => g.Rules.chance(S, b.c) - g.Rules.chance(S, a.c))[0];
+          stats.locked += Game.lockedChoices(ev).length;
+          stats.opened += vis.filter(v => v.c.needs && g.Rules.showableLock(v.c.needs)).length;
+          Game.choose(pick.i);
+          continue;
+        }
       }
       Game.next();
     }
@@ -46,6 +55,9 @@ for (let r = 0; r < RUNS; r++) {
   stats.memories.push(S.memories.length);
   stats.cards.push(S.cards.length);
   stats.seen.push(S.seen.length);
+  stats.levels.push(S.level);
+  if (S.memories.includes('hohyeon_story')) stats.hoStory++;
+  for (const k of ['hohyeon', 'hermione', 'ron', 'harry']) (stats.rels[k] = stats.rels[k] || []).push(S.rel[k] || 0);
   if (S.seen.includes('sp_hospital')) stats.hospital++;
   if (S.seen.includes('sp_lowheart')) stats.lowheart++;
   if (S.seen.includes('sp_notice')) stats.noticeCall++;
@@ -58,6 +70,8 @@ console.log(`${RUNS}회 실행: 완주 ${stats.finished} · 진행 불가 ${stat
 console.log(`한 회차 화면 수 평균 ${avg(stats.steps)} · 만난 사건 평균 ${avg(stats.seen)} (${range(stats.seen)}) / 전체 ${Object.keys(EVENTS).length}`);
 console.log(`기숙사 점수 기여 평균 ${avg(stats.points)} (${range(stats.points)}) · 주문 ${avg(stats.spells)} · 기억 ${avg(stats.memories)} · 카드 ${avg(stats.cards)}`);
 console.log(`의무실 ${stats.hospital}회 · 마음 위기 ${stats.lowheart}회 · 사감 호출 ${stats.noticeCall}회 · 기숙사 분포 ${JSON.stringify(stats.houses)}`);
+console.log(`레벨 평균 ${avg(stats.levels)} · 회차당 잠긴 선택지 ${(stats.locked / RUNS).toFixed(1)}개 / 열린 열쇠 선택지 ${(stats.opened / RUNS).toFixed(1)}개 · 호현의 이야기 도달 ${stats.hoStory}/${RUNS}`);
+console.log('최종 호감도 평균 ' + Object.entries(stats.rels).map(([k, v]) => `${k} ${avg(v)}`).join(' · '));
 const never = Object.keys(EVENTS).filter(id => !seenCount[id]);
 console.log(`한 번도 안 나온 사건 (${never.length}): ${never.join(', ') || '없음'}`);
 const rare = Object.keys(EVENTS).filter(id => seenCount[id] && seenCount[id] < RUNS * 0.03).map(id => `${id}(${seenCount[id]})`);

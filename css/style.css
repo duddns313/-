@@ -236,3 +236,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
 :root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before { animation: none !important; transition: none !important; }
 [hidden] { display: none !important; }
 .choice-top:empty { display: none; }
+
+/* ── 잠긴 길 · 열린 길 · 덕분에 ── */
+.choice.locked { opacity: .62; box-shadow: none; background: transparent; border-style: dashed; cursor: default; }
+.choice.locked .choice-label { color: var(--ink2); }
+.tag.lock { color: var(--ink3); }
+.need { font-size: 12.5px; color: var(--ink2); margin-top: 6px; line-height: 1.5; }
+.need small { color: var(--ink3); }
+.choice.opened { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.opened-by { font-size: 12px; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+.thanks { background: var(--recall); border-left: 3px solid var(--gold); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; font-size: 13.5px; color: var(--ink); line-height: 1.6; }
+/* ── 레벨업 ── */
+.levelup { background: var(--card); border: 1px solid color-mix(in srgb, var(--gold) 55%, var(--line)); border-radius: 14px; padding: 12px; margin: 4px 0 14px; }
+.levelup p { margin: 0 0 10px; font-size: 14.5px; }
+.levelup p small { color: var(--ink3); margin-left: 6px; }
+.levelup .done { margin: 0; color: var(--ink2); }
+.stat-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.stat-pick button { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; display: flex; flex-direction: column; align-items: center; }
+.stat-pick button:active { background: var(--gold); color: var(--bg); }
+.stat-pick b { font-size: 18px; }
+.stat-pick small { font-size: 11px; color: var(--ink2); }
+.rels li span small { display: block; font-size: 11px; color: var(--ink3); }
+#dock button.badge span { position: relative; }
+#dock button.badge span::after { content: ''; position: absolute; top: -2px; right: -6px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+.thanks.failed { border-left-color: var(--ink3); color: var(--ink2); }
+.thanks .th-head { font-weight: 700; font-size: 12.5px; margin-bottom: 2px; }

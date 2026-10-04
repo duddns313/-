@@ -18,7 +18,12 @@ let firstError = null;
 for (let r = 0; r < RUNS; r++) {
   const rnd = mulberry(r * 7919 + 1);
   Game.setRandom(rnd);
-  const S = Game.start(newState());
+  const S0 = newState();
+  /* 시작 능력치: 기본 1 + 5점을 무작위로 (최대 5) */
+  const keys = Object.keys(g.STATS);
+  keys.forEach(k => { S0.stats[k] = 1; });
+  for (let n = 0; n < 5;) { const k = keys[Math.floor(rnd() * 5)]; if (S0.stats[k] < 5) { S0.stats[k]++; n++; } }
+  const S = Game.start(S0);
   let steps = 0;
   try {
     while (steps < 2000) {
@@ -72,6 +77,7 @@ for (let r = 0; r < RUNS; r++) {
   if (S.seen.includes('sp_hospital')) stats.hospital++;
   if (S.seen.includes('sp_lowheart')) stats.lowheart++;
   if (S.seen.includes('sp_notice')) stats.noticeCall++;
+  for (const id of Object.values(g.STAT_STORIES || {}).flat()) if (S.seen.includes(id)) stats['s_' + id] = (stats['s_' + id] || 0) + 1;
   for (const id of ['sp_curfew', 'y1_quirrell', 'y1_norbert_night', 'fn_common', 'fn_trapdoor', 'fn_dumbledore']) if (S.seen.includes(id)) stats['c_' + id] = (stats['c_' + id] || 0) + 1;
   for (const m of ['quirrell_office', 'lullaby', 'dumbledore_thanks', 'cup_points']) if (S.memories.includes(m)) stats['m_' + m] = (stats['m_' + m] || 0) + 1;
   if (S.flags.obliviated) stats.obliviated = (stats.obliviated || 0) + 1;
@@ -90,6 +96,7 @@ console.log(`레벨 평균 ${avg(stats.levels)} · 회차당 잠긴 선택지 ${
 console.log(`위기 도달: ${['sp_curfew', 'y1_quirrell', 'y1_norbert_night', 'fn_common', 'fn_trapdoor', 'fn_dumbledore'].map(k => k + ' ' + (stats['c_' + k] || 0)).join(' · ')}`);
 console.log(`위기 기억: ${['quirrell_office', 'lullaby', 'dumbledore_thanks', 'cup_points'].map(k => k + ' ' + (stats['m_' + k] || 0)).join(' · ')} · 망각 ${stats.obliviated || 0}`);
 console.log(`회차당 구입 ${((stats.bought || 0) / RUNS).toFixed(1)}개 · 학년말 갈레온 평균 ${avg(stats.galleonEnd || [])} · 학년말 기운 평균 ${avg(stats.heartLog || [])}`);
+console.log('특기 이야기: ' + Object.values(g.STAT_STORIES || {}).flat().map(k => k.replace('st_', '') + ' ' + (stats['s_' + k] || 0)).join(' · '));
 console.log(`회차당 다시 해 보기 ${((stats.retries || 0) / RUNS).toFixed(1)}회`);
 console.log('최종 호감도 평균 ' + Object.entries(stats.rels).map(([k, v]) => `${k} ${avg(v)}`).join(' · '));
 const never = Object.keys(EVENTS).filter(id => !seenCount[id]);

@@ -72,7 +72,7 @@ const Game = (() => {
   }
 
   /* ── 성장: 경험이 쌓이면 레벨이 오르고, 능력치는 직접 고른다 ── */
-  const XP_PER_LEVEL = 60;
+  const XP_PER_LEVEL = 75;
   const XP_GAIN = { crit: 12, success: 10, fail: 14, fumble: 16 };
   function gainXp(n) {
     const chips = [];
@@ -112,7 +112,7 @@ const Game = (() => {
     }
     const extraText = [];
     const statKey = Rules.statOf(S, choice);
-    /* 판정에 쓴 능력치가 그 자리에서 바로 오르지는 않는다 — 대신 경험이 된다 (한 능력치만 키우는 것을 막는다) */
+    /* 판정에 쓴 능력치는 그 자리에서 오르지 않고 경험이 된다 — 능력치는 성장 단계에서 직접 고른다 */
     let fx = typeof outcome.fx === 'function' ? outcome.fx(S) : outcome.fx;
     /* 사건 속 작은 위로는 조금만 채운다 — 크게 채우는 건 쉬기·먹기·친구의 몫 */
     if (fx && ev.type !== 'special') {
@@ -124,12 +124,20 @@ const Game = (() => {
     const thanks = Rules.thanksFor(choice.needs);
     if (statKey) {
       const bs = Rules.bonuses(S, choice);
-      for (const b of bs) if (b.value > 0 && b.kind !== 'fresh') thanks.push(`${b.label} 덕분에 성공률 +${b.value}`);
-      if (bs.some(b => b.kind === 'fresh')) bonusXp += 4;
+      for (const b of bs) if (b.value > 0 && b.kind !== 'insight') thanks.push(`${b.label} 덕분에`);
       if (opts.helpLabel) thanks.push(opts.helpLabel);
-      S.recent = (S.recent || []).concat(statKey).slice(-8);
+      if (S.insight > 0) S.insight = 0;           /* 통찰은 한 번 쓰면 사라진다 */
     }
     let chips = Rules.apply(S, fx, rnd);
+    /* 능력치마다 다른 특기 보상 */
+    const perk = statKey ? Rules.perkFx(statKey, choice.dc, grade) : null;
+    if (perk) {
+      const p = Object.assign({}, perk);
+      if (p.xp) { bonusXp += p.xp; delete p.xp; }
+      const pc = Rules.apply(S, p, rnd);
+      if (perk.xp) pc.push({ t: `⬆️ 경험 +${perk.xp}`, good: true });
+      chips = chips.concat(pc.map(x => Object.assign({}, x, { t: `${STATS[statKey].icon} ${x.t}`, perk: true })));
+    }
     if (choice.stat && !(choice.outcomes || {})[grade]) {
       if (grade === 'crit') chips = chips.concat(Rules.apply(S, { heart: 5 }, rnd));
       if (grade === 'fumble') chips = chips.concat(Rules.apply(S, { heart: -5 }, rnd));
@@ -144,7 +152,7 @@ const Game = (() => {
         chips = chips.concat(Rules.apply(S, ev.streak.done.fx, rnd));
       }
     }
-    chips = chips.concat(gainXp((grade ? XP_GAIN[grade] : 6) + bonusXp));
+    chips = chips.concat(gainXp((grade ? XP_GAIN[grade] + Math.max(0, (choice.dc || 3) - 3) * 2 : 6) + bonusXp));
     S.screen = Object.assign({}, S.screen, {
       stage: 'result', choice: index, grade, chance: c, thanks,
       undo: grade === 'fail' || grade === 'fumble' ? snapshot : null,
@@ -280,10 +288,15 @@ const Game = (() => {
 
   /* 부엉이 주문서 */
   function shopOpen(shopId) { return Rules.meets(S, SHOPS[shopId].needs); }
+  /* 쌍둥이의 동업자는 쌍둥이 물건을 원가에 산다 */
+  function priceOf(id) {
+    const it = ITEMS[id];
+    return Math.max(1, it.price - (it.shop === 'twins' && S.flags.twins_discount ? 1 : 0));
+  }
   function buy(id) {
     const it = ITEMS[id];
-    if (!it || !it.price || !shopOpen(it.shop) || S.res.galleon < it.price) return null;
-    const chips = Rules.apply(S, { galleon: -it.price, item: id }, rnd);
+    if (!it || !it.price || !shopOpen(it.shop) || S.res.galleon < priceOf(id)) return null;
+    const chips = Rules.apply(S, { galleon: -priceOf(id), item: id }, rnd);
     saveGame(S);
     return chips;
   }
@@ -298,5 +311,5 @@ const Game = (() => {
     return chips;
   }
 
-  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, retryOptions, retry, buy, shopOpen, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
+  return { XP_PER_LEVEL, start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, retryOptions, retry, buy, priceOf, shopOpen, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
 })();

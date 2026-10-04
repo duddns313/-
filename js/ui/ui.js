@@ -156,8 +156,18 @@ const UI = (() => {
 
   function choiceTag(S, c) {
     const key = Rules.statOf(S, c);
-    if (key) return `<span class="tag s-${key}">${STATS[key].icon} ${STATS[key].name}</span>`;
+    if (key) return `<span class="tag s-${key}">${STATS[key].icon} ${STATS[key].name} <b>${S.stats[key]}</b></span>`;
     return '';
+  }
+  /* 난이도(●) · 보상(★) — 성공률 숫자 대신 이 둘만 보여 준다 */
+  function diffBadge(S, c) {
+    const d = Rules.difficulty(S, c);
+    return `<span class="diff d${d.dots}" title="난이도">${'●'.repeat(d.dots)}${'○'.repeat(4 - d.dots)} ${d.name}</span>`;
+  }
+  function rewardBadge(S, c) {
+    const r = Rules.rewardLevel(S, c);
+    const key = Rules.statOf(S, c);
+    return `<span class="reward r${r}">보상 ${'★'.repeat(r)}${'☆'.repeat(3 - r)}${key ? ` <small>+ ${esc(STATS[key].perk.split(' (')[0])}</small>` : ''}</span>`;
   }
 
   function renderChoices(box, ev) {
@@ -173,15 +183,12 @@ const UI = (() => {
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
       const nums = Settings.get('showNumbers');
-      const voice = key ? innerVoice(S, ev, i, c, key, chance, bon) : null;
-      const st = Rules.stakes(S, c);
       const helpers = bon.filter(x => x.value > 0);
       const burdens = bon.filter(x => x.value < 0);
-      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${c.sneak ? '<span class="tag sneak">👣 몰래</span>' : ''}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${key ? diffBadge(S, c) : ''}${c.sneak ? '<span class="tag sneak">👣 몰래</span>' : ''}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
         <div class="choice-label">${esc(T(c.label))}</div>
-        ${voice ? `<div class="voice v-${voice.tier}">${esc(voice.text)}</div>` : ''}
         ${helpers.length || burdens.length ? `<div class="bonus">${helpers.map(x => `<span>${esc(x.label)}${nums ? ' +' + x.value : ''}</span>`).join('')}${burdens.map(x => `<span class="neg">${esc(x.label)}${nums ? ' ' + x.value : ''}</span>`).join('')}</div>` : ''}
-        ${st.gain.length || st.risk.length ? `<div class="stakes">${st.gain.length ? `<span class="g">얻을 수 있는 것 ${esc(st.gain.join(' · '))}</span>` : ''}${st.risk.length ? `<span class="r">위험 ${esc(st.risk.join(' · '))}</span>` : ''}</div>` : ''}`;
+        <div class="stakes">${rewardBadge(S, c)}</div>`;
       b.addEventListener('click', () => {
         if (skipTyping()) return;
         box.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -371,12 +378,64 @@ const UI = (() => {
     st.appendChild(box);
   }
 
+  /* 새로 시작 — 영운이 어떤 아이인지 먼저 정한다 (기본 1 + 5점 나누기) */
+  const CREATE_POINTS = 5, CREATE_MAX = 5;
   function startNew() {
     clearSave();
     closeSheet();
-    lastRes = null;
-    Game.start(newState());
-    render(true);
+    renderCreate();
+  }
+  function renderCreate() {
+    $('#topbar').hidden = true;
+    $('#dock').hidden = true;
+    const st = stage();
+    st.innerHTML = '';
+    window.scrollTo({ top: 0 });
+    const keys = Object.keys(STATS);
+    const pick = Object.fromEntries(keys.map(k => [k, 1]));
+    const left = () => CREATE_POINTS - keys.reduce((n, k) => n + pick[k] - 1, 0);
+    const box = el('section', 'create');
+    st.appendChild(box);
+    const draw = () => {
+      box.innerHTML = `<h2>영운은 어떤 아이일까?</h2>
+        <p class="sub">능력치마다 잘 풀리는 선택지와 <b>특기 보상</b>이 다르고, <b>5</b>가 되면 그 능력치만의 이야기가 열린다(8이 되면 그다음 이야기). 성장할 때마다 더 올릴 수 있다.</p>
+        <p class="left">나눌 점수 <b>${left()}</b> / ${CREATE_POINTS}</p>`;
+      for (const k of keys) {
+        const r = el('div', 'stat-row');
+        r.innerHTML = `<span class="nm">${STATS[k].icon} ${STATS[k].name}</span>
+          <span class="ctl"><button data-d="-1" aria-label="${STATS[k].name} 내리기">−</button><b>${pick[k]}</b><button data-d="1" aria-label="${STATS[k].name} 올리기">+</button></span>
+          <span class="ds">${esc(STATS[k].desc)}<br>특기 보상 <em>${esc(STATS[k].perk)}</em> · 이야기 <em>「${esc(STATS[k].story)}」</em></span>`;
+        const [minus, plus] = r.querySelectorAll('button');
+        minus.disabled = pick[k] <= 1;
+        plus.disabled = left() <= 0 || pick[k] >= CREATE_MAX;
+        minus.addEventListener('click', () => { pick[k]--; draw(); });
+        plus.addEventListener('click', () => { pick[k]++; draw(); });
+        box.appendChild(r);
+      }
+      const row = el('div', 'row-btns');
+      const rnd = el('button', 'secondary', '🎲 운에 맡기기');
+      rnd.addEventListener('click', () => {
+        keys.forEach(k => { pick[k] = 1; });
+        for (let n = 0; n < CREATE_POINTS;) { const k = keys[Math.floor(Math.random() * keys.length)]; if (pick[k] < CREATE_MAX) { pick[k]++; n++; } }
+        draw();
+      });
+      const even = el('button', 'secondary', '⚖️ 고르게');
+      even.addEventListener('click', () => { keys.forEach(k => { pick[k] = 2; }); draw(); });
+      row.appendChild(rnd);
+      row.appendChild(even);
+      box.appendChild(row);
+      const go = el('button', 'primary', left() > 0 ? `점수를 모두 나눠 주세요 (${left()})` : '이 아이로 시작한다');
+      go.disabled = left() > 0;
+      go.addEventListener('click', () => {
+        const S = newState();
+        S.stats = Object.assign({}, pick);
+        lastRes = null;
+        Game.start(S);
+        render(true);
+      });
+      box.appendChild(go);
+    };
+    draw();
   }
   function confirmNew() {
     openSheet('confirm');
@@ -413,8 +472,9 @@ const UI = (() => {
         if (it.shop !== sid) continue;
         const have = S.items[id] || 0;
         const li = el('li', null, `<span class="ic">${it.icon}</span><div><b>${esc(it.name)}${have ? ` <em class="have">가진 것 ${have}</em>` : ''}</b><small>${esc(it.hint || it.desc)}</small></div>`);
-        const b = el('button', 'use buy', `${RESOURCES.galleon.icon} ${it.price}`);
-        if (S.res.galleon < it.price) b.disabled = true;
+        const price = Game.priceOf(id);
+        const b = el('button', 'use buy', `${RESOURCES.galleon.icon} ${price}${price < it.price ? ' <s>' + it.price + '</s>' : ''}`);
+        if (S.res.galleon < price) b.disabled = true;
         b.addEventListener('click', () => {
           const chips = Game.buy(id);
           if (chips) toast(`${it.icon} ${it.name} — 주문 완료. 다음 날 아침, 부엉이가 꾸러미를 떨어뜨렸다.`);
@@ -483,9 +543,16 @@ const UI = (() => {
       const grid = el('div', 'stats-grid');
       grid.innerHTML = Object.keys(STATS).map(k => `<div><span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small></div>`).join('');
       box.appendChild(grid);
-      box.appendChild(el('p', 'kv', `<span>성장 단계</span><b>${S.level}단계 · 다음까지 ${60 - (S.xp % 60)}</b>`));
+      box.appendChild(el('p', 'kv', `<span>성장 단계</span><b>${S.level}단계 · 다음까지 ${Game.XP_PER_LEVEL - (S.xp % Game.XP_PER_LEVEL)}</b>`));
       if (S.statPoints > 0) box.appendChild(levelPanel(() => openSheet('me')));
-      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 한동안 안 쓴 방법을 쓰면 「새로운 접근」 보너스가 붙는다. 판정은 능력치가 높을수록, 기억·주문·소지품의 도움을 받을수록 쉬워진다. 기운이 바닥나면 어려워진다.'));
+      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패와 어려운 선택에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 판정은 능력치가 난이도보다 높을수록, 기억·주문·소지품의 도움을 받을수록 쉬워진다. 성공하면 그 능력치의 특기 보상이 따라온다.'));
+      box.appendChild(el('h3', null, '🌟 특기 이야기'));
+      const sl = el('ul', 'storylist');
+      for (const k of Object.keys(STATS)) {
+        const parts = (STAT_STORIES[k] || []).map(id => S.seen.includes(id) ? '✔' : '·').join(' ');
+        sl.appendChild(el('li', null, `<span>${STATS[k].icon} 「${esc(STATS[k].story)}」</span><small>${S.stats[k] >= 8 ? '두 번째 이야기까지 열림' : S.stats[k] >= 5 ? '첫 이야기 열림 · 8에 다음' : `${STATS[k].name} 5에 열림`} ${parts}</small>`));
+      }
+      box.appendChild(sl);
       const res = el('ul', 'kvlist');
       res.innerHTML = Object.keys(RESOURCES).filter(k => !RESOURCES[k].hidden).map(k => `<li><span>${RESOURCES[k].icon} ${RESOURCES[k].name}</span><b>${S.res[k]}${RESOURCES[k].max ? ' / ' + RESOURCES[k].max : ''}</b></li>`).join('');
       box.appendChild(res);

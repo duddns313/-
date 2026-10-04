@@ -74,7 +74,6 @@ defineEvents([
 휴게실의 몇몇 아이들이 처음 맡는 냄새에 고개를 돌렸다. 바다 냄새, 소금 냄새, 기름 냄새. 론 위즐리가 코를 킁킁거리며 가장 먼저 다가왔다.`,
   choices: [
     { label: '가게집 딸답게, 새우깡을 한 봉지씩 판다', stat: 'cunning', dc: 3,
-      voice: '아빠가 농담이랬지. 근데 반만 농담이었을 거야.',
       outcomes: {
         success: { text: `"한 봉지에 1시클." 영운이 말했다. "첫 봉지는 시식이야."
 
@@ -137,7 +136,6 @@ defineEvents([
 그 뒤 두 주 동안 영운은 저녁마다 휴게실 창가에 앉아 있었다. 창밖으로 천문탑이 보였다. 갈 수 없는 곳은 이상하게 더 가까워 보였다.`, fx: { notice: -15, curfew: 2 } } },
     { label: '『호그와트의 역사』를 펼친다 — "교칙 제4조에 따르면…"', needs: { item: 'hogwarts_history' }, stat: 'wisdom', dc: 3,
       lockHint: '성의 규칙을 잘 아는 책이 있다면…',
-      voice: '4조였나, 14조였나. 헤르미온느라면 바로 알 텐데.',
       outcomes: {
         success: { text: `"교칙 제4조에 따르면, 천문학 과제를 위한 천문탑 출입은 담당 교수의 허락이 있으면 밤에도 가능하다고 되어 있어요. 시니스트라 교수님께 허락을 받았고요. 한 번은."
 
@@ -181,7 +179,6 @@ defineEvents([
   choices: [
     { label: '찻잔을 들고 마시는 척한다 — 거절하는 게 더 수상해 보인다', stat: 'cunning', dc: 4,
       bonus: [{ memory: 'quirrell_stare', value: 8, label: '💭 깜박이지 않던 눈을 기억한다' }],
-      voice: '마시면 안 돼. 입술만 대. 웃으면서.',
       outcomes: {
         success: { text: `영운은 찻잔을 들어 입술에 댔다. 뜨거운 김이 코끝을 적셨다. 목울대를 한 번 움직였다. 삼키는 척. 그리고 찻잔을 내려놓으며 웃었다. "맛있어요, 교수님. 그냥 숙제 때문에 도서관에 가는 거예요. 헤르미온느가 같이 가자고 해서요."
 
@@ -199,7 +196,6 @@ defineEvents([
 
 *역시.* 영운은 생각했다. *뭔가 넣었어.*`, fx: { loseItem: 'bezoar', flag: 'tea_safe', wisdom: 1 }, next: 'y1_quirrell2' } },
     { label: '"마늘 냄새 때문에 속이 안 좋아서요." 찻잔을 밀어 낸다', stat: 'courage', dc: 4,
-      voice: '눈을 피하지 마. 피하면 들킨다.',
       outcomes: {
         success: { text: `"죄송해요, 교수님. 마늘 냄새 때문에 속이 좀." 영운은 찻잔을 조용히 밀어 냈다. 그리고 눈을 피하지 않았다.
 
@@ -225,7 +221,6 @@ defineEvents([
 "미안해요, 윤 양." 퀴렐이 말했다. 진심으로 미안한 것처럼 들렸다. 그게 더 무서웠다. "아프지 않아요. 그냥… 조금 잊을 뿐이에요. 오블리비—"`,
   choices: [
     { label: '주머니 속 필리버스터 폭죽에 불을 당긴다', needs: { item: 'fireworks' }, lockHint: '시끄러운 무언가가 있다면, 온 성이 이리로 달려올 텐데.',
-      voice: '터져라. 최대한 크게.',
       outcome: { text: `영운은 주머니 속에서 폭죽 심지를 꺾었다. 필리버스터 폭죽은 불이 필요 없었다.
 
 연구실이 폭발했다. 아니, 폭발한 것처럼 보였다. 빨강, 초록, 금빛 불꽃이 천장으로 솟구쳤다가 벽을 따라 미친 듯이 튀었다. 걸려 있던 마늘 다발이 불꽃에 맞아 사방으로 날아갔다. 소리가, 엄청난 소리가 성 전체를 울렸다.
@@ -238,7 +233,6 @@ defineEvents([
 
 영운은 아무 말도 하지 않았다. 말해 봤자 믿어 줄 사람이 없다는 걸 알았다. 대신 기억했다. 터번 속의 목소리를. 하나도 빠짐없이.`, fx: s => ({ loseItem: 'fireworks', memory: 'quirrell_office', notice: 12, points: -5, heart: s.flags.tea_safe ? -5 : -10 }) } },
     { label: '똥폭탄을 바닥에 내던진다', needs: { item: 'dungbomb' }, lockHint: '지독한 냄새로 방을 채울 무언가가 있다면…',
-      voice: '숨 참아. 그리고 문.',
       outcome: { text: `영운은 주머니에서 똥폭탄을 꺼내 퀴렐의 발치에 내던졌다.
 
 퍽. 초록빛 연기가 방을 가득 채웠다. 냄새는 상상 이상이었다. 마늘 냄새도, 그 밑의 썩은 냄새도, 모든 냄새를 짓밟는 냄새였다. 퀴렐이 기침을 하며 비틀거렸다. 터번 속의 목소리가 무언가 날카롭게 외쳤다.
@@ -248,7 +242,6 @@ defineEvents([
 복도 끝까지 달려서야 영운은 숨을 쉬었다. 무릎이 떨렸다. 머릿속에 그 목소리가 메아리쳤다. *지워라.* 하지만 지워지지 않았다. 하나도.`, fx: s => ({ loseItem: 'dungbomb', memory: 'quirrell_office', notice: 8, heart: s.flags.tea_safe ? -8 : -12 }) } },
     { label: '"윙가르디움 레비오사!" 선반의 마늘 단지를 퀴렐 머리 위로', needs: { spell: 'wingardium' }, stat: 'magic', dc: 4,
       bonus: [{ memory: 'first_spark', value: 6 }],
-      voice: '휘두르고, 튕기고. 헤르미온느처럼. 지금.',
       outcomes: {
         success: { text: `"윙가르디움 레비오사!"
 
@@ -268,7 +261,6 @@ defineEvents([
 무언가 중요한 걸 알고 있었던 것 같았다. 그게 무엇이었는지, 영운은 끝내 떠올리지 못했다.`, fx: obliviateFx },
       } },
     { label: '미리 짜 둔 대로 — 호현이 20분 뒤 문을 두드리기로 했다', needs: { rel: { hohyeon: 40 } }, lockHint: '호현과 더 가까웠다면, 미리 "20분 뒤에 찾으러 와"라고 부탁해 둘 수 있었을 텐데.',
-      voice: '불려 갈 때 시계를 봤어. 이제 19분. 18분. 버티기만 하면 돼.',
       outcome: { text: `연구실로 올라오기 전, 영운은 계단 아래에서 호현에게 딱 한 마디를 했었다. "20분 지나도 안 내려오면, 문 두드려."
 
 호현은 이유를 묻지 않았다. 호현은 원래 이유를 묻지 않았다. 고개만 끄덕였을 뿐이었다.
@@ -287,8 +279,7 @@ defineEvents([
 
 영운은 고개를 끄덕였다. 작전은 영운이 짰고, 문은 호현이 두드렸다. 둘 다 그걸 알았다.`, fx: s => ({ memory: 'quirrell_office', rel: { hohyeon: 10 }, heart: s.flags.tea_safe ? -4 : -8 }) } },
     { label: '시간을 번다 — "교수님, 그 목소리는 누구예요?"', stat: 'wisdom', dc: 5,
-      bonus: [{ flag: 'suspicion_notes', value: 8, label: '📓 일기장의 표' }, { flag: 'firenze_words', value: 8, label: '💭 피렌체의 말' }],
-      voice: '말을 걸어. 질문은 내 무기야. 생각할 틈을 주지 마.',
+      bonus: [{ flag: 'suspicion_notes', value: 8, label: '📓 일기장의 표' }, { flag: 'firenze_words', value: 8, label: '💭 피렌체의 말' }, { memory: 'grey_lady', value: 8, label: '💭 회색 숙녀 — 질문의 모양을 본다' }],
       outcomes: {
         success: { text: `"교수님, 그 목소리는 누구예요?"
 
@@ -312,7 +303,6 @@ defineEvents([
 머릿속 어딘가가 지우개로 문지른 공책처럼 희미했다. 무언가 중요한 걸 알고 있었던 것 같은데. 아주 중요한 걸. 영운은 그 빈칸을 한참 들여다보았다. 아무것도 떠오르지 않았다.`, fx: obliviateFx },
       } },
     { label: '문으로 몸을 던진다', stat: 'courage', dc: 5, sneak: true,
-      voice: '세 걸음. 문고리. 계단. 생각하지 말고 뛰어.',
       outcomes: {
         success: { text: `영운은 생각하지 않았다. 의자를 박차고, 문고리를 잡고, 계단으로 몸을 던졌다. 등 뒤에서 흰빛이 번쩍였다. 주문이 영운의 머리카락 끝을 스치고 계단 벽에 맞았다.
 
@@ -343,7 +333,6 @@ defineEvents([
   choices: [
     { label: '맥고나걸 교수를 말포이 쪽으로 이끈다 — "복도에 누가 돌아다녀요"', stat: 'cunning', dc: 4, sneak: true,
       bonus: [{ item: 'hogwarts_history', value: 8, label: '🎒 『호그와트의 역사』의 성 지도' }],
-      voice: '말포이를 잡으려면, 말포이가 제일 먼저 나와야 해. 그 녀석은 성미가 급하니까.',
       outcomes: {
         success: { text: `밤 열한 시 반, 영운은 맥고나걸 교수의 연구실 문을 두드렸다. 잠옷 위에 망토를 걸치고, 최대한 겁먹은 얼굴로.
 
@@ -367,7 +356,6 @@ defineEvents([
 침대에 누워 영운은 천장을 노려보았다. 그날 밤 말포이는 결국 잡혔다고 했다. 그리고 해리와 헤르미온느와 네빌도.`, fx: { notice: 12, points: -10, flag: 'caught_night', heart: -8 } },
       } },
     { label: '폭죽으로 필치를 반대쪽 끝으로 끌어낸다', needs: { item: 'fireworks' }, lockHint: '아주 크고 시끄러운 무언가가 있다면, 필치를 성 반대편으로 보낼 수 있을 텐데.',
-      voice: '필치는 소리 나는 쪽으로 간다. 늘 그래.',
       outcome: { text: `자정 십오 분 전, 영운은 지하 1층 트로피 진열실 창틀에 필리버스터 폭죽을 올려놓고 심지를 꺾었다. 그리고 달렸다.
 
 등 뒤에서 성이 흔들렸다. 펑, 펑, 펑. 빨간 불꽃과 초록 불꽃이 트로피들에 반사되어 진열실 전체가 크리스마스트리처럼 번쩍였다.
@@ -393,7 +381,6 @@ defineEvents([
 그날 밤 노버트는 무사히 떠났다. 다음 날 아침의 모래시계를 보기 전까지, 영운은 그게 해피엔딩이라고 믿었다.`, fx: { loseItem: 'dungbomb', memory: ['norbert_night', 'norbert'], notice: 8, rel: { draco: -6, hagrid: 6 } } } },
     { label: '천문탑 계단 아래에서 밤새 망을 본다', stat: 'diligence', dc: 4, sneak: true,
       bonus: [{ item: 'wintercloak', value: 15, label: '🎒 두꺼운 겨울 망토' }, { item: 'sweater', value: 6, label: '🧶 엄마가 뜬 스웨터' }],
-      voice: '4월 밤은 생각보다 추워. 그래도 움직이지 마.',
       outcomes: {
         success: { text: `영운은 천문탑 계단 아래 갑옷 그늘에 웅크리고 앉았다. 돌바닥에서 냉기가 올라왔다. 시계탑이 열한 시를 쳤다. 열한 시 반. 자정.
 
@@ -439,7 +426,6 @@ ${y1Clues(s).length >= 3 ? `영운의 머릿속에서 일기장의 표가 저절
   choices: [
     { label: '『저주와 반대 저주』에서 읽은 대로 — 반대 주문을 건다', needs: { flag: 'counter_curse' }, stat: 'magic', dc: 3,
       lockHint: '도서관에서 몸이 굳는 저주를 푸는 법을 읽어 두었다면…',
-      voice: '책에서 본 대로. 손목을 반대로. 천천히.',
       outcomes: {
         success: { text: `영운은 지팡이를 들고 도서관에서 읽은 문장을 떠올렸다. *몸이 굳은 자는 모든 것을 보고 듣는다. 그러니 겁주지 말고, 천천히.*
 
@@ -457,7 +443,6 @@ ${y1Clues(s).length >= 3 ? `영운의 머릿속에서 일기장의 표가 저절
 "알아. 다녀올게."`, fx: { rel: { neville: 6 } }, next: 'fn_corridor' },
       } },
     { label: '네빌을 똑바로 눕히고 담요를 덮는다. 그리고 셋을 쫓는다', stat: 'courage', dc: 3,
-      voice: '무서워. 그래도 지금 안 가면 평생 궁금할 거야.',
       outcomes: {
         success: { text: `영운은 네빌을 조심스럽게 똑바로 눕혔다. 베개를 받치고, 담요를 덮었다. "누가 그랬는지 알아. 어디로 갔는지도 알 것 같아." 네빌의 눈이 깜박였다. 그렇다는 뜻이었다.
 
@@ -472,7 +457,6 @@ ${y1Clues(s).length >= 3 ? `영운의 머릿속에서 일기장의 표가 저절
       } },
     { label: s => s.pet === 'owl' ? `부엉이장으로 — {pet}에게 덤블도어 앞으로 쪽지를 묶는다` : '부엉이장으로 — 학교 부엉이에게 덤블도어 앞으로 쪽지를 묶는다', stat: 'diligence', dc: 3,
       bonus: [{ pet: 'owl', value: 15, label: '🦉 내 부엉이' }, { memory: 'two_letters', value: 6 }],
-      voice: '어른이 알아야 해. 지금 가장 빠른 어른은… 날개가 있는 쪽이야.',
       outcomes: {
         success: { text: s => `영운은 네빌에게 담요를 덮어 주고 부엉이장까지 달렸다. 계단 몇 개를 건너뛰었는지 모른다. 숨이 턱까지 찼다.
 
@@ -508,7 +492,6 @@ ${s.pet === 'owl' ? `{pet}가 영운의 손가락을 한 번 깨물었다. 이 �
 복도 저쪽 끝에서 노리스 부인의 노란 눈 두 개가 반짝였다.`,
   choices: [
     { label: '풍선껌을 최대한 크게 불어 피브스의 입에 붙인다', needs: { item: 'gum' }, lockHint: '절대 안 터지고 끈질기게 들러붙는 무언가가 있다면…',
-      voice: '드루블의 풍선껌은 절대 안 터진다고 했어. 절대.',
       outcome: { text: `영운은 껌을 입에 넣고 미친 듯이 씹었다. 블루벨 맛이 입 안에 퍼졌다. 그리고 불었다. 풍선이 커졌다. 커지고, 커지고, 영운의 머리통만 해졌다.
 
 "필치 씨이이—읍!"
@@ -524,7 +507,6 @@ ${s.pet === 'owl' ? `{pet}가 영운의 손가락을 한 번 깨물었다. 이 �
 노리스 부인도 연기 쪽으로 달려갔다. 영운은 숨을 참고 반대쪽으로 달렸다. 복도 끝, 오른쪽 문. 문이 열려 있었다.`, fx: { loseItem: 'dungbomb', flag: 'fn_quiet' }, next: 'fn_trapdoor' } },
     { label: '"피 묻은 남작님이 이쪽으로 오세요." 목소리를 낮게 깐다', stat: 'cunning', dc: 4,
       bonus: [{ item: 'hogwarts_history', value: 10, label: '🎒 『호그와트의 역사』 — 피브스가 유일하게 무서워하는 유령' }, { memory: 'myrtle_friend', value: 6, label: '💭 머틀에게 들은 유령들 이야기' }],
-      voice: '피브스가 무서워하는 건 딱 하나. 그거면 돼.',
       outcomes: {
         success: { text: `"피브스." 영운은 목소리를 최대한 낮고 느리게 깔았다. "피 묻은 남작님이 너를 찾으셔. 오늘 밤 이 복도에서 소란 피우는 놈은 직접 손봐 주시겠대."
 
@@ -540,7 +522,6 @@ ${s.pet === 'owl' ? `{pet}가 영운의 손가락을 한 번 깨물었다. 이 �
 멀리서 필치의 발소리가 들리기 시작했다. 영운은 이를 악물고 복도 끝으로 달렸다. 시간이 없었다.`, fx: { notice: 10, flag: 'fn_chased' }, next: 'fn_trapdoor' },
       } },
     { label: '들키든 말든 피브스 밑으로 미끄러져 달린다', stat: 'courage', dc: 4, sneak: true,
-      voice: '필치가 오기 전에 문까지. 열 걸음이면 돼.',
       outcomes: {
         success: { text: `영운은 몸을 낮추고 피브스 바로 밑으로 미끄러지듯 달렸다. 피브스가 "필치 씨이—" 하고 외치다가, 영운이 너무 빨리 지나가자 말을 멈추고 어리둥절하게 뒤를 돌아보았다.
 
@@ -580,7 +561,6 @@ ${s.memories.includes('three_heads') ? '그 숨소리를 영운은 알고 있었
   choices: [
     { label: '노래를 부른다 — 엄마가 가게 문을 닫고 불러 주던 「섬집아기」', stat: 'courage', dc: 5,
       bonus: [{ item: 'hohyeon_cap', value: 8, label: '🪙 주머니 속 병뚜껑을 쥐고' }, { memory: 'two_letters', value: 6 }, { memory: 'christmas_home', value: 8, label: '💭 크리스마스의 집' }],
-      voice: '음악을 들으면 잠든댔어. 내가 아는 가장 졸린 노래. 엄마 목소리로.',
       outcomes: {
         success: { text: `영운은 입을 열었다. 목소리가 갈라졌다. 다시 열었다.
 
@@ -608,7 +588,6 @@ ${s.memories.includes('three_heads') ? '그 숨소리를 영운은 알고 있었
 영운은 벽에 등을 붙인 채 노래를 계속 불렀다. 몇 번째인지 셀 수도 없었다.`, fx: { memory: 'lullaby', heart: -12 }, next: 'fn_dumbledore' },
       } },
     { label: '개 비스킷 봉지를 통째로 던진다', needs: { item: 'biscuits' }, lockHint: '큰 개가 좋아할 만한 것이 있다면…',
-      voice: '팽도 이거 하나면 순한 양이 됐어. 머리가 셋이면… 세 배로.',
       outcome: { text: `영운은 비스킷 봉지를 찢어 개의 발치로 던졌다. 비스킷이 사방으로 흩어졌다.
 
 세 머리가 동시에 고개를 숙였다. 그리고 싸우기 시작했다. 서로의 비스킷을 차지하려고. 오른쪽 머리가 왼쪽 머리의 귀를 물었다. 가운데 머리가 둘 다를 밀어내고 가장 큰 비스킷을 삼켰다.
@@ -617,7 +596,6 @@ ${s.memories.includes('three_heads') ? '그 숨소리를 영운은 알고 있었
 
 비스킷을 다 먹은 세 머리가 하프 소리에 하나씩 꾸벅거렸다. 배가 부른 개는 잠이 잘 온다. 팽이 그랬다.`, fx: { loseItem: 'biscuits', flag: 'fluffy_asleep', rel: { hagrid: 6 } }, next: 'fn_dumbledore' } },
     { label: '끊어진 하프 줄을 스펠로테이프로 잇는다', needs: { item: 'spellotape' }, stat: 'diligence', dc: 3, lockHint: '부러진 것을 일단 붙여 줄 무언가가 있다면…',
-      voice: '하프가 다시 울리면 돼. 손 떨지 말고. 한 번에.',
       outcomes: {
         success: { text: `영운은 개의 눈을 피해 바닥을 기어 하프에 다가갔다. 끊어진 줄 두 끝을 맞대고, 스펠로테이프를 감았다. 한 바퀴. 두 바퀴. 손이 떨렸지만 테이프는 떨지 않았다.
 
@@ -630,7 +608,6 @@ ${s.memories.includes('three_heads') ? '그 숨소리를 영운은 알고 있었
       } },
     { label: '"윙가르디움 레비오사!" 하프를 띄워 줄을 튕긴다', needs: { spell: 'wingardium' }, stat: 'magic', dc: 4,
       bonus: [{ flag: 'exam_charms', value: 10, label: '📚 파인애플 탭댄스 시험' }],
-      voice: '파인애플도 춤추게 했잖아. 하프쯤이야.',
       outcomes: {
         success: { text: `"윙가르디움 레비오사."
 
@@ -670,7 +647,6 @@ ${s.flags.fn_chased ? '필치는 덤블도어가 사라진 뚜껑 문과 영운�
 
 반달 안경 너머로 그가 윙크를 했다. 영운은 그 윙크를 오래 기억했다.`, fx: s => ({ memory: 'dumbledore_thanks', rel: { harry: 8 }, heart: s.flags.owl_dumbledore || s.flags.fluffy_asleep ? 10 : 4, notice: -10 }) } },
     { label: '"저도 같이 내려가게 해 주세요."', stat: 'courage', dc: 5,
-      voice: '말해. 거절당해도 말해. 안 하면 평생 후회해.',
       outcomes: {
         success: { text: `"저도 같이 내려가게 해 주세요."
 

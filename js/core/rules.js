@@ -44,12 +44,8 @@ const Rules = (() => {
         (b.flag && S.flags[b.flag]);
       if (ok) out.push({ label: b.label || labelFor(b), value: b.value });
     }
-    const key = statOf(S, choice);
-    if (key) {
-      /* 오래 안 쓴 방법을 쓰면 보너스 — 벌은 주지 않는다 */
-      const recent = S.recent || [];
-      if (recent.length >= 3 && !recent.slice(-4).includes(key)) out.push({ label: '✨ 새로운 접근', value: 6, kind: 'fresh' });
-    }
+    if (statOf(S, choice) && S.insight > 0) out.push({ label: '💡 지난번에 얻은 통찰', value: S.insight, kind: 'insight' });
+    if (choice.sneak && S.memories.includes('secret_passage')) out.push({ label: '💭 쌍둥이의 지도에서 본 길', value: 10 });
     if (choice.sneak && S.res.notice >= 12) out.push({ label: '👁️ 필치가 지켜본다', value: -Math.min(25, Math.round(S.res.notice / 2)), kind: 'watched' });
     if (S.res.heart <= 25) out.push({ label: '🕯️ 지친 몸과 마음', value: -10, kind: 'tired' });
     return out;
@@ -92,6 +88,7 @@ const Rules = (() => {
     for (const sp of asList(n.spell)) out.push(`🪄 익혀 둔 「${SPELLS[sp].name}」`);
     for (const c of asList(n.card)) out.push(`🃏 모아 둔 「${CARDS[c].name}」 카드`);
     if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 우정`);
+    if (n.stat) for (const k in n.stat) out.push(`${STATS[k].icon} 높은 ${STATS[k].name}`);
     return out;
   }
 
@@ -128,6 +125,47 @@ const Rules = (() => {
       }
     }
     return { gain: [...gain], risk: [...risk] };
+  }
+
+  /* 난이도: 지금의 영운에게 얼마나 어려운가 — 능력치·도움·지친 정도를 모두 따져 네 단계 말로만 보여 준다 */
+  function difficulty(S, choice) {
+    const c = chance(S, choice);
+    if (c >= 80) return { dots: 1, name: '쉬움' };
+    if (c >= 60) return { dots: 2, name: '할 만함' };
+    if (c >= 40) return { dots: 3, name: '어려움' };
+    return { dots: 4, name: '무모함' };
+  }
+
+  /* 능력치마다 다른 특기 보상 — 어려울수록 크다 */
+  function perkFx(key, dc, grade) {
+    if (grade !== 'success' && grade !== 'crit') return null;
+    const t = Math.max(0, Math.min(3, (dc || 3) - 2));          // 0~3
+    const m = grade === 'crit' ? 1.5 : 1;
+    const r = n => (n ? Math.max(1, Math.round(n * m)) : 0);
+    switch (key) {
+      case 'courage':   return { points: r([1, 2, 3, 5][t]) };
+      case 'wisdom':    return { insight: r([6, 8, 10, 12][t]) };
+      case 'diligence': return { heart: r([3, 4, 6, 9][t]) };
+      case 'cunning':   return { galleon: r([0, 1, 1, 2][t]), notice: -r([2, 3, 4, 5][t]) };
+      case 'magic':     return { xp: r([5, 8, 12, 16][t]) };
+    }
+    return null;
+  }
+
+  /* 보상 수준 ★1~3 — 성공했을 때 얻는 것의 크기 */
+  function rewardLevel(S, choice) {
+    const o = choice.outcome || (choice.outcomes && (choice.outcomes.success || choice.outcomes.result));
+    let fx = o && o.fx;
+    try { if (typeof fx === 'function') fx = fx(S); } catch (e) { fx = null; }
+    fx = fx || {};
+    let v = 0;
+    v += asList(fx.memory).length * 3 + asList(fx.spell).length * 3 + asList(fx.item).length * 2 + asList(fx.card).length;
+    if (fx.rel) for (const k in fx.rel) if (k !== 'housemate' && fx.rel[k] > 0) v += fx.rel[k] >= 15 ? 2 : fx.rel[k] >= 8 ? 1 : 0;
+    if (fx.points > 0) v += fx.points >= 5 ? 2 : 1;
+    if (fx.galleon > 0) v += fx.galleon >= 3 ? 2 : 1;
+    if (fx.heart >= 15) v += 1;
+    if (statOf(S, choice)) v += Math.max(0, (choice.dc || 3) - 3);
+    return v >= 5 ? 3 : v >= 2 ? 2 : 1;
   }
 
   const TIERS = [[70, '단짝'], [40, '가까운 친구'], [20, '친구'], [0, '아는 사이']];
@@ -228,6 +266,10 @@ const Rules = (() => {
       S.res.heart = clamp('heart', S.res.heart + h);
       chips.push({ t: `🫘 ${f}!${h ? ' ' + RESOURCES.heart.icon + ' ' + sign(h) : ''}`, good: h >= 0 });
     }
+    if (fx.insight) {
+      S.insight = Math.max(S.insight || 0, fx.insight);
+      chips.push({ t: `💡 통찰 — 다음 판정 +${fx.insight}`, good: true });
+    }
     if (fx.loseMemory) for (const id of asList(fx.loseMemory)) {
       const i = S.memories.indexOf(id);
       if (i >= 0) { S.memories.splice(i, 1); chips.push({ t: `💭 기억이 흐려졌다: ${MEMORIES[id].name}`, good: false, big: true }); }
@@ -276,5 +318,5 @@ const Rules = (() => {
       .replace(/\{petKind\}/g, p ? p.kind : '');
   }
 
-  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf, needLabels, showableLock, thanksFor, relTier, stakes };
+  return { meets, bonuses, chance, roll, pickOutcome, apply, text, asList, statOf, needLabels, showableLock, thanksFor, relTier, stakes, difficulty, perkFx, rewardLevel };
 })();

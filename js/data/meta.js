@@ -2,11 +2,11 @@
 /* 게임 전역에서 쓰는 고정 데이터: 스탯·자원·기숙사·장소·주문·소지품·인물·카드·기억 */
 
 const STATS = {
-  courage:   { name: '용기', icon: '🦁' },
-  wisdom:    { name: '지혜', icon: '🦅' },
-  diligence: { name: '성실', icon: '🦡' },
-  cunning:   { name: '기지', icon: '🐍' },
-  magic:     { name: '마법', icon: '✨' },
+  courage:   { name: '용기', icon: '🦁', perk: '🏆 기숙사 점수', desc: '먼저 나서고, 맞서고, 지킨다.', story: '올리버 우드의 비밀 연습' },
+  wisdom:    { name: '지혜', icon: '🦅', perk: '💡 통찰 (다음 판정이 쉬워진다)', desc: '따지고, 기억하고, 끝까지 파고든다.', story: '회색 숙녀의 수수께끼' },
+  diligence: { name: '성실', icon: '🦡', perk: '🕯️ 기운 회복', desc: '버티고, 돌보고, 하던 일을 끝낸다.', story: '스프라우트 교수의 온실 조수' },
+  cunning:   { name: '기지', icon: '🐍', perk: '🪙 갈레온 · 👁️ 주목도 감소', desc: '눈치 보고, 말로 풀고, 빠져나간다.', story: '위즐리 쌍둥이의 동업자' },
+  magic:     { name: '마법', icon: '✨', perk: '⬆️ 경험치 (더 빨리 성장)', desc: '지팡이 끝으로 해낸다.', story: '플리트윅 교수의 특별 수업' },
 };
 
 const RESOURCES = {
@@ -181,6 +181,16 @@ const MEMORIES = {
   lullaby:        { name: '섬집아기', desc: '머리 셋 달린 개 앞에서 엄마의 자장가를 불렀다. 목이 쉴 때까지.' },
   dumbledore_thanks: { name: '반달 안경 너머의 윙크', desc: '마지막 밤, 덤블도어가 아무도 모르게 고맙다고 했다.' },
   cup_points:     { name: '모래시계 속의 내 몫', desc: '1년 동안 기숙사에 보탠 점수가 그 우승 안에 섞여 있었다.' },
+  wood_trust:     { name: '골프공 마흔세 개', desc: '올리버 우드의 비밀 연습에서 해리가 놓친 공을 주웠다.' },
+  reserve_list:   { name: '선발전 명단', desc: '블러저 앞에 뛰어들었다. 우드가 내년 선발전 명단에 이름을 적었다.' },
+  grey_lady:      { name: '시작이 없는 원', desc: '래번클로 문고리의 수수께끼를 풀었다. 회색 숙녀가 처음으로 말을 걸었다.' },
+  lost_diadem:    { name: '어머니의 것을 가져간 딸', desc: '회색 숙녀가 빌린 지혜에 대한 오래된 이야기를 들려주었다.' },
+  sprout_helper:  { name: '귀마개와 아기 맨드레이크', desc: '스프라우트 교수의 온실 조수가 되었다.' },
+  snare_lesson:   { name: '둘만의 수업', desc: '스프라우트 교수에게 악마의 덫을 다루는 법을 배웠다.' },
+  twins_partner:  { name: '동업자', desc: '위즐리 쌍둥이의 장부를 고쳐 주고 동업자가 되었다. 쌍둥이 물건은 원가에.' },
+  secret_passage: { name: '애꾸눈 마녀의 등', desc: '쌍둥이가 보여 준 지도에서 비밀 통로를 알아냈다. 몰래 다니기가 쉬워졌다.' },
+  flitwick_lesson:{ name: '수요일 저녁의 자물쇠', desc: '플리트윅 교수의 방과 후 수업에서 알로호모라를 배웠다.' },
+  duel_champion:  { name: '한 걸음 밀린 챔피언', desc: '왕년의 결투 챔피언 플리트윅 교수와 마주 섰다.' },
 };
 
 /* 1학년 달력. 0 = 입학 전, 13 = 학년말 */

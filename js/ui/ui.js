@@ -249,6 +249,7 @@ const UI = (() => {
     wrap.appendChild(el('div', 'travel-head', `<span>${S.turn} / ${TURNS_PER_YEAR}</span><div class="progress"><i style="width:${(S.turn / TURNS_PER_YEAR) * 100}%"></i></div>`));
     wrap.appendChild(el('h2', 'scene-title', '어디로 갈까?'));
     wrap.appendChild(el('p', 'travel-mood', esc(season(S.turn))));
+    if (sc.weekNote) wrap.appendChild(el('p', 'week-note', sc.weekNote === 'hp' ? '❤️-1 · 수업과 숙제와 계단. 몸이 조금 무겁다.' : '💭-1 · 집 생각이 나는 한 주였다. 마음이 조금 가라앉았다.'));
     const list = el('div', 'cards');
     for (const c of sc.hand) {
       const p = PLACES[c.id];
@@ -325,10 +326,10 @@ const UI = (() => {
     box.innerHTML = `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
       <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
-      <div class="prose"><p>${hp
+      <div class="prose"><p class="shown">${hp
         ? '영운은 다시 일어나지 못했다. 폼프리 부인은 영운을 오래 붙잡아 두었고, 결국 부엉이 한 마리가 뉴몰든으로 날아갔다. 엄마는 그 편지를 읽고 가게 셔터를 내렸다. 영운은 호그와트 특급의 창가에 앉아, 멀어지는 성을 끝까지 보았다.'
         : '어느 아침, 영운은 침대에서 일어나지 못했다. 몸이 아픈 게 아니었다. 그냥, 더는 버틸 수가 없었다. 부엉이 한 마리가 뉴몰든으로 날아갔다. 엄마는 그 편지를 들고 한참 서 있다가, 아무 말 없이 영운의 방을 치웠다.'}</p>
-      <p>${esc(S.rewinds >= 3 ? '호현이 되감을 수 있는 세상은 이미 다 써 버린 뒤였다.' : '길 건너 서울 마트의 불이 그날 밤 늦게까지 켜져 있었다.')}</p></div>
+      <p class="shown">${esc(S.rewinds >= 3 ? '호현이 되감을 수 있는 세상은 이미 다 써 버린 뒤였다.' : '길 건너 서울 마트의 불이 그날 밤 늦게까지 켜져 있었다.')}</p></div>
       <p class="note">❤️ 체력이나 💭 정신력이 0이 되면 호그와트를 떠나게 됩니다. 쉬고, 먹고, 친구와 웃는 것도 선택입니다.</p>`;
     const again = el('button', 'primary', loadPrologue() ? '처음부터 — 프롤로그 건너뛰기' : '처음부터 다시');
     again.addEventListener('click', () => { lastRes = null; if (loadPrologue()) Game.skipPrologue(); else Game.start(newState()); render(true); });

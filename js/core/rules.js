@@ -48,7 +48,13 @@ const Rules = (() => {
   }
 
   /* 대가: { hp, mind, rep, galleon } — 낼 수 있는가 */
+  /* ease: { needs, cost } — 기억·물건·관계가 있으면 대가가 줄어든다 ("덕분에") */
+  function eased(S, c) {
+    return asList(c.ease).find(e => meets(S, e.needs)) || null;
+  }
   function costOf(S, c) {
+    const e = eased(S, c);
+    if (e) return e.cost || {};
     const v = typeof c.cost === 'function' ? c.cost(S) : c.cost;
     return v || {};
   }
@@ -78,6 +84,8 @@ const Rules = (() => {
       if (n.rel) for (const k in n.rel) out.push({ t: `💛 ${PEOPLE[k].short || PEOPLE[k].name} (${relTier(n.rel[k]).name})`, ok: (S.rel[k] || 0) >= n.rel[k], kind: 'key' });
       if (n.repMin != null) out.push({ t: `⭐ 평판 「${REP_NAMES[n.repMin]}」 이상`, ok: S.res.rep >= n.repMin, kind: 'key' });
     }
+    const e = eased(S, c);
+    if (e) out.push({ t: `${thanksFor(e.needs).join(' · ')} 덕분에 대가가 줄었다`, ok: true, kind: 'ease' });
     const k = costOf(S, c);
     if (k.hp) out.push({ t: `❤️-${k.hp}`, ok: S.res.hp >= k.hp, kind: 'cost', danger: S.res.hp - k.hp <= 0 });
     if (k.mind) out.push({ t: `💭-${k.mind}`, ok: S.res.mind >= k.mind, kind: 'cost', danger: S.res.mind - k.mind <= 0 });
@@ -234,5 +242,5 @@ const Rules = (() => {
       .replace(/\{petKind\}/g, p ? p.kind : '');
   }
 
-  return { meets, costOf, affordable, lethal, reqLine, specialRewards, apply, text, asList, showableLock, thanksFor, relTier, REP_NAMES, MAX };
+  return { meets, eased, costOf, affordable, lethal, reqLine, specialRewards, apply, text, asList, showableLock, thanksFor, relTier, REP_NAMES, MAX };
 })();

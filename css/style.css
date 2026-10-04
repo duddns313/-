@@ -445,3 +445,5 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .gameover .prose { text-align: left; }
 .gameover .note { font-family: var(--serif); color: var(--ink2); line-height: 1.8; margin: 20px 0; font-size: 14.5px; }
 .gameover button { display: block; width: 100%; margin-top: 10px; }
+.rq.ease { color: var(--good); border-style: dashed; }
+.week-note { font-size: 13.5px; color: var(--bad); font-family: var(--serif); margin: -4px 0 12px; }

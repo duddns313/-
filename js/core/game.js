@@ -32,6 +32,12 @@ const Game = (() => {
   function turnStart() {
     S.stage = S.turn <= TURNS_PER_YEAR ? 'travel' : 'done';
     const q = [];
+    /* 학교생활의 피로 — 짝수 주엔 몸이, 홀수 주엔 마음이 한 칸 닳는다. 피로만으로 쓰러지지는 않는다(1에서 멈춘다) */
+    S.weekNote = null;
+    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR) {
+      const k = S.turn % 2 === 0 ? 'hp' : 'mind';
+      if (S.res[k] > 1) { S.res[k]--; S.weekNote = k; }
+    }
     /* 쓰러지기 직전, 1년에 한 번씩 누군가 붙잡아 준다 */
     if (S.res.hp === 1 && !S.flags.mercy_hp && EVENTS.sp_lowhp) q.push('sp_lowhp');
     if (S.res.mind === 1 && !S.flags.mercy_mind && EVENTS.sp_lowmind) q.push('sp_lowmind');
@@ -97,6 +103,8 @@ const Game = (() => {
     /* 되감기를 위해 고르기 직전을 보관한다 */
     const snapshot = JSON.stringify(Object.assign({}, S, { screen: null }));
     const thanks = Rules.thanksFor(choice.needs);
+    const ez = Rules.eased(S, choice);
+    if (ez) thanks.push(...Rules.thanksFor(ez.needs));
     /* 대가를 치른다 */
     const cost = Rules.costOf(S, choice);
     const pay = {};
@@ -108,7 +116,7 @@ const Game = (() => {
     chips = chips.concat(Rules.apply(S, fx, rnd));
     S.screen = Object.assign({}, S.screen, {
       stage: 'result', choice: index, thanks,
-      undo: ev.type === 'special' || !S.flags.rewind_known ? null : snapshot,
+      undo: ev.type === 'special' || ev.noRewind || !JSON.parse(snapshot).flags.rewind_known ? null : snapshot,
       text: Rules.text(S, outcome.text),
       introChips: S.screen.introChips || S.screen.chips || [],
       chips: (S.screen.introChips || S.screen.chips || []).concat(chips),
@@ -210,7 +218,7 @@ const Game = (() => {
       take(pool[Math.floor(rnd() * pool.length)]);
     }
     if (safe) hand.push(safe);
-    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel(), nightClosed: nightClosed() };
+    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel(), nightClosed: nightClosed(), weekNote: S.weekNote };
     saveGame(S);
   }
 

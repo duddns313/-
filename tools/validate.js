@@ -144,6 +144,12 @@ for (const ev of evs) {
     if (!CUR.length) CUR = evSamples;
     render(cid, 'label', c.label);
     checkNeeds(cid, c.needs);
+    for (const e of list(c.ease)) {
+      checkNeeds(cid, e.needs);
+      for (const m of list(e.needs && e.needs.memory)) memUse[m] = (memUse[m] || 0) + 1;
+      for (const i of list(e.needs && e.needs.item)) itemUse[i] = (itemUse[i] || 0) + 1;
+      if (!c.cost) err(cid, 'ease가 있는데 원래 대가(cost)가 없다');
+    }
     if (c.needs && typeof c.needs === 'object') {
       for (const i of list(c.needs.item)) itemUse[i] = (itemUse[i] || 0) + 1;
       for (const m of list(c.needs.memory)) memUse[m] = (memUse[m] || 0) + 1;

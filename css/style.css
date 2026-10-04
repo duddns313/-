@@ -420,3 +420,28 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .travel .shop-open { display: block; margin: 14px auto 0; }
 .travel .shop-open small { margin-left: 6px; opacity: .8; }
 .tag.sneak { background: transparent; color: var(--ink2); border: 1px dashed var(--rule); }
+
+/* v8 — 열쇠 · 대가 */
+#resbar .res .pips { font-style: normal; letter-spacing: 1px; font-size: 11px; color: var(--seal); }
+#resbar .res.r-mind .pips { color: #3d5a8a; }
+#resbar .res.low .pips { animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+.req { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 8px; padding-top: 6px; border-top: 1px dotted var(--rule); }
+.rq { font-size: 12.5px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink2); white-space: nowrap; }
+.rq.key { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, transparent); font-weight: 600; }
+.rq.cost { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); font-weight: 700; }
+.rq.gain { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, transparent); font-weight: 700; }
+.rq.reward { color: var(--ink); background: var(--slip); }
+.rq.miss { text-decoration: line-through; opacity: .7; }
+.rq.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+.rq.danger small { font-weight: 400; margin-left: 2px; }
+.choice.lethal { border-color: var(--bad); }
+.choice.fallback .choice-label { font-style: italic; }
+.rewind { border-style: dashed; }
+.gameover { text-align: center; padding: 24px 0 40px; }
+.gameover .crest { font-size: 54px; margin-top: 12px; }
+.gameover h2 { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 10px 0 2px; }
+.gameover .sub { color: var(--ink2); font-size: 14px; margin: 0 0 16px; font-family: var(--serif); }
+.gameover .prose { text-align: left; }
+.gameover .note { font-family: var(--serif); color: var(--ink2); line-height: 1.8; margin: 20px 0; font-size: 14.5px; }
+.gameover button { display: block; width: 100%; margin-top: 10px; }

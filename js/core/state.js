@@ -9,8 +9,9 @@ function defineEvents(list) {
   }
 }
 
-const SAVE_KEY = 'hp7_save_v4';
-const SAVE_VERSION = 4;
+const SAVE_KEY = 'hp7_save_v8';
+const SAVE_VERSION = 8;
+const PROLOGUE_KEY = 'hp7_prologue_v8';
 
 function newState() {
   return {
@@ -19,11 +20,11 @@ function newState() {
     turn: 0,
     stage: 'prologue',        // prologue | travel | done
     house: null, wand: null, pet: null,
-    stats: { courage: 2, wisdom: 2, diligence: 2, cunning: 2, magic: 2 },   // 새로 시작할 때 화면에서 다시 나눈다
-    xp: 0, level: 1, statPoints: 0, insight: 0,
-    res: { hp: 100, heart: 80, galleon: 0, notice: 0, points: 0 },
+    /* ❤️ 체력 · 💭 정신력 (한도 5, 0이면 게임 오버) · ⭐ 평판 (1~5) · 🪙 갈레온 · 기숙사 점수(이야기 속에만) */
+    res: { hp: 4, mind: 4, rep: 3, galleon: 0, points: 0 },
+    rewinds: 0,
     spells: [], items: {}, memories: [], cards: [],
-    flags: {}, marks: {}, rel: {}, streaks: {},
+    flags: {}, marks: {}, rel: {}, visits: {},
     seen: [], later: [], queue: ['pro_letter'],
     log: [],
     screen: null,
@@ -43,4 +44,15 @@ function loadGame() {
 }
 function clearSave() {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 무시 */ }
+}
+/* 프롤로그를 마친 상태 — 게임 오버 뒤 다시 할 때 건너뛰기용 */
+function savePrologue(S) {
+  try { localStorage.setItem(PROLOGUE_KEY, JSON.stringify(Object.assign({}, S, { screen: null }))); } catch (e) { /* 무시 */ }
+}
+function loadPrologue() {
+  try {
+    const raw = localStorage.getItem(PROLOGUE_KEY);
+    const S = raw && JSON.parse(raw);
+    return S && S.v === SAVE_VERSION ? S : null;
+  } catch (e) { return null; }
 }

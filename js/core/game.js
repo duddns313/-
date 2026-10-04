@@ -1,10 +1,11 @@
 'use strict';
-/* 게임 흐름: 턴 → 정사 사건 → 행선지 카드 → 장소 사건 → 다음 턴 */
+/* 게임 흐름: 턴 → 정사 사건 → 행선지 카드 → 장소 사건 → 다음 턴
+   주사위 없음. 선택지는 열쇠와 대가로 열리고, 고른 대로 일어난다. ❤️·💭가 0이면 게임 오버. */
 
 const Game = (() => {
   let S = null;
   let rnd = Math.random;
-  const GRADE_NAME = { crit: '대성공', success: '성공', fail: '아쉬움', fumble: '엉망진창' };
+  const REWINDS_PER_YEAR = 3;
 
   const state = () => S;
   function setRandom(fn) { rnd = fn; }
@@ -17,27 +18,31 @@ const Game = (() => {
 
   /* ── 진행 ── */
   function advance() {
+    if (S.screen && S.screen.kind === 'gameover') return;
     if (S.queue.length) return showEvent(S.queue.shift());
     if (S.stage === 'travel') return showTravel();
     if (S.turn >= TURNS_PER_YEAR + 1) return showYearEnd();
+    /* 프롤로그가 끝난 순간을 기억해 두었다가, 다음 판에서 건너뛸 수 있게 한다 */
+    if (S.turn === 0 && S.year === 1) savePrologue(S);
     S.turn++;
     turnStart();
     return advance();
   }
 
-  /* 기운은 매주 닳고, 주목도는 천천히 식는다 */
-  const HEART_DRAIN = 10, NOTICE_CURFEW = 20, NOTICE_CALL = 40;
   function turnStart() {
     S.stage = S.turn <= TURNS_PER_YEAR ? 'travel' : 'done';
-    if (S.turn > 1) {
-      S.res.notice = Math.max(0, S.res.notice - 2);
-      S.res.heart = Math.max(0, S.res.heart - HEART_DRAIN);   /* 학교생활은 고단하다 — 쉬고 먹고 웃어야 채워진다 */
-    }
     const q = [];
-    if (S.res.heart <= 0) q.push('sp_hospital');
-    else if (S.res.heart <= 15 && EVENTS.sp_lowheart) q.push('sp_lowheart');
-    if (S.res.notice >= NOTICE_CALL) q.push('sp_notice');
-    else if (S.res.notice >= NOTICE_CURFEW && !(S.curfewUntil >= S.turn) && EVENTS.sp_curfew) q.push('sp_curfew');
+    /* 쓰러지기 직전, 1년에 한 번씩 누군가 붙잡아 준다 */
+    if (S.res.hp === 1 && !S.flags.mercy_hp && EVENTS.sp_lowhp) q.push('sp_lowhp');
+    if (S.res.mind === 1 && !S.flags.mercy_mind && EVENTS.sp_lowmind) q.push('sp_lowmind');
+    /* 평판이 부르는 사건 — 두 주에 한 번쯤 */
+    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR && S.turn - (S.repTurn || 0) >= 2) {
+      const tier = S.res.rep >= 4 ? 'high' : S.res.rep <= 2 ? 'low' : null;
+      if (tier) {
+        const pool = Object.values(EVENTS).filter(ev => ev.repEvent === tier && (ev.year || 1) === S.year && !S.seen.includes(ev.id) && Rules.meets(S, ev.needs));
+        if (pool.length) { q.push(pool[Math.floor(rnd() * pool.length)].id); S.repTurn = S.turn; }
+      }
+    }
     const canon = Object.values(EVENTS)
       .filter(ev => ev.turn === S.turn && (ev.year || 1) === S.year && !S.seen.includes(ev.id) && Rules.meets(S, ev.needs))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -57,158 +62,98 @@ const Game = (() => {
     let chips = [];
     if (ev.fx) chips = Rules.apply(S, ev.fx, rnd);
     S.screen = { kind: 'event', id, stage: 'intro', date: dateLabel(ev), chips };
-    if (!visibleChoices(ev).length && ev.next) S.queue.unshift(...Rules.asList(ev.next));
+    if (checkGameOver()) return;
+    if (!openChoices(ev).length && ev.next) S.queue.unshift(...Rules.asList(ev.next));
     saveGame(S);
   }
 
-  function visibleChoices(ev) {
-    return (ev.choices || []).map((c, i) => ({ c, i })).filter(({ c }) => Rules.meets(S, c.needs));
-  }
-  /* 조건이 모자라 잠긴 선택지 — 보여 주되 누를 수 없다 (도전 의식) */
-  function lockedChoices(ev) {
-    return (ev.choices || []).map((c, i) => ({ c, i }))
-      .filter(({ c }) => !c.secret && !Rules.meets(S, c.needs) && Rules.showableLock(c.needs))
-      .map(x => Object.assign(x, { need: Rules.needLabels(S, x.c.needs) }));
-  }
-
-  /* ── 성장: 경험이 쌓이면 레벨이 오르고, 능력치는 직접 고른다 ── */
-  const XP_PER_LEVEL = 75;
-  const XP_GAIN = { crit: 12, success: 10, fail: 14, fumble: 16 };
-  function gainXp(n) {
-    const chips = [];
-    const before = Math.floor(S.xp / XP_PER_LEVEL);
-    S.xp += n;
-    const after = Math.floor(S.xp / XP_PER_LEVEL);
-    if (after > before) {
-      S.level += after - before;
-      S.statPoints += after - before;
-      chips.push({ t: `⬆️ ${S.level}단계로 성장 — 능력치를 직접 올릴 수 있다`, good: true, big: true, levelUp: true });
+  /* ── 선택지: 열린 것 / 잠긴 것 / (다른 길이 다 막혔을 때만) 대신하는 것 ── */
+  function choiceStates(ev) {
+    const all = (ev.choices || []).map((c, i) => ({ c, i }));
+    const ok = ({ c }) => Rules.meets(S, c.needs) && Rules.affordable(S, c);
+    const main = all.filter(x => !x.c.fallback);
+    const safeMain = main.filter(x => ok(x) && !Rules.lethal(S, x.c));
+    const open = [], locked = [];
+    for (const x of all) {
+      if (x.c.fallback) {
+        if (!safeMain.length && Rules.meets(S, x.c.needs)) open.push(Object.assign({ fallback: true }, x));
+        continue;
+      }
+      if (ok(x)) { open.push(Object.assign({ lethal: Rules.lethal(S, x.c) }, x)); continue; }
+      if (x.c.secret) continue;
+      if (!Rules.meets(S, x.c.needs) && !Rules.showableLock(x.c.needs)) continue;
+      locked.push(x);
     }
-    return chips;
+    return { open, locked };
   }
-  function allocate(stat) {
-    if (!(S.statPoints > 0) || !STATS[stat]) return false;
-    S.statPoints--;
-    S.stats[stat]++;
-    saveGame(S);
-    return true;
-  }
+  const openChoices = ev => choiceStates(ev).open;
+  const visibleChoices = openChoices;
+  const lockedChoices = ev => choiceStates(ev).locked;
 
-  /* opts: { extra: 성공률 보정, note: 결과 앞에 붙는 한 줄, retried: true } */
-  function choose(index, opts) {
-    opts = opts || {};
+  function choose(index) {
     const ev = EVENTS[S.screen.id];
     const choice = ev.choices[index];
-    if (!choice || !Rules.meets(S, choice.needs) || S.screen.stage !== 'intro') return;
-    /* 다시 굴리기를 위해 고르기 직전의 상태를 보관한다 */
+    if (!choice || S.screen.stage !== 'intro' || !openChoices(ev).some(x => x.i === index)) return;
+    /* 되감기를 위해 고르기 직전을 보관한다 */
     const snapshot = JSON.stringify(Object.assign({}, S, { screen: null }));
-    let grade = null, c = null, outcome;
-    if (Rules.statOf(S, choice)) {
-      c = Math.max(5, Math.min(95, Rules.chance(S, choice) + (opts.extra || 0)));
-      grade = Rules.roll(c, rnd);
-      outcome = Rules.pickOutcome(choice.outcomes, grade);
-    } else {
-      outcome = choice.outcome || Rules.pickOutcome(choice.outcomes, 'success');
-    }
-    const extraText = [];
-    const statKey = Rules.statOf(S, choice);
-    /* 판정에 쓴 능력치는 그 자리에서 오르지 않고 경험이 된다 — 능력치는 성장 단계에서 직접 고른다 */
-    let fx = typeof outcome.fx === 'function' ? outcome.fx(S) : outcome.fx;
-    /* 사건 속 작은 위로는 조금만 채운다 — 크게 채우는 건 쉬기·먹기·친구의 몫 */
-    if (fx && ev.type !== 'special') {
-      const up = (fx.heart > 0 ? fx.heart : 0) + (fx.hp > 0 ? fx.hp : 0);
-      if (up > 0) { fx = Object.assign({}, fx); if (fx.heart > 0) fx.heart = Math.max(1, Math.round(fx.heart * 0.6)); if (fx.hp > 0) fx.hp = Math.max(1, Math.round(fx.hp * 0.6)); }
-    }
-    let bonusXp = 0;
-    if (statKey && fx && fx[statKey] > 0) { fx = Object.assign({}, fx); bonusXp += 4 * fx[statKey]; delete fx[statKey]; }
     const thanks = Rules.thanksFor(choice.needs);
-    if (statKey) {
-      const bs = Rules.bonuses(S, choice);
-      for (const b of bs) if (b.value > 0 && b.kind !== 'insight') thanks.push(`${b.label} 덕분에`);
-      if (opts.helpLabel) thanks.push(opts.helpLabel);
-      if (S.insight > 0) S.insight = 0;           /* 통찰은 한 번 쓰면 사라진다 */
-    }
-    let chips = Rules.apply(S, fx, rnd);
-    /* 능력치마다 다른 특기 보상 */
-    const perk = statKey ? Rules.perkFx(statKey, choice.dc, grade) : null;
-    if (perk) {
-      const p = Object.assign({}, perk);
-      if (p.xp) { bonusXp += p.xp; delete p.xp; }
-      const pc = Rules.apply(S, p, rnd);
-      if (perk.xp) pc.push({ t: `⬆️ 경험 +${perk.xp}`, good: true });
-      chips = chips.concat(pc.map(x => Object.assign({}, x, { t: `${STATS[statKey].icon} ${x.t}`, perk: true })));
-    }
-    if (choice.stat && !(choice.outcomes || {})[grade]) {
-      if (grade === 'crit') chips = chips.concat(Rules.apply(S, { heart: 5 }, rnd));
-      if (grade === 'fumble') chips = chips.concat(Rules.apply(S, { heart: -5 }, rnd));
-    }
-    if (ev.streak) {
-      const k = ev.streak.key;
-      if (grade === 'success' || grade === 'crit') S.streaks[k] = (S.streaks[k] || 0) + 1;
-      else if (grade) S.streaks[k] = 0;
-      if (S.streaks[k] >= ev.streak.need) {
-        S.flags['streak_' + k] = true;
-        extraText.push(Rules.text(S, ev.streak.done.text));
-        chips = chips.concat(Rules.apply(S, ev.streak.done.fx, rnd));
-      }
-    }
-    chips = chips.concat(gainXp((grade ? XP_GAIN[grade] + Math.max(0, (choice.dc || 3) - 3) * 2 : 6) + bonusXp));
+    /* 대가를 치른다 */
+    const cost = Rules.costOf(S, choice);
+    const pay = {};
+    for (const k of ['hp', 'mind', 'rep', 'galleon']) if (cost[k]) pay[k] = -cost[k];
+    let chips = Rules.apply(S, pay, rnd);
+    const outcome = choice.outcome || {};
+    let fx = typeof outcome.fx === 'function' ? outcome.fx(S) : outcome.fx;
+    if (choice.consume && choice.needs && choice.needs.item) fx = Object.assign({}, fx, { loseItem: Rules.asList(fx && fx.loseItem).concat(Rules.asList(choice.needs.item)) });
+    chips = chips.concat(Rules.apply(S, fx, rnd));
     S.screen = Object.assign({}, S.screen, {
-      stage: 'result', choice: index, grade, chance: c, thanks,
-      undo: grade === 'fail' || grade === 'fumble' ? snapshot : null,
-      retried: !!opts.retried,
-      text: [opts.note || '', Rules.text(S, outcome.text)].concat(extraText).filter(Boolean).join('\n\n'),
+      stage: 'result', choice: index, thanks,
+      undo: ev.type === 'special' || !S.flags.rewind_known ? null : snapshot,
+      text: Rules.text(S, outcome.text),
       introChips: S.screen.introChips || S.screen.chips || [],
       chips: (S.screen.introChips || S.screen.chips || []).concat(chips),
     });
-    S.log.push({ y: S.year, t: S.turn, title: Rules.text(S, ev.title), choice: Rules.text(S, choice.label), grade: grade ? GRADE_NAME[grade] : null });
+    S.log.push({ y: S.year, t: S.turn, title: Rules.text(S, ev.title), choice: Rules.text(S, choice.label) });
     if (S.log.length > 200) S.log.shift();
     if (outcome.next) S.queue.unshift(...Rules.asList(outcome.next));
+    if (checkGameOver()) return;
     saveGame(S);
   }
 
-  /* ── 다시 해 보기: 호현의 병뚜껑 부적 / 친구에게 도움 청하기 (한 턴에 각각 한 번) ── */
-  const HELPERS = ['hohyeon', 'hermione', 'ron', 'harry', 'neville'];
-  /* 받침에 따라 조사 고르기 (호현이/헤르미온느가) */
-  function josa(word, withBatchim, without) {
-    const c = word.charCodeAt(word.length - 1) - 0xAC00;
-    return c >= 0 && c <= 11171 && c % 28 ? withBatchim : without;
+  /* ── 게임 오버: 처음부터 ── */
+  function checkGameOver() {
+    if (S.res.hp > 0 && S.res.mind > 0) return false;
+    S.screen = { kind: 'gameover', cause: S.res.hp <= 0 ? 'hp' : 'mind', date: dateLabel(), prev: S.screen && S.screen.id };
+    clearSave();
+    return true;
   }
-  function retryOptions() {
+
+  /* ── 호현의 되감기: 1년에 세 번. 쓸수록 호현이 힘들어한다. 영운만 기억한다. ── */
+  function rewindInfo() {
     const sc = S.screen;
-    if (!sc || sc.kind !== 'event' || sc.stage !== 'result' || !sc.undo || sc.retried) return [];
-    const out = [];
-    if (S.items.hohyeon_cap > 0 && S.charmTurn !== S.turn) out.push({ kind: 'charm', label: '🪙 호현의 병뚜껑을 쥐고, 한 번 더', sub: '이번 턴에 한 번' });
-    if (S.helpTurn !== S.turn) {
-      const ev = EVENTS[sc.id];
-      const cand = HELPERS.filter(k => (S.rel[k] || 0) >= 40).sort((a, b) => (ev.who === b) - (ev.who === a) || S.rel[b] - S.rel[a]);
-      if (cand[0]) out.push({ kind: 'friend', who: cand[0], label: `💛 ${PEOPLE[cand[0]].short}에게 도움을 청한다`, sub: '성공률 +15 · 이번 턴에 한 번' });
-    }
-    return out;
+    if (!sc || sc.kind !== 'event' || sc.stage !== 'result' || !sc.undo) return null;
+    const used = S.rewinds || 0;
+    if (used >= REWINDS_PER_YEAR) return null;
+    return { left: REWINDS_PER_YEAR - used, nth: used + 1, cost: used + 1 === 2 ? { mind: 1 } : null };
   }
-  function retry(kind) {
-    const opt = retryOptions().find(o => o.kind === kind);
-    if (!opt) return false;
+  const REWIND_NOTE = {
+    1: '*세상이 한 번 깜박였다. 귀가 먹먹해지고, 다음 순간 영운은 몇 분 전의 자리에 서 있었다. 저만치에서 호현이 관자놀이를 누르고 있었다. 눈이 마주치자 호현은 아무 일 없다는 듯 웃었다.*',
+    2: '*세상이 다시 깜박였다. 이번에는 더 길게. 정신을 차렸을 때 호현의 인중에 붉은 줄이 그어져 있었다. 코피였다. 호현은 소매로 그것을 훔치며 말했다. "건조해서 그래." 영운은 그 말을 믿지 않았다. 믿을 수가 없었다.*',
+    3: '*세 번째로 세상이 깜박였다. 그리고 이번에는, 호현이 그 자리에 무릎을 꿇었다.*',
+  };
+  function rewind() {
+    const info = rewindInfo();
+    if (!info) return false;
+    if (info.cost && S.res.mind <= info.cost.mind) return false;
     const sc = S.screen;
     const restored = JSON.parse(sc.undo);
     for (const k of Object.keys(S)) delete S[k];
-    Object.assign(S, restored, { screen: Object.assign({}, sc, { stage: 'intro', undo: null, chips: sc.introChips || [] }) });
-    if (kind === 'charm') {
-      S.charmTurn = S.turn;
-      choose(sc.choice, { retried: true, note: '*영운은 주머니 속 병뚜껑을 꽉 쥐었다. 찌그러진 식혜 병뚜껑. 호현이 기차에서 쥐여 준 부적. 숨을 한 번 고르고—한 번 더.*' });
-    } else {
-      S.helpTurn = S.turn;
-      const name = PEOPLE[opt.who].short;
-      const lines = {
-        hohyeon: '"윤, 내가 할게. 너는 그쪽 봐." 호현이 어느새 옆에 와 있었다.',
-        hermione: '"아니야, 이렇게 해 봐." 헤르미온느가 영운의 손목을 잡아 각도를 고쳐 주었다.',
-        ron: '"야, 같이 하자." 론이 귀까지 빨개진 채 옆에 섰다.',
-        harry: '해리가 아무 말 없이 영운 옆에 섰다. 그것만으로 충분했다.',
-        neville: '"나, 나도 도울게." 네빌이 떨리는 목소리로, 그래도 물러서지 않고 말했다.',
-      };
-      choose(sc.choice, { retried: true, extra: 15, helpLabel: `💛 ${name}${josa(name, '이', '가')} 함께해서 성공률 +15`, note: `*${lines[opt.who]}*` });
-      S.screen.chips = S.screen.chips.concat(Rules.apply(S, { rel: { [opt.who]: 2 } }, rnd));
-    }
+    Object.assign(S, restored);
+    S.rewinds = info.nth;
+    S.screen = { kind: 'event', id: sc.id, stage: 'intro', date: sc.date, chips: [], rewound: info.nth, note: REWIND_NOTE[info.nth] };
+    if (info.cost) S.screen.chips = Rules.apply(S, { mind: -info.cost.mind }, rnd);
+    if (info.nth === 3) S.later.push({ id: 'ho_rewind_fall', turn: S.turn });
+    S.flags['rewind_' + info.nth] = true;
     saveGame(S);
     return true;
   }
@@ -216,21 +161,30 @@ const Game = (() => {
   function next() {
     if (!S.screen) return advance();
     const k = S.screen.kind;
+    if (k === 'gameover') return;
     if (k === 'event') {
       const ev = EVENTS[S.screen.id];
-      if (S.screen.stage === 'intro' && visibleChoices(ev).length) return;
+      if (S.screen.stage === 'intro' && openChoices(ev).length) return;
     }
     if (k === 'travel') return;
+    /* 되감기 세 번째: 호현이 쓰러진다 — 다음 장면 바로 앞에 끼워 넣는다 */
+    const due = S.later.filter(l => l.id === 'ho_rewind_fall');
+    if (due.length && EVENTS.ho_rewind_fall && !S.seen.includes('ho_rewind_fall')) {
+      S.later = S.later.filter(l => l.id !== 'ho_rewind_fall');
+      S.queue.unshift('ho_rewind_fall');
+    }
     advance();
     saveGame(S);
   }
 
   /* ── 행선지 카드 ── */
+  /* 평판이 낮으면 필치가 따라다녀 밤에만 갈 수 있는 곳이 닫힌다 */
+  const nightClosed = () => S.res.rep <= 2;
   function eligiblePlaceEvents(pid) {
     return Object.values(EVENTS).filter(ev =>
-      ev.place === pid && !ev.turn && ev.type !== 'special' && (ev.year || 1) === S.year &&
-      !(PLACES[pid].night && S.curfewUntil >= S.turn) &&
-      (ev.repeat ? !(ev.streak && S.flags['streak_' + ev.streak.key]) : !S.seen.includes(ev.id)) &&
+      ev.place === pid && !ev.turn && ev.type !== 'special' && !ev.repEvent && (ev.year || 1) === S.year &&
+      !(PLACES[pid].night && nightClosed()) &&
+      (ev.repeat ? true : !S.seen.includes(ev.id)) &&
       Rules.meets(S, ev.needs));
   }
 
@@ -240,7 +194,6 @@ const Game = (() => {
     if (evs.some(e => e.priority)) hints.push('⭐');
     if (evs.some(e => e.who && !e.repeat)) hints.push('💛');
     if (PLACES[pid].danger) hints.push('⚠️');
-    if (evs.some(e => e.streak)) hints.push('🔁');
     return { id: pid, count: evs.length, hints, fresh: evs.some(e => !e.repeat || !S.seen.includes(e.id)) };
   }
 
@@ -257,7 +210,7 @@ const Game = (() => {
       take(pool[Math.floor(rnd() * pool.length)]);
     }
     if (safe) hand.push(safe);
-    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel() };
+    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel(), nightClosed: nightClosed() };
     saveGame(S);
   }
 
@@ -265,6 +218,8 @@ const Game = (() => {
     if (!S.screen || S.screen.kind !== 'travel') return;
     const evs = eligiblePlaceEvents(pid);
     if (!evs.length) return;
+    S.visits = S.visits || {};
+    S.visits[pid] = (S.visits[pid] || 0) + 1;
     const top = Math.max(...evs.map(e => e.priority || 0));
     let pool = evs.filter(e => (e.priority || 0) === top);
     const fresh = pool.filter(e => !e.repeat || !S.seen.includes(e.id));
@@ -301,7 +256,7 @@ const Game = (() => {
     return chips;
   }
 
-  /* 소지품 사용 */
+  /* 소지품 사용 (먹을 것) */
   function useItem(id) {
     const it = ITEMS[id];
     if (!it || !it.use || !(S.items[id] > 0)) return null;
@@ -311,5 +266,15 @@ const Game = (() => {
     return chips;
   }
 
-  return { XP_PER_LEVEL, start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, lockedChoices, allocate, retryOptions, retry, buy, priceOf, shopOpen, useItem, dateLabel, GRADE_NAME, eligiblePlaceEvents };
+  /* 프롤로그 건너뛰고 시작 */
+  function skipPrologue() {
+    const snap = loadPrologue();
+    if (!snap) return null;
+    S = snap;
+    S.screen = null;
+    advance();
+    return S;
+  }
+
+  return { start, state, setRandom, advance, choose, next, pickPlace, visibleChoices, openChoices, lockedChoices, choiceStates, rewindInfo, rewind, buy, priceOf, shopOpen, useItem, dateLabel, eligiblePlaceEvents, skipPrologue, REWINDS_PER_YEAR };
 })();

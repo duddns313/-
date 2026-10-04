@@ -81,6 +81,7 @@ const UI = (() => {
   function skipTyping() { if (typing && !typing.done) { typing.skip = true; return true; } return false; }
 
   /* ───────── 상단 ───────── */
+  const pips = (v, max) => '●'.repeat(Math.max(0, v)) + '○'.repeat(Math.max(0, max - v));
   function renderTop() {
     const S = Game.state();
     $('#topbar').hidden = false;
@@ -89,17 +90,17 @@ const UI = (() => {
     $('#dateline').innerHTML = `<span class="year">${S.year}학년</span><span class="date">${esc(date)}</span>${h ? `<span class="house" style="--house:${h.color}">${h.name}</span>` : ''}`;
     const r = S.res;
     const items = [
-      ['heart', RESOURCES.heart.icon, r.heart], ['galleon', RESOURCES.galleon.icon, r.galleon], ['notice', RESOURCES.notice.icon, r.notice],
+      ['hp', RESOURCES.hp.icon, `<i class="pips">${pips(r.hp, 5)}</i>`, r.hp <= 1],
+      ['mind', RESOURCES.mind.icon, `<i class="pips">${pips(r.mind, 5)}</i>`, r.mind <= 1],
+      ['rep', RESOURCES.rep.icon, Rules.REP_NAMES[r.rep], r.rep <= 2],
+      ['galleon', RESOURCES.galleon.icon, r.galleon, false],
     ];
     const bar = $('#resbar');
-    bar.innerHTML = items.map(([k, icon, v]) => {
-      const changed = lastRes && lastRes[k] !== r[k] ? (r[k] > lastRes[k] ? (k === 'notice' ? 'down' : 'up') : (k === 'notice' ? 'up' : 'down')) : '';
-      const low = k === 'heart' && r[k] <= 25 ? ' low' : (k === 'notice' && r[k] >= 20 ? ' low' : '');
-      return `<button class="res ${changed}${low}" data-res="${k}" aria-label="${RESOURCES[k].name} ${v}"><span>${icon}</span><b>${v}</b></button>`;
+    bar.innerHTML = items.map(([k, icon, v, low]) => {
+      const changed = lastRes && lastRes[k] !== r[k] ? (r[k] > lastRes[k] ? 'up' : 'down') : '';
+      return `<button class="res r-${k} ${changed}${low ? ' low' : ''}" data-res="${k}" aria-label="${RESOURCES[k].name} ${r[k]}"><span>${icon}</span><b>${v}</b></button>`;
     }).join('');
     lastRes = Object.assign({}, r);
-    const meBtn = document.querySelector('#dock button[data-sheet="me"]');
-    if (meBtn) meBtn.classList.toggle('badge', S.statPoints > 0);
   }
 
   /* ───────── 장면 ───────── */
@@ -147,48 +148,32 @@ const UI = (() => {
         if (sc.stage === 'intro') renderChoices(choicesBox, ev);
         else appendResult(art, ev, false);
       };
-      if (sc.stage === 'intro' && animate) typeInto(prose, T(ev.text), null, after);
-      else { typeInto(prose, T(ev.text), null, null); skipTyping(); after(); }
+      const body = (sc.note && sc.stage === 'intro' ? sc.note + '\n\n' : '') + T(ev.text);
+      if (sc.stage === 'intro' && animate) typeInto(prose, body, null, after);
+      else { typeInto(prose, body, null, null); skipTyping(); after(); }
     } else {
       appendResult(art, ev, animate);
     }
   }
 
-  function choiceTag(S, c) {
-    const key = Rules.statOf(S, c);
-    if (key) return `<span class="tag s-${key}">${STATS[key].icon} ${STATS[key].name} <b>${S.stats[key]}</b></span>`;
-    return '';
-  }
-  /* 난이도(●) · 보상(★) — 성공률 숫자 대신 이 둘만 보여 준다 */
-  function diffBadge(S, c) {
-    const d = Rules.difficulty(S, c);
-    return `<span class="diff d${d.dots}" title="난이도">${'●'.repeat(d.dots)}${'○'.repeat(4 - d.dots)} ${d.name}</span>`;
-  }
-  function rewardBadge(S, c) {
-    const r = Rules.rewardLevel(S, c);
-    const key = Rules.statOf(S, c);
-    return `<span class="reward r${r}">보상 ${'★'.repeat(r)}${'☆'.repeat(3 - r)}${key ? ` <small>+ ${esc(STATS[key].perk.split(' (')[0])}</small>` : ''}</span>`;
+  /* 선택지 아래 한 줄: 열쇠 · 대가 · 회복 · 특별 보상 */
+  function reqHtml(S, c) {
+    const req = Rules.reqLine(S, c);
+    const rew = Rules.specialRewards(S, c);
+    if (!req.length && !rew.length) return '';
+    return `<div class="req">${req.map(r => `<span class="rq ${r.kind}${r.ok ? '' : ' miss'}${r.danger ? ' danger' : ''}">${esc(r.t)}${r.danger ? ' <small>마지막 한 칸</small>' : ''}</span>`).join('')}${rew.length ? `<span class="rq reward">얻는 것 ${esc(rew.join(' · '))}</span>` : ''}</div>`;
   }
 
   function renderChoices(box, ev) {
     const S = Game.state();
     box.innerHTML = '';
-    const vis = Game.visibleChoices(ev);
-    if (!vis.length) { box.appendChild(continueButton()); return; }
-    for (const { c, i } of vis) {
-      const key = Rules.statOf(S, c);
-      const chance = key ? Rules.chance(S, c) : null;
-      const b = el('button', 'choice');
-      const bon = key ? Rules.bonuses(S, c) : [];
+    const { open, locked } = Game.choiceStates(ev);
+    if (!open.length && !locked.length) { box.appendChild(continueButton()); return; }
+    for (const { c, i, lethal, fallback } of open) {
+      const b = el('button', `choice${lethal ? ' lethal' : ''}${fallback ? ' fallback' : ''}`);
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
-      const nums = Settings.get('showNumbers');
-      const helpers = bon.filter(x => x.value > 0);
-      const burdens = bon.filter(x => x.value < 0);
-      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-top">${choiceTag(S, c)}${key ? diffBadge(S, c) : ''}${c.sneak ? '<span class="tag sneak">👣 몰래</span>' : ''}${nums && chance != null ? `<span class="pct ${chance >= 70 ? 'hi' : chance < 40 ? 'lo' : ''}">${chance}%</span>` : ''}</div>
-        <div class="choice-label">${esc(T(c.label))}</div>
-        ${helpers.length || burdens.length ? `<div class="bonus">${helpers.map(x => `<span>${esc(x.label)}${nums ? ' +' + x.value : ''}</span>`).join('')}${burdens.map(x => `<span class="neg">${esc(x.label)}${nums ? ' ' + x.value : ''}</span>`).join('')}</div>` : ''}
-        <div class="stakes">${rewardBadge(S, c)}</div>`;
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}`;
       b.addEventListener('click', () => {
         if (skipTyping()) return;
         box.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -197,13 +182,13 @@ const UI = (() => {
       });
       box.appendChild(b);
     }
-    for (const { c, need } of Game.lockedChoices(ev)) {
+    for (const { c } of locked) {
       const b = el('div', 'choice locked');
-      b.innerHTML = `<div class="choice-top"><span class="tag lock">🔒 아직 갈 수 없는 길</span></div>
-        <div class="choice-label">${esc(T(c.label))}</div>
-        <div class="need">필요: ${esc(need.join(' · '))}${c.lockHint ? `<br><small>${esc(T(c.lockHint))}</small>` : ''}</div>`;
+      b.innerHTML = `<div class="choice-top"><span class="tag lock">🔒</span></div>
+        <div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}${c.lockHint ? `<div class="need"><small>${esc(T(c.lockHint))}</small></div>` : ''}`;
       box.appendChild(b);
     }
+    if (!open.length) box.appendChild(continueButton());
     if (!Settings.get('reduceMotion')) box.classList.add('appear');
   }
 
@@ -215,28 +200,22 @@ const UI = (() => {
     const c = ev.choices[sc.choice];
     const res = el('div', 'result');
     res.appendChild(el('div', 'picked', `<span>›</span> ${esc(T(c.label))}`));
-    if (sc.grade) res.appendChild(el('div', `grade g-${sc.grade}`, `${Game.GRADE_NAME[sc.grade]}${Settings.get('showNumbers') ? ` <small>${sc.chance}%</small>` : ''}`));
-    if (sc.thanks && sc.thanks.length) {
-      const failed = sc.grade === 'fail' || sc.grade === 'fumble';
-      const head = failed ? '<div class="th-head">힘을 보탰지만, 이번엔 닿지 않았다</div>' : '';
-      res.appendChild(el('div', `thanks${failed ? ' failed' : ''}`, head + sc.thanks.map(t => `<div>✨ ${esc(failed ? t.replace(' 덕분에', '') : t)}${failed || /덕분에/.test(t) ? '' : ' 덕분에'}</div>`).join('')));
-    }
+    if (sc.thanks && sc.thanks.length) res.appendChild(el('div', 'thanks', sc.thanks.map(t => `<div>✨ ${esc(t)} 덕분에</div>`).join('')));
     const prose = el('div', 'prose');
     res.appendChild(prose);
     art.appendChild(res);
-    if (animate) {
-      scrollToEl(res);
-      if (sc.grade && navigator.vibrate && !Settings.get('reduceMotion')) { try { navigator.vibrate(sc.grade === 'crit' ? [20, 40, 20] : sc.grade === 'fumble' ? 60 : 10); } catch (e) { /* 무시 */ } }
-    }
+    if (animate) scrollToEl(res);
     const after = () => {
       const cr = chipRow(sc.chips);
       if (cr) res.appendChild(cr);
-      if (S.statPoints > 0) res.appendChild(levelPanel());
       if (box) {
         box.innerHTML = '';
-        for (const o of Game.retryOptions()) {
-          const rb = el('button', 'retry', `${esc(o.label)}<small>${esc(o.sub)}</small>`);
-          rb.addEventListener('click', () => { if (skipTyping()) return; Game.retry(o.kind); render(true); });
+        const rw = Game.rewindInfo();
+        if (rw) {
+          const tired = ['', '호현이 관자놀이를 누를 것이다', '호현의 코피가 날 것이다 · 💭-1', '호현이 버티지 못할 것이다'][rw.nth];
+          const rb = el('button', 'retry rewind', `⏪ 호현이 세상을 되감는다<small>올해 남은 횟수 ${rw.left} · ${tired}</small>`);
+          if (rw.cost && S.res.mind <= rw.cost.mind) rb.disabled = true;
+          rb.addEventListener('click', () => { if (skipTyping()) return; Game.rewind(); render(true); });
           box.appendChild(rb);
         }
         box.appendChild(continueButton());
@@ -245,26 +224,6 @@ const UI = (() => {
     };
     if (animate) typeInto(prose, sc.text, null, after);
     else { typeInto(prose, sc.text, null, null); skipTyping(); after(); }
-  }
-
-  /* 레벨업: 능력치를 직접 고른다 */
-  function levelPanel(onDone) {
-    const S = Game.state();
-    const box = el('div', 'levelup');
-    const draw = () => {
-      box.innerHTML = '';
-      if (!(S.statPoints > 0)) { box.appendChild(el('p', 'done', '성장을 마쳤다.')); onDone && onDone(); return; }
-      box.appendChild(el('p', null, `<b>⬆️ 한 뼘 자랐다.</b> 어디에 힘을 줄까? <small>남은 점수 ${S.statPoints}</small>`));
-      const row = el('div', 'stat-pick');
-      for (const k of Object.keys(STATS)) {
-        const b = el('button', null, `<span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small>`);
-        b.addEventListener('click', () => { Game.allocate(k); toast(`${STATS[k].icon} ${STATS[k].name} ${S.stats[k]}`); draw(); });
-        row.appendChild(b);
-      }
-      box.appendChild(row);
-    };
-    draw();
-    return box;
   }
 
   function continueButton() {
@@ -299,7 +258,7 @@ const UI = (() => {
       list.appendChild(b);
     }
     wrap.appendChild(list);
-    wrap.appendChild(el('p', 'legend', `⭐ 이어지는 이야기 · 💛 누군가 기다린다 · 🔁 연속 도전 · ⚠️ 들킬 수도 있다${S.curfewUntil >= S.turn ? ' · 🌙 지금은 밤 외출 금지' : ''}`));
+    wrap.appendChild(el('p', 'legend', `⭐ 이어지는 이야기 · 💛 누군가 기다린다 · ⚠️ 위험할 수 있다 · 🛋️ 휴게실에서는 쉴 수 있다${sc.nightClosed ? '<br>👁️ 평판이 낮아 필치가 따라다닌다 — 밤에만 갈 수 있는 곳은 닫혔다' : ''}`));
     const shop = el('button', 'secondary shop-open', `🦉 부엉이 주문서 <small>${RESOURCES.galleon.icon} ${S.res.galleon}</small>`);
     shop.addEventListener('click', () => openSheet('bag'));
     wrap.appendChild(shop);
@@ -321,8 +280,10 @@ const UI = (() => {
       <div class="crest" style="--house:${h.color}">${h.animal}</div>
       <h2>1학년 끝</h2>
       <p class="sub">${h.name} · ${esc(WANDS[S.wand] ? WANDS[S.wand].name.split(',')[0] + ' 지팡이' : '')}${S.pet ? ' · ' + PETS[S.pet].kind + ' ' + PETS[S.pet].name : ''}</p>
-      <div class="stats-grid">${Object.keys(STATS).map(k => `<div><span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small></div>`).join('')}</div>
       <ul class="summary">
+        <li><span>❤️ 체력 · 💭 정신력</span><b>${S.res.hp} · ${S.res.mind}</b></li>
+        <li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li>
+        <li><span>⏪ 호현이 되감은 횟수</span><b>${S.rewinds || 0} / ${Game.REWINDS_PER_YEAR}</b></li>
         <li><span>🏆 기숙사에 보탠 점수</span><b>${S.res.points > 0 ? '+' : ''}${S.res.points}</b></li>
         <li><span>📖 만난 사건</span><b>${seen} / ${total}</b></li>
         <li><span>💭 남은 기억</span><b>${S.memories.length}</b></li>
@@ -332,7 +293,7 @@ const UI = (() => {
       ${rels.length ? `<h3>가까워진 사람들</h3><ul class="rels">${rels.map(([k, v]) => `<li><span>${esc(PEOPLE[k].name)}</span><i style="width:${v}%"></i></li>`).join('')}</ul>` : ''}
       <h3>기억</h3>
       <ul class="mems">${S.memories.map(m => `<li><b>${esc(MEMORIES[m].name)}</b> ${esc(MEMORIES[m].desc)}</li>`).join('')}</ul>
-      <p class="note">2학년 — 비밀의 방 — 은 아직 쓰이는 중입니다.<br>다른 기숙사, 다른 선택으로 1학년을 다시 걸어 보세요. 한 번에 만날 수 있는 사건은 절반쯤입니다.</p>`;
+      <p class="note">2학년 — 비밀의 방 — 은 아직 쓰이는 중입니다.<br>다른 선택으로 1학년을 다시 걸어 보세요. 한 번에 만날 수 있는 사건은 절반쯤입니다.</p>`;
     const again = el('button', 'primary', '처음부터 다시');
     again.addEventListener('click', () => confirmNew());
     box.appendChild(again);
@@ -349,6 +310,35 @@ const UI = (() => {
     if (k === 'event') renderEvent(animate);
     else if (k === 'travel') renderTravel();
     else if (k === 'yearEnd') renderYearEnd();
+    else if (k === 'gameover') renderGameOver();
+  }
+
+  /* ───────── 게임 오버 ───────── */
+  function renderGameOver() {
+    const S = Game.state();
+    const st = stage();
+    st.innerHTML = '';
+    window.scrollTo({ top: 0 });
+    $('#dock').hidden = true;
+    const hp = S.screen.cause === 'hp';
+    const box = el('section', 'gameover');
+    box.innerHTML = `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
+      <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
+      <p class="sub">${esc(S.screen.date || '')}</p>
+      <div class="prose"><p>${hp
+        ? '영운은 다시 일어나지 못했다. 폼프리 부인은 영운을 오래 붙잡아 두었고, 결국 부엉이 한 마리가 뉴몰든으로 날아갔다. 엄마는 그 편지를 읽고 가게 셔터를 내렸다. 영운은 호그와트 특급의 창가에 앉아, 멀어지는 성을 끝까지 보았다.'
+        : '어느 아침, 영운은 침대에서 일어나지 못했다. 몸이 아픈 게 아니었다. 그냥, 더는 버틸 수가 없었다. 부엉이 한 마리가 뉴몰든으로 날아갔다. 엄마는 그 편지를 들고 한참 서 있다가, 아무 말 없이 영운의 방을 치웠다.'}</p>
+      <p>${esc(S.rewinds >= 3 ? '호현이 되감을 수 있는 세상은 이미 다 써 버린 뒤였다.' : '길 건너 서울 마트의 불이 그날 밤 늦게까지 켜져 있었다.')}</p></div>
+      <p class="note">❤️ 체력이나 💭 정신력이 0이 되면 호그와트를 떠나게 됩니다. 쉬고, 먹고, 친구와 웃는 것도 선택입니다.</p>`;
+    const again = el('button', 'primary', loadPrologue() ? '처음부터 — 프롤로그 건너뛰기' : '처음부터 다시');
+    again.addEventListener('click', () => { lastRes = null; if (loadPrologue()) Game.skipPrologue(); else Game.start(newState()); render(true); });
+    box.appendChild(again);
+    if (loadPrologue()) {
+      const full = el('button', 'secondary', '프롤로그부터 다시 보기');
+      full.addEventListener('click', () => { lastRes = null; Game.start(newState()); render(true); });
+      box.appendChild(full);
+    }
+    st.appendChild(box);
   }
 
   function renderTitle() {
@@ -378,64 +368,14 @@ const UI = (() => {
     st.appendChild(box);
   }
 
-  /* 새로 시작 — 영운이 어떤 아이인지 먼저 정한다 (기본 1 + 5점 나누기) */
-  const CREATE_POINTS = 5, CREATE_MAX = 5;
+  /* 새로 시작 — 프롤로그를 이미 본 적이 있으면 건너뛸 수 있다 */
   function startNew() {
     clearSave();
     closeSheet();
-    renderCreate();
-  }
-  function renderCreate() {
-    $('#topbar').hidden = true;
-    $('#dock').hidden = true;
-    const st = stage();
-    st.innerHTML = '';
-    window.scrollTo({ top: 0 });
-    const keys = Object.keys(STATS);
-    const pick = Object.fromEntries(keys.map(k => [k, 1]));
-    const left = () => CREATE_POINTS - keys.reduce((n, k) => n + pick[k] - 1, 0);
-    const box = el('section', 'create');
-    st.appendChild(box);
-    const draw = () => {
-      box.innerHTML = `<h2>영운은 어떤 아이일까?</h2>
-        <p class="sub">능력치마다 잘 풀리는 선택지와 <b>특기 보상</b>이 다르고, <b>5</b>가 되면 그 능력치만의 이야기가 열린다(8이 되면 그다음 이야기). 성장할 때마다 더 올릴 수 있다.</p>
-        <p class="left">나눌 점수 <b>${left()}</b> / ${CREATE_POINTS}</p>`;
-      for (const k of keys) {
-        const r = el('div', 'stat-row');
-        r.innerHTML = `<span class="nm">${STATS[k].icon} ${STATS[k].name}</span>
-          <span class="ctl"><button data-d="-1" aria-label="${STATS[k].name} 내리기">−</button><b>${pick[k]}</b><button data-d="1" aria-label="${STATS[k].name} 올리기">+</button></span>
-          <span class="ds">${esc(STATS[k].desc)}<br>특기 보상 <em>${esc(STATS[k].perk)}</em> · 이야기 <em>「${esc(STATS[k].story)}」</em></span>`;
-        const [minus, plus] = r.querySelectorAll('button');
-        minus.disabled = pick[k] <= 1;
-        plus.disabled = left() <= 0 || pick[k] >= CREATE_MAX;
-        minus.addEventListener('click', () => { pick[k]--; draw(); });
-        plus.addEventListener('click', () => { pick[k]++; draw(); });
-        box.appendChild(r);
-      }
-      const row = el('div', 'row-btns');
-      const rnd = el('button', 'secondary', '🎲 운에 맡기기');
-      rnd.addEventListener('click', () => {
-        keys.forEach(k => { pick[k] = 1; });
-        for (let n = 0; n < CREATE_POINTS;) { const k = keys[Math.floor(Math.random() * keys.length)]; if (pick[k] < CREATE_MAX) { pick[k]++; n++; } }
-        draw();
-      });
-      const even = el('button', 'secondary', '⚖️ 고르게');
-      even.addEventListener('click', () => { keys.forEach(k => { pick[k] = 2; }); draw(); });
-      row.appendChild(rnd);
-      row.appendChild(even);
-      box.appendChild(row);
-      const go = el('button', 'primary', left() > 0 ? `점수를 모두 나눠 주세요 (${left()})` : '이 아이로 시작한다');
-      go.disabled = left() > 0;
-      go.addEventListener('click', () => {
-        const S = newState();
-        S.stats = Object.assign({}, pick);
-        lastRes = null;
-        Game.start(S);
-        render(true);
-      });
-      box.appendChild(go);
-    };
-    draw();
+    lastRes = null;
+    if (loadPrologue()) return openSheet('startMode');
+    Game.start(newState());
+    render(true);
   }
   function confirmNew() {
     openSheet('confirm');
@@ -496,7 +436,7 @@ const UI = (() => {
       box.appendChild(el('h3', null, '📜 지나온 이야기'));
       const ul = el('ul', 'log');
       [...S.log].reverse().forEach(l => {
-        ul.appendChild(el('li', null, `<small>${esc((CALENDAR[l.y] || {})[l.t] || '')}</small><b>${esc(l.title)}</b><span>› ${esc(l.choice)}${l.grade ? ` <em class="g">${l.grade}</em>` : ''}</span>`));
+        ul.appendChild(el('li', null, `<small>${esc((CALENDAR[l.y] || {})[l.t] || '')}</small><b>${esc(l.title)}</b><span>› ${esc(l.choice)}</span>`));
       });
       if (!S.log.length) ul.appendChild(el('li', 'empty', '아직 아무 일도 없었다.'));
       box.appendChild(ul);
@@ -540,22 +480,10 @@ const UI = (() => {
       const S = Game.state();
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, `🪄 윤영운${S.house ? ' · ' + HOUSES[S.house].name : ''}`));
-      const grid = el('div', 'stats-grid');
-      grid.innerHTML = Object.keys(STATS).map(k => `<div><span>${STATS[k].icon}</span><b>${S.stats[k]}</b><small>${STATS[k].name}</small></div>`).join('');
-      box.appendChild(grid);
-      box.appendChild(el('p', 'kv', `<span>성장 단계</span><b>${S.level}단계 · 다음까지 ${Game.XP_PER_LEVEL - (S.xp % Game.XP_PER_LEVEL)}</b>`));
-      if (S.statPoints > 0) box.appendChild(levelPanel(() => openSheet('me')));
-      box.appendChild(el('p', 'hint', '선택할 때마다 경험이 쌓이고(실패와 어려운 선택에서 더 많이 배운다), 단계가 오르면 능력치를 직접 고른다. 판정은 능력치가 난이도보다 높을수록, 기억·주문·소지품의 도움을 받을수록 쉬워진다. 성공하면 그 능력치의 특기 보상이 따라온다.'));
-      box.appendChild(el('h3', null, '🌟 특기 이야기'));
-      const sl = el('ul', 'storylist');
-      for (const k of Object.keys(STATS)) {
-        const parts = (STAT_STORIES[k] || []).map(id => S.seen.includes(id) ? '✔' : '·').join(' ');
-        sl.appendChild(el('li', null, `<span>${STATS[k].icon} 「${esc(STATS[k].story)}」</span><small>${S.stats[k] >= 8 ? '두 번째 이야기까지 열림' : S.stats[k] >= 5 ? '첫 이야기 열림 · 8에 다음' : `${STATS[k].name} 5에 열림`} ${parts}</small>`));
-      }
-      box.appendChild(sl);
       const res = el('ul', 'kvlist');
-      res.innerHTML = Object.keys(RESOURCES).filter(k => !RESOURCES[k].hidden).map(k => `<li><span>${RESOURCES[k].icon} ${RESOURCES[k].name}</span><b>${S.res[k]}${RESOURCES[k].max ? ' / ' + RESOURCES[k].max : ''}</b></li>`).join('');
+      res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 되감기</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
       box.appendChild(res);
+      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친구·평판)와 대가(❤️·💭·⭐·🪙)가 적혀 있다. 모자라면 잠긴다. 체력이나 정신력이 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃으면 채워진다. 평판이 높으면 좋은 일이, 낮으면 귀찮은 일이 찾아온다.'));
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
       const ru = el('ul', 'rels');
@@ -604,13 +532,24 @@ const UI = (() => {
       seg('글자 크기', 'fontSize', [['m', '보통'], ['l', '크게'], ['xl', '아주 크게']]);
       seg('화면', 'theme', [['auto', '자동'], ['light', '양피지'], ['dark', '밤']]);
       seg('연출 줄이기', 'reduceMotion', [[true, '켜기'], [false, '끄기']]);
-      seg('성공률 숫자', 'showNumbers', [[false, '숨기기'], [true, '보이기']]);
       box.appendChild(el('p', 'hint', '연출 줄이기를 켜 두면 화면이 흔들리거나 번쩍이는 효과가 모두 꺼집니다. 글이 나오는 중에 화면을 누르면 바로 전부 보입니다.'));
       if (Game.state()) {
         const b = el('button', 'danger-btn', '처음부터 다시 시작');
         b.addEventListener('click', () => openSheet('confirm'));
         box.appendChild(b);
       }
+      return box;
+    },
+    startMode() {
+      const box = el('div', 'sheet-content');
+      box.appendChild(el('h3', null, '어디서부터 시작할까요?'));
+      box.appendChild(el('p', 'hint', '프롤로그(편지 · 다이애건 앨리 · 기차 · 기숙사 배정)를 건너뛰면, 지난번에 프롤로그에서 고른 지팡이 · 동물 · 물건 그대로 첫 주부터 시작합니다.'));
+      const skip = el('button', 'primary', '프롤로그 건너뛰기');
+      skip.addEventListener('click', () => { closeSheet(); Game.skipPrologue(); render(true); });
+      const full = el('button', 'secondary', '프롤로그부터');
+      full.addEventListener('click', () => { closeSheet(); Game.start(newState()); render(true); });
+      box.appendChild(skip);
+      box.appendChild(full);
       return box;
     },
     confirm() {
@@ -628,9 +567,10 @@ const UI = (() => {
   };
 
   const RES_HELP = {
-    heart: '매주 10씩 닳는다. 25 이하면 모든 판정이 어려워지고, 0이 되면 의무실에 실려 간다. 쉬기·먹기·친구와 웃기로 채운다.',
-    galleon: '부엉이 주문서(🎒 소지품)에서 물건을 산다. 집에서 오는 소포, 심부름, 내기로 모인다.',
-    notice: '말썽을 피우면 오른다. 12 이상이면 몰래 하는 행동(👣)이 어려워지고, 20을 넘기면 밤 외출이 금지되고, 40을 넘기면 사감실에 불려 간다. 매주 조금씩 내려간다.',
+    hp: '몸을 쓰는 선택에 든다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 자거나 먹으면 찬다.',
+    mind: '무섭고 슬프고 맞서는 선택에 든다. 0이 되면 호그와트를 떠나야 한다. 친구와 웃거나 집에서 편지가 오면 찬다.',
+    rep: '교수와 학교가 영운을 얼마나 믿는가. 높으면 좋은 일이, 낮으면 필치와 스네이프가 찾아온다. 거짓말·규칙 위반으로 깎아 위기를 넘길 수 있다.',
+    galleon: '부엉이 주문서(🎒 소지품)에서 물건을 산다. 집에서 오는 소포, 장사, 내기로 모인다.',
   };
 
   let toastTimer = null;

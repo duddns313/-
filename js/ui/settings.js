@@ -2,7 +2,7 @@
 /* 기기 단위 설정: 타자 속도 · 연출 줄이기 · 글자 크기 · 화면 테마 */
 const Settings = (() => {
   const KEY = 'hp7_settings';
-  const DEFAULTS = { speed: 'normal', reduceMotion: true, fontSize: 'm', theme: 'auto', showNumbers: false };
+  const DEFAULTS = { speed: 'normal', reduceMotion: true, fontSize: 'm', theme: 'auto' };
   const SPEED_MS = { slow: 40, normal: 22, fast: 9, instant: 0 };
   let cur = Object.assign({}, DEFAULTS);
   try { Object.assign(cur, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* 기본값 사용 */ }

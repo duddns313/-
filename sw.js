@@ -1,5 +1,5 @@
 /* 오프라인 캐시 — 파일을 바꾸면 VERSION을 올린다 */
-const VERSION = 'hp7-v10';
+const VERSION = 'hp7-v11';
 const FILES = [
   './', 'index.html', 'manifest.json', 'css/style.css', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/data/meta.js', 'js/core/state.js', 'js/core/rules.js', 'js/core/game.js',

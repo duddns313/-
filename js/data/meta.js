@@ -37,10 +37,14 @@ const PLACES = {
 
 const SPELLS = {
   lumos:       { name: '루모스',               desc: '지팡이 끝에 불을 밝힌다' },
+  nox:         { name: '녹스',                 desc: '지팡이 끝의 불을 끈다. 어둠 속에 숨을 때' },
+  reparo:      { name: '레파로',               desc: '깨지고 부러진 것을 고친다 (오쿨루스 레파로 — 안경도)' },
   wingardium:  { name: '윙가르디움 레비오사',  desc: '물건을 공중에 띄운다' },
   alohomora:   { name: '알로호모라',           desc: '잠긴 자물쇠를 연다' },
   petrificus:  { name: '페트리피쿠스 토탈루스', desc: '상대를 통나무처럼 굳힌다' },
   bluebell:    { name: '푸른 불꽃',            desc: '병에 담아 들고 다닐 수 있는 푸른 불을 피운다' },
+  locomotor:   { name: '로코모토르 모르티스',  desc: '다리 묶기 저주. 두 다리가 딱 붙는다' },
+  finite:      { name: '피니테 인칸타템',      desc: '걸린 마법을 푼다 — 다리 묶기도, 전신 마비도' },
 };
 
 /* use: 소지품에서 먹는 1회용 효과 · price/shop: 부엉이 주문서 · hint: 쓰임새

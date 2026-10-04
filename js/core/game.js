@@ -82,7 +82,7 @@ const Game = (() => {
     const open = [], locked = [];
     for (const x of all) {
       if (x.c.fallback) {
-        if (!safeMain.length && Rules.meets(S, x.c.needs)) open.push(Object.assign({ fallback: true }, x));
+        if (!safeMain.length && Rules.meets(S, x.c.needs)) open.push(Object.assign({ fallback: true, lethal: Rules.lethal(S, x.c) }, x));   /* 피할 수 없는 대가: 모자라도 치른다 */
         continue;
       }
       if (ok(x)) { open.push(Object.assign({ lethal: Rules.lethal(S, x.c) }, x)); continue; }

@@ -122,7 +122,7 @@ for (const ev of evs) {
   if (main.length > 4) err(id, `선택지 ${main.length}개 — 최대 4개`);
   /* 언제나 고를 수 있는 길이 하나는 있어야 한다: 열쇠도 대가도 없는 선택지, 또는 대신하는 선택지 */
   const isFree = c => !c.cost && (!c.needs || (typeof c.needs === 'object' && !c.needs.item && !c.needs.spell && !c.needs.memory && !c.needs.rel && !c.needs.card && c.needs.repMin == null && !c.needs.flag && !c.needs.fn && !c.needs.any));
-  if (!choices.some(c => isFree(c) || (c.fallback && !c.cost))) err(id, '항상 고를 수 있는 선택지(열쇠·대가 없음)나 fallback이 없음 — 막힐 수 있다');
+  if (!choices.some(c => isFree(c) || (c.fallback && (!c.cost || ev.forced)))) err(id, '항상 고를 수 있는 선택지(열쇠·대가 없음)나 fallback이 없음 — 막힐 수 있다');
   if (choices.some(c => c.fallback) && !main.some(c => c.cost || c.needs)) warn(id, 'fallback이 있는데 막힐 선택지가 없다 — fallback이 영영 안 보인다');
   choices.forEach((c, i) => {
     const cid = `${id}#${i}`;
@@ -134,7 +134,7 @@ for (const ev of evs) {
       nCost++;
       for (const k in cost) if (!['hp', 'mind', 'rep', 'galleon'].includes(k)) err(cid, `알 수 없는 대가 '${k}'`);
       if (cost.hp > 2 || cost.mind > 2 || cost.rep > 2) warn(cid, '대가가 2를 넘는다');
-      if (c.fallback) err(cid, 'fallback에는 대가를 붙이지 않는다');
+      if (c.fallback && !ev.forced) err(cid, 'fallback에는 대가를 붙이지 않는다 (피할 수 없는 대가라면 사건에 forced: true)');
     }
     if (c.needs && typeof c.needs === 'object' && (c.needs.item || c.needs.spell || c.needs.memory || c.needs.rel || c.needs.repMin != null)) nKey++;
     if (isFree(c) && !c.fallback) nFree++;

@@ -484,3 +484,4 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .preps li .ic { width: 22px; text-align: center; }
 .preps li small { display: block; color: var(--ink2); }
 .preps li.done b { color: var(--good); }
+.slots .slot.empty { border: 1px dashed var(--rule) !important; padding: 12px 14px; background: transparent; font-size: inherit; }

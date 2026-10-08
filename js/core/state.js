@@ -57,3 +57,23 @@ function loadPrologue() {
     return S && S.v === SAVE_VERSION ? S : null;
   } catch (e) { return null; }
 }
+
+/* 저장 칸 세 개 — 자동 저장(이어하기)과 따로 남는다. 게임 오버에도 지워지지 않는다. */
+const SLOT_COUNT = 3;
+const SLOT_KEY = n => `hp7_slot_v9_${n}`;
+function saveSlot(n, S, label) {
+  try {
+    localStorage.setItem(SLOT_KEY(n), JSON.stringify({ at: Date.now(), label: label || '', state: S }));
+    return true;
+  } catch (e) { return false; }
+}
+function readSlot(n) {
+  try {
+    const raw = localStorage.getItem(SLOT_KEY(n));
+    const d = raw && JSON.parse(raw);
+    return d && d.state && d.state.v === SAVE_VERSION ? d : null;
+  } catch (e) { return null; }
+}
+function loadSlot(n) { const d = readSlot(n); return d ? JSON.parse(JSON.stringify(d.state)) : null; }
+function clearSlot(n) { try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) { /* 무시 */ } }
+function anySlot() { for (let n = 1; n <= SLOT_COUNT; n++) if (readSlot(n)) return true; return false; }

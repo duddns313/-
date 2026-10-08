@@ -63,10 +63,9 @@ const Rules = (() => {
     const v = typeof c.cost === 'function' ? c.cost(S) : c.cost;
     return v || {};
   }
+  /* ❤️·💭 대가는 숨긴다 — 모자라도 고를 수 있고, 그러면 쓰러진다(lethal) */
   function affordable(S, c) {
     const k = costOf(S, c);
-    if (k.hp && S.res.hp < k.hp) return false;
-    if (k.mind && S.res.mind < k.mind) return false;
     if (k.rep && S.res.rep - k.rep < 1) return false;
     if (k.galleon && S.res.galleon < k.galleon) return false;
     return true;
@@ -90,16 +89,17 @@ const Rules = (() => {
       if (n.repMin != null) out.push({ t: `⭐ 평판 「${REP_NAMES[n.repMin]}」 이상`, ok: S.res.rep >= n.repMin, kind: 'key' });
     }
     const e = eased(S, c);
-    if (e) out.push({ t: `${thanksFor(e.needs).join(' · ')} 덕분에 대가가 줄었다`, ok: true, kind: 'ease' });
+    if (e) out.push({ t: `${thanksFor(e.needs).join(' · ')} 덕분에 수월하다`, ok: true, kind: 'ease' });
     const k = costOf(S, c);
-    if (k.hp) out.push({ t: `❤️-${k.hp}`, ok: S.res.hp >= k.hp, kind: 'cost', danger: S.res.hp - k.hp <= 0 });
-    if (k.mind) out.push({ t: `💭-${k.mind}`, ok: S.res.mind >= k.mind, kind: 'cost', danger: S.res.mind - k.mind <= 0 });
+    /* ❤️·💭 대가는 보여 주지 않는다. 다만 그게 마지막 한 칸이라면, 몸이 먼저 안다 */
+    if (lethal(S, c)) out.push({ t: '지금의 나에겐 버거울지도 모른다', ok: true, kind: 'danger', danger: true });
     if (k.rep) out.push({ t: `⭐-${k.rep}`, ok: S.res.rep - k.rep >= 1, kind: 'cost' });
     if (k.galleon) out.push({ t: `🪙-${k.galleon}`, ok: S.res.galleon >= k.galleon, kind: 'cost' });
     /* 회복은 미리 알려 준다 */
     const fx = peekFx(S, c);
     if (fx.hp > 0) out.push({ t: `❤️+${fx.hp}`, ok: true, kind: 'gain' });
     if (fx.mind > 0) out.push({ t: `💭+${fx.mind}`, ok: true, kind: 'gain' });
+    if (fx.galleon > 0) out.push({ t: `🪙+${fx.galleon}`, ok: true, kind: 'gain' });
     return out;
   }
   /* 특별 보상(이야기와 이어지는 것)만 미리 보여 준다 */
@@ -131,7 +131,7 @@ const Rules = (() => {
     if (!n || typeof n === 'function') return out;
     for (const m of asList(n.memory)) out.push(`💭 「${MEMORIES[m].name}」의 기억`);
     for (const i of asList(n.item)) out.push(`${ITEMS[i].icon} 챙겨 둔 ${ITEMS[i].name}`);
-    for (const sp of asList(n.spell)) out.push(`🪄 익혀 둔 「${SPELLS[sp].name}」`);
+    for (const sp of asList(n.spell)) out.push(`🪄 되찾은 「${SPELLS[sp].name}」`);
     for (const c of asList(n.card)) out.push(`🃏 모아 둔 「${CARDS[c].name}」 카드`);
     if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 우정`);
     if (n.repMin != null) out.push(`⭐ 쌓아 둔 평판`);
@@ -174,7 +174,7 @@ const Rules = (() => {
     }
     if (fx.spell) for (const id of asList(fx.spell)) if (!S.spells.includes(id)) {
       S.spells.push(id);
-      chips.push({ t: `🪄 주문 습득: ${SPELLS[id].name}`, good: true, big: true });
+      chips.push({ t: `🪄 되찾은 주문: ${SPELLS[id].name}`, good: true, big: true, note: SPELLS[id].back });
     }
     if (fx.memory) for (const id of asList(fx.memory)) if (!S.memories.includes(id)) {
       S.memories.push(id);
@@ -213,10 +213,15 @@ const Rules = (() => {
         S.knots = S.knots || {};
         if (S.knots[id] === st) continue;
         S.knots[id] = st;
-        chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true });
+        chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true,
+          note: st === 'cut' ? `이어질 곳을 잃었다: ${KNOTS[id].feeds}` : `→ ${KNOTS[id].feeds}` });
       }
     }
-    if (fx.flag) for (const f of asList(fx.flag)) S.flags[f] = true;
+    if (fx.flag) for (const f of asList(fx.flag)) {
+      /* 6월을 위한 준비는 심는 순간 알려 준다 */
+      if (typeof PREPS !== 'undefined' && PREPS[f] && !S.flags[f]) chips.push({ t: `🗝️ 6월을 위한 준비 — ${PREPS[f].title}`, good: true, big: true, note: `${PREPS[f].trap}에서 ${PREPS[f].who}에게 피어날 것이다.` });
+      S.flags[f] = true;
+    }
     if (fx.unflag) for (const f of asList(fx.unflag)) delete S.flags[f];
     if (fx.mark) for (const f of asList(fx.mark)) S.marks[f] = S.turn;
     if (fx.house) S.house = fx.house;

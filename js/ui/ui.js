@@ -115,7 +115,10 @@ const UI = (() => {
   function chipRow(chips) {
     if (!chips || !chips.length) return null;
     const row = el('div', 'chips');
-    for (const c of chips) row.appendChild(el('span', `chip ${c.good ? 'good' : 'bad'}${c.big ? ' big' : ''}`, esc(c.t)));
+    for (const c of chips) {
+      row.appendChild(el('span', `chip ${c.good ? 'good' : 'bad'}${c.big ? ' big' : ''}`, esc(c.t)));
+      if (c.note) row.appendChild(el('p', 'chip-note', `<em>${esc(c.note)}</em>`));
+    }
     return row;
   }
 
@@ -161,7 +164,7 @@ const UI = (() => {
     const req = Rules.reqLine(S, c);
     const rew = Rules.specialRewards(S, c);
     if (!req.length && !rew.length) return '';
-    return `<div class="req">${req.map(r => `<span class="rq ${r.kind}${r.ok ? '' : ' miss'}${r.danger ? ' danger' : ''}">${esc(r.t)}${r.danger ? ' <small>마지막 한 칸</small>' : ''}</span>`).join('')}${rew.length ? `<span class="rq reward">얻는 것 ${esc(rew.join(' · '))}</span>` : ''}</div>`;
+    return `<div class="req">${req.map(r => `<span class="rq ${r.kind}${r.ok ? '' : ' miss'}${r.danger ? ' danger' : ''}">${esc(r.t)}${''}</span>`).join('')}${rew.length ? `<span class="rq reward">얻는 것 ${esc(rew.join(' · '))}</span>` : ''}</div>`;
   }
 
   function renderChoices(box, ev) {
@@ -291,7 +294,7 @@ const UI = (() => {
         <li><span>🏆 기숙사에 보탠 점수</span><b>${S.res.points > 0 ? '+' : ''}${S.res.points}</b></li>
         <li><span>📖 만난 사건</span><b>${seen} / ${total}</b></li>
         <li><span>💭 남은 기억</span><b>${S.memories.length}</b></li>
-        <li><span>🪄 익힌 주문</span><b>${S.spells.length}</b></li>
+        <li><span>🪄 되찾은 주문</span><b>${S.spells.length}</b></li>
         <li><span>🃏 개구리 초콜릿 카드</span><b>${S.cards.length} / ${Object.keys(CARDS).length}</b></li>
       </ul>
       ${rels.length ? `<h3>가까워진 사람들</h3><ul class="rels">${rels.map(([k, v]) => `<li><span>${esc(PEOPLE[k].name)}</span><i style="width:${v}%"></i></li>`).join('')}</ul>` : ''}
@@ -325,8 +328,14 @@ const UI = (() => {
     window.scrollTo({ top: 0 });
     $('#dock').hidden = true;
     const hp = S.screen.cause === 'hp';
+    const broken = S.screen.cause === 'broken';
     const box = el('section', 'gameover');
-    box.innerHTML = `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
+    box.innerHTML = broken ? `<div class="crest">🔥</div>
+      <h2>무너진 길</h2>
+      <p class="sub">${esc(S.screen.date || '')}</p>
+      <div class="prose"><p class="shown">그 밤, 돌은 터번 아래의 손에 들어갔다. 매듭이 너무 많이 끊겨 있었다. 셋은 끝까지 가지 못했고, 덤블도어는 늦었다.</p>
+      <p class="shown">나는 그 길 끝에 무엇이 오는지 안다. 첫 번째 삶보다 훨씬 이르게, 훨씬 어둡게. 그리고 이번엔 접을 시간이 없었다.</p></div>
+      <p class="note">무거운 매듭과 6월을 위한 준비가 마지막 밤을 가릅니다. 📓 일기장에서 끊긴 매듭을 확인해 보세요.</p>` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
       <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">${hp
@@ -337,6 +346,11 @@ const UI = (() => {
     const again = el('button', 'primary', loadPrologue() ? '처음부터 — 프롤로그 건너뛰기' : '처음부터 다시');
     again.addEventListener('click', () => { lastRes = null; if (loadPrologue()) Game.skipPrologue(); else Game.start(newState()); render(true); });
     box.appendChild(again);
+    if (anySlot()) {
+      const ls = el('button', 'secondary', '💾 저장한 곳에서 불러오기');
+      ls.addEventListener('click', () => openSheet('saves'));
+      box.appendChild(ls);
+    }
     if (loadPrologue()) {
       const full = el('button', 'secondary', '프롤로그부터 다시 보기');
       full.addEventListener('click', () => { lastRes = null; Game.start(newState()); render(true); });
@@ -362,6 +376,11 @@ const UI = (() => {
       const c = el('button', 'primary', `이어하기 <small>${saved.year}학년 · ${esc((CALENDAR[saved.year] || {})[saved.turn] || '')}</small>`);
       c.addEventListener('click', () => { Game.start(saved); lastRes = null; render(false); });
       box.appendChild(c);
+    }
+    if (anySlot()) {
+      const l = el('button', 'secondary', '💾 불러오기');
+      l.addEventListener('click', () => openSheet('saves'));
+      box.appendChild(l);
     }
     const n = el('button', saved ? 'secondary' : 'primary', '새로 시작');
     n.addEventListener('click', () => (saved ? confirmNew() : startNew()));
@@ -434,7 +453,62 @@ const UI = (() => {
     return wrap;
   }
 
+  /* 저장 칸에 붙일 한 줄 */
+  function slotLabel(S) {
+    const when = S.turn > 0 ? `${S.year}학년 · ${(CALENDAR[S.year] || {})[S.turn] || ''}` : '프롤로그';
+    const sc = S.screen || {};
+    const where = sc.kind === 'event' && EVENTS[sc.id] ? Rules.text(S, EVENTS[sc.id].title) : sc.kind === 'travel' ? '행선지를 고르는 중' : '';
+    return { when, where };
+  }
+  function loadFrom(n) {
+    const S = loadSlot(n);
+    if (!S) return;
+    closeSheet();
+    lastRes = null;
+    Game.start(S);
+    saveGame(S);
+    render(false);
+    toast(`💾 ${n}번 칸에서 불러왔다.`);
+  }
+
   const SHEETS = {
+    saves() {
+      const S = Game.state();
+      const box = el('div', 'sheet-content');
+      box.appendChild(el('h3', null, '💾 저장 · 불러오기'));
+      box.appendChild(el('p', 'hint', '세 칸까지 남겨 둘 수 있다. 저장 칸은 게임 오버가 되어도 지워지지 않는다. (호현의 되감기와는 다르다 — 이건 나만 아는 책갈피다.)'));
+      const canSave = S && S.screen && S.screen.kind !== 'gameover' && S.screen.kind !== 'yearEnd';
+      const ul = el('ul', 'slots');
+      for (let n = 1; n <= SLOT_COUNT; n++) {
+        const d = readSlot(n);
+        const li = el('li', `slot${d ? '' : ' empty'}`);
+        if (d) {
+          const L = slotLabel(d.state);
+          const t = new Date(d.at);
+          const stamp = `${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+          li.innerHTML = `<div class="slot-head"><b>${n}번 칸 · ${esc(L.when)}</b><small>${stamp}</small></div><div class="slot-info">${esc(L.where)}${L.where ? ' · ' : ''}❤️ ${d.state.res.hp} · 💭 ${d.state.res.mind} · ⭐ ${esc(Rules.REP_NAMES[d.state.res.rep])}</div>`;
+        } else {
+          li.innerHTML = `<div class="slot-head"><b>${n}번 칸</b></div><div class="slot-info">비어 있다</div>`;
+        }
+        const btns = el('div', 'slot-btns');
+        const sv = el('button', 'save', d ? '여기에 저장' : '저장');
+        sv.disabled = !canSave;
+        sv.addEventListener('click', () => {
+          if (d && !sv.dataset.sure) { sv.dataset.sure = '1'; sv.textContent = '덮어쓸까? 한 번 더'; return; }
+          if (saveSlot(n, JSON.parse(JSON.stringify(S)))) { toast(`💾 ${n}번 칸에 저장했다.`); openSheet('saves'); }
+          else toast('저장할 수 없는 환경이다.');
+        });
+        const ld = el('button', 'load', '불러오기');
+        ld.disabled = !d;
+        ld.addEventListener('click', () => loadFrom(n));
+        btns.appendChild(sv);
+        btns.appendChild(ld);
+        li.appendChild(btns);
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+      return box;
+    },
     log() {
       const S = Game.state();
       const box = el('div', 'sheet-content');
@@ -452,6 +526,16 @@ const UI = (() => {
       box.appendChild(ul);
       const nev = Object.values(KNOTS).filter(k => k.neville && ['tied', 'loose'].includes((S.knots || {})[k.id])).length;
       box.appendChild(el('p', 'kv', `<span>🌱 네빌에게 심은 씨앗</span><b>${nev} / ${Object.values(KNOTS).filter(k => k.neville).length}</b>`));
+      if (typeof PREPS !== 'undefined') {
+        box.appendChild(el('h3', null, '🗝️ 6월을 위한 준비'));
+        box.appendChild(el('p', 'hint', '마지막 밤, 셋은 스스로 함정을 지나가야 한다. 내가 미리 심어 두지 않으면, 그날 밤 어둠 속에서 내가 직접 손을 써야 한다. 흔적이 남는다.'));
+        const pu = el('ul', 'preps');
+        for (const [id, p] of Object.entries(PREPS)) {
+          const done = !!S.flags[id];
+          pu.appendChild(el('li', done ? 'done' : '', `<span class="ic">${done ? '✔️' : '·'}</span><div><b>${esc(p.trap)} — ${esc(p.title)}</b><small>${esc(done ? p.who + '에게 심어 두었다' : p.how)}</small></div>`));
+        }
+        box.appendChild(pu);
+      }
       box.appendChild(el('h3', null, '📜 지나온 이야기'));
       const lg = el('ul', 'log');
       [...S.log].reverse().forEach(l => {
@@ -491,7 +575,7 @@ const UI = (() => {
       box.appendChild(el('h3', null, '🪄 익힌 주문'));
       const sp = el('ul', 'items');
       S.spells.forEach(id => sp.appendChild(el('li', null, `<span class="ic">✨</span><div><b>${esc(SPELLS[id].name)}</b><small>${esc(SPELLS[id].desc)}</small></div>`)));
-      if (!S.spells.length) sp.appendChild(el('li', 'empty', '아직 제대로 쓸 줄 아는 주문이 없다.'));
+      if (!S.spells.length) sp.appendChild(el('li', 'empty', '머리는 일곱 해 동안 쓴 주문을 기억한다. 이 지팡이로 되찾은 건 아직 없다.'));
       box.appendChild(sp);
       return box;
     },
@@ -552,6 +636,9 @@ const UI = (() => {
       seg('화면', 'theme', [['auto', '자동'], ['light', '양피지'], ['dark', '밤']]);
       seg('연출 줄이기', 'reduceMotion', [[true, '켜기'], [false, '끄기']]);
       box.appendChild(el('p', 'hint', '연출 줄이기를 켜 두면 화면이 흔들리거나 번쩍이는 효과가 모두 꺼집니다. 글이 나오는 중에 화면을 누르면 바로 전부 보입니다.'));
+      const sb = el('button', 'secondary', '💾 저장 · 불러오기');
+      sb.addEventListener('click', () => openSheet('saves'));
+      box.appendChild(sb);
       if (Game.state()) {
         const b = el('button', 'danger-btn', '처음부터 다시 시작');
         b.addEventListener('click', () => openSheet('confirm'));

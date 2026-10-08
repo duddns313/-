@@ -136,6 +136,12 @@ const Game = (() => {
 
   /* ── 게임 오버: 처음부터 ── */
   function checkGameOver() {
+    /* 무너진 길 — 퀴렐이 돌을 손에 넣었다 */
+    if (S.flags.ending_broken) {
+      S.screen = { kind: 'gameover', cause: 'broken', date: dateLabel(), prev: S.screen && S.screen.id };
+      clearSave();
+      return true;
+    }
     if (S.res.hp > 0 && S.res.mind > 0) return false;
     S.screen = { kind: 'gameover', cause: S.res.hp <= 0 ? 'hp' : 'mind', date: dateLabel(), prev: S.screen && S.screen.id };
     clearSave();

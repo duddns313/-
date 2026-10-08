@@ -25,10 +25,12 @@ defineKnots([
   { id: 'k_snape_leg', month: '11월 1일', title: '해리가 스네이프의 물린 다리를 본다', weight: 'light', due: 5, ready: true,
     feeds: '셋은 스네이프를 의심한다 → 퀴렐이 경계를 늦춘다', life: '해리가 『퀴디치의 역사』를 돌려받으러 교무실에 가야 한다.' },
   { id: 'k_quidditch', month: '11월', title: '헤르미온느가 스네이프의 망토에 불을 붙인다', weight: 'heavy', due: 5,
+    ready: true,
     feeds: '해리가 산다', life: '퀴렐의 눈길이 끊기는 단 몇 초.' },
   { id: 'k_hagrid_slip', month: '11월', title: '해그리드가 "니콜라스 플라멜"을 흘린다', weight: 'light', due: 6,
     feeds: '플라멜을 찾는 겨울' },
   { id: 'k_mirror', month: '12월', title: '해리가 필치를 피해 소망의 거울을 찾는다', weight: 'heavy', due: 7,
+    ready: true,
     feeds: '6월, 돌을 꺼내는 방법' },
   { id: 'k_leglock', month: '1월', title: '다리 묶기에 걸린 네빌 — "넌 말포이 열두 명 몫이야"', weight: 'heavy', neville: true, due: 8,
     feeds: '플라멜 깨달음 · 네빌의 용기' },
@@ -43,9 +45,22 @@ defineKnots([
   { id: 'k_realize', month: '6월', title: '해리가 해그리드의 실수를 깨닫는다', weight: 'heavy', due: 13,
     feeds: '그날 밤 뚜껑 문으로' },
   { id: 'k_neville', month: '6월', title: '네빌이 셋을 막아선다', weight: 'heavy', neville: true, due: 13,
+    ready: true,
     feeds: '덤블도어의 10점 · 네빌의 용기' },
   { id: 'k_return', month: '6월', title: '덤블도어가 제때 돌아온다', weight: 'heavy', due: 13,
+    ready: true,
     feeds: '해리가 산다' },
   { id: 'k_trapdoor', month: '6월', title: '셋이 함정을 지난다', weight: 'heavy', due: 13,
+    ready: true,
     feeds: '1학년의 끝' },
 ]);
+
+/* 6월을 위한 준비 — 마지막 밤의 함정을 셋이 스스로 지나가도록, 1년 내내 내가 심어 두는 것.
+   flag 이름 그대로 S.flags에 선다. 없으면 그날 밤 내가 어둠 속에서 직접 손을 써야 한다(흔적이 남는다). */
+const PREPS = {
+  prep_snare:  { trap: '악마의 덫',        who: '헤르미온느', title: '헤르미온느가 불을 떠올린다',            how: '스프라우트 교수에게 "어둡고 축축한 걸 좋아하는 덩굴"을 묻게 만들거나, 푸른 불꽃을 헤르미온느 앞에서 쓰게 한다' },
+  prep_keys:   { trap: '날개 달린 열쇠',   who: '해리',       title: '해리가 작고 빠른 것을 잡는 눈',          how: '해리가 수색꾼이 되고, 작은 것을 쫓는 연습을 한다' },
+  prep_chess:  { trap: '마법사 체스',      who: '론',         title: '론이 자기를 내주는 수',                   how: '론과 체스를 두며 "가장 좋은 수가 나를 내주는 수일 때"를 함께 본다' },
+  prep_riddle: { trap: '일곱 개의 병',     who: '헤르미온느', title: '헤르미온느가 수수께끼를 푸는 머리',       how: '헤르미온느에게 논리 수수께끼를 건넨다 — 독수리 문고리, 퍼즐 책' },
+  prep_owl:    { trap: '덤블도어의 귀환',  who: '헤르미온느', title: '무슨 일이 생기면 곧장 부엉이장으로',     how: '헤르미온느에게 부엉이장 가는 지름길을 알려 두고, "선생님께 먼저"라는 말을 심는다' },
+};

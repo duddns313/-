@@ -9,9 +9,9 @@ function defineEvents(list) {
   }
 }
 
-const SAVE_KEY = 'hp7_save_v8';
-const SAVE_VERSION = 8;
-const PROLOGUE_KEY = 'hp7_prologue_v8';
+const SAVE_KEY = 'hp7_save_v9';
+const SAVE_VERSION = 9;
+const PROLOGUE_KEY = 'hp7_prologue_v9';
 
 function newState() {
   return {
@@ -23,9 +23,10 @@ function newState() {
     /* ❤️ 체력 · 💭 정신력 (한도 5, 0이면 게임 오버) · ⭐ 평판 (1~5) · 🪙 갈레온 · 기숙사 점수(이야기 속에만) */
     res: { hp: 4, mind: 4, rep: 3, galleon: 0, points: 0 },
     rewinds: 0,
+    knots: {},            // 운명의 매듭: id → tied | loose | cut
     spells: [], items: {}, memories: [], cards: [],
     flags: {}, marks: {}, rel: {}, visits: {},
-    seen: [], later: [], queue: ['pro_letter'],
+    seen: [], later: [], queue: ['pro_1998'],
     log: [],
     screen: null,
   };

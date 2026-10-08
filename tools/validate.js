@@ -65,7 +65,7 @@ function render(id, label, t, min) {
 }
 
 const OLD_FX = ['heart', 'notice', 'xp', 'insight', 'curfew', 'courage', 'wisdom', 'diligence', 'cunning', 'magic'];
-const FX_KEYS = new Set(['hp', 'mind', 'rep', 'galleon', 'points', 'item', 'loseItem', 'spell', 'memory', 'loseMemory', 'rel', 'card', 'beans', 'flag', 'unflag', 'mark', 'house', 'wand', 'pet', 'later']);
+const FX_KEYS = new Set(['hp', 'mind', 'rep', 'galleon', 'points', 'item', 'loseItem', 'spell', 'memory', 'loseMemory', 'rel', 'card', 'beans', 'flag', 'unflag', 'mark', 'house', 'wand', 'pet', 'later', 'tie', 'loosen', 'cut']);
 function checkFx(id, fx, inChoice) {
   if (!fx) return;
   for (const s of CUR) {
@@ -86,6 +86,7 @@ function checkFx(id, fx, inChoice) {
     if (f.pet && !PETS[f.pet]) err(id, `없는 펫 ${f.pet}`);
     if (f.wand && !WANDS[f.wand]) err(id, `없는 지팡이 ${f.wand}`);
     for (const l of list(f.later)) if (!EVENTS[l.id]) err(id, `later 대상 없음 ${l.id}`);
+    for (const k of list(f.tie).concat(list(f.loosen), list(f.cut))) if (!g.KNOTS[k]) err(id, `없는 매듭 ${k}`);
   }
 }
 function checkNeeds(id, n) {
@@ -94,6 +95,7 @@ function checkNeeds(id, n) {
   for (const i of list(n.item).concat(list(n.notItem))) if (!ITEMS[i]) err(id, `needs 없는 소지품 ${i}`);
   for (const sp of list(n.spell).concat(list(n.notSpell))) if (!SPELLS[sp]) err(id, `needs 없는 주문 ${sp}`);
   if (n.stat || n.resMin && (n.resMin.heart != null || n.resMin.notice != null)) err(id, 'needs에 예전 능력치·자원 조건');
+  for (const k of list(n.tied).concat(list(n.firmly), list(n.cutKnot), list(n.openKnot))) if (!g.KNOTS[k]) err(id, `needs 없는 매듭 ${k}`);
   for (const sub of n.any || []) checkNeeds(id, sub);
 }
 

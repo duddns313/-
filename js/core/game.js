@@ -32,6 +32,12 @@ const Game = (() => {
   function turnStart() {
     S.stage = S.turn <= TURNS_PER_YEAR ? 'travel' : 'done';
     const q = [];
+    /* 기한이 지난 매듭은 저절로 끊어진다 — 내가 아무것도 하지 않으면 원작은 일어나지 않는다 */
+    S.knots = S.knots || {};
+    S.cutNotes = [];
+    if (typeof KNOTS !== 'undefined') for (const k of Object.values(KNOTS)) {
+      if (k.ready && (k.year || 1) === S.year && k.due < S.turn && !S.knots[k.id]) { S.knots[k.id] = 'cut'; S.cutNotes.push(k.id); }
+    }
     /* 학교생활의 피로 — 짝수 주엔 몸이, 홀수 주엔 마음이 한 칸 닳는다. 피로만으로 쓰러지지는 않는다(1에서 멈춘다) */
     S.weekNote = null;
     if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR) {
@@ -218,7 +224,7 @@ const Game = (() => {
       take(pool[Math.floor(rnd() * pool.length)]);
     }
     if (safe) hand.push(safe);
-    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel(), nightClosed: nightClosed(), weekNote: S.weekNote };
+    S.screen = { kind: 'travel', hand: hand.map(c => ({ id: c.id, hints: c.hints })), date: dateLabel(), nightClosed: nightClosed(), weekNote: S.weekNote, cutNotes: S.cutNotes || [] };
     saveGame(S);
   }
 

@@ -249,6 +249,9 @@ const UI = (() => {
     wrap.appendChild(el('div', 'travel-head', `<span>${S.turn} / ${TURNS_PER_YEAR}</span><div class="progress"><i style="width:${(S.turn / TURNS_PER_YEAR) * 100}%"></i></div>`));
     wrap.appendChild(el('h2', 'scene-title', '어디로 갈까?'));
     wrap.appendChild(el('p', 'travel-mood', esc(season(S.turn))));
+    for (const id of sc.cutNotes || []) wrap.appendChild(el('p', 'cut-note', `✂️ 매듭이 끊어졌다 — ${esc(KNOTS[id].title)}`));
+    const due = Object.values(KNOTS).filter(k => k.ready && !(S.knots || {})[k.id] && k.due >= S.turn && k.due <= S.turn + 1);
+    if (due.length) wrap.appendChild(el('p', 'due-note', `📓 곧 묶어야 할 매듭 · ${due.map(k => esc(k.title)).join(' · ')}`));
     if (sc.weekNote) wrap.appendChild(el('p', 'week-note', sc.weekNote === 'hp' ? '❤️-1 · 수업과 숙제와 계단. 몸이 조금 무겁다.' : '💭-1 · 집 생각이 나는 한 주였다. 마음이 조금 가라앉았다.'));
     const list = el('div', 'cards');
     for (const c of sc.hand) {
@@ -434,13 +437,27 @@ const UI = (() => {
     log() {
       const S = Game.state();
       const box = el('div', 'sheet-content');
-      box.appendChild(el('h3', null, '📜 지나온 이야기'));
-      const ul = el('ul', 'log');
-      [...S.log].reverse().forEach(l => {
-        ul.appendChild(el('li', null, `<small>${esc((CALENDAR[l.y] || {})[l.t] || '')}</small><b>${esc(l.title)}</b><span>› ${esc(l.choice)}</span>`));
-      });
-      if (!S.log.length) ul.appendChild(el('li', 'empty', '아직 아무 일도 없었다.'));
+      box.appendChild(el('h3', null, '📓 일기장 — 내가 기억하는 길'));
+      box.appendChild(el('p', 'hint', '첫 번째 삶에서 호현과 내가 뒤에서 만들어 낸 원작의 우연들. 기한까지 아무것도 하지 않으면 끊긴다. 🌱는 네빌 — 우리가 놓쳤던 마지막 열쇠.'));
+      const st = { tied: ['🪢', '묶음'], loose: ['〰️', '겨우'], cut: ['✂️', '끊김'] };
+      const ul = el('ul', 'knots');
+      for (const k of Object.values(KNOTS).filter(k => (k.year || 1) === S.year)) {
+        const v = (S.knots || {})[k.id];
+        const now = !v && k.due >= S.turn && k.due <= S.turn + 1;
+        const li = el('li', `knot ${v || (now ? 'now' : 'todo')} ${k.weight}`);
+        li.innerHTML = `<span class="ks">${v ? st[v][0] : now ? '❗' : '·'}</span><div><small>${esc(k.month)} · ${k.weight === 'heavy' ? '무거운 매듭' : '가벼운 매듭'}${k.neville ? ' · 🌱' : ''}${v ? ' · ' + st[v][1] : now ? ' · 이번에' : ''}</small><b>${esc(k.title)}</b>${v || now ? `<em>→ ${esc(k.feeds)}</em>` : ''}${now && k.life ? `<i>${esc(k.life)}</i>` : ''}</div>`;
+        ul.appendChild(li);
+      }
       box.appendChild(ul);
+      const nev = Object.values(KNOTS).filter(k => k.neville && ['tied', 'loose'].includes((S.knots || {})[k.id])).length;
+      box.appendChild(el('p', 'kv', `<span>🌱 네빌에게 심은 씨앗</span><b>${nev} / ${Object.values(KNOTS).filter(k => k.neville).length}</b>`));
+      box.appendChild(el('h3', null, '📜 지나온 이야기'));
+      const lg = el('ul', 'log');
+      [...S.log].reverse().forEach(l => {
+        lg.appendChild(el('li', null, `<small>${esc((CALENDAR[l.y] || {})[l.t] || '')}</small><b>${esc(l.title)}</b><span>› ${esc(l.choice)}</span>`));
+      });
+      if (!S.log.length) lg.appendChild(el('li', 'empty', '아직 아무 일도 없었다.'));
+      box.appendChild(lg);
       return box;
     },
     bag() {

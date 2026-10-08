@@ -39,6 +39,11 @@ const Rules = (() => {
     if (n.seen) for (const id of asList(n.seen)) if (!S.seen.includes(id)) return false;
     if (n.visits) for (const p in n.visits) if (((S.visits || {})[p] || 0) < n.visits[p]) return false;
     if (n.spells != null && S.spells.length < n.spells) return false;
+    /* 운명의 매듭: tied = 묶였거나 느슨하게라도 묶임 · cutKnot = 끊김 · openKnot = 아직 아무 일도 없음 */
+    for (const k of asList(n.tied)) if (!['tied', 'loose'].includes((S.knots || {})[k])) return false;
+    for (const k of asList(n.firmly)) if ((S.knots || {})[k] !== 'tied') return false;
+    for (const k of asList(n.cutKnot)) if ((S.knots || {})[k] !== 'cut') return false;
+    for (const k of asList(n.openKnot)) if ((S.knots || {})[k]) return false;
     if (n.since) for (const k in n.since) {
       if (S.marks[k] == null || S.turn - S.marks[k] < n.since[k]) return false;
     }
@@ -201,6 +206,15 @@ const Rules = (() => {
       const [f, h, k] = flavors[Math.floor(rnd() * flavors.length)];
       if (h && !(h < 0 && S.res[k] <= 1)) S.res[k] = clamp(k, S.res[k] + h);
       chips.push({ t: `🫘 ${f}!${h ? ` ${RESOURCES[k].icon} ${sign(h)}` : ''}`, good: h >= 0 });
+    }
+    /* 운명의 매듭 */
+    for (const [key, st, icon, word] of [['tie', 'tied', '🪢', '매듭을 묶었다'], ['loosen', 'loose', '〰️', '매듭을 겨우 붙잡았다'], ['cut', 'cut', '✂️', '매듭이 끊어졌다']]) {
+      for (const id of asList(fx[key])) {
+        S.knots = S.knots || {};
+        if (S.knots[id] === st) continue;
+        S.knots[id] = st;
+        chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true });
+      }
     }
     if (fx.flag) for (const f of asList(fx.flag)) S.flags[f] = true;
     if (fx.unflag) for (const f of asList(fx.unflag)) delete S.flags[f];

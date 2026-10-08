@@ -147,7 +147,7 @@ defineEvents([
 
 그 웃음을 안다. 뉴몰든의 골목에서, 9와 3/4 승강장에서, 그리고 무너진 대연회장 앞 계단에서 본 웃음이었다. 늘 무언가를 붙잡고 있는 웃음.${s.flags.rewind_known ? `
 
-불빛 아래로 호현의 눈 밑이 거뭇했다. 세상이 몇 분 뒤로 감기던 그날 이후로 부쩍 그랬다. 몇 번째인지, 아픈지 물으면 호현은 "별거 아니야" 하고 웃을 뿐이었다. 그 일도, 이 양피지도, 호현은 혼자 쥐고 있었다.` : ''}${s.flags.knows_hohyeon_home ? `
+불빛 아래로 호현의 눈 밑이 거뭇했다. 세상이 몇 분 뒤로 감기던 그날 이후로 부쩍 그랬다. 몇 번째인지, 아픈지 물으면 호현은 "별거 아니야" 하고 웃을 뿐이었다. 그 일도, 이 양피지도, 호현은 혼자 쥐고 있었다.` : ''}${s.turn >= 8 ? `
 
 크리스마스 무렵부터 호현은 가끔 말을 하다 멈췄다. 하려던 말을 잊은 사람처럼. 그럴 때면 관자놀이를 문지르며 웃었다. "뭐였더라. 중요한 거였는데."` : ''}
 
@@ -176,7 +176,7 @@ defineEvents([
       } },
     { label: '아무것도 묻지 않고, 옆에 앉는다',
       outcome: {
-        text: s => (s.flags.knows_hohyeon_home || s.flags.gave_package || (s.rel.hohyeon || 0) >= 60) ? `아무것도 묻지 않았다. 호현 옆에 앉아 꺼져 가는 불을 보았다. 오 분. 십 분. 호현도 아무 말이 없었다.${s.flags.gave_package ? ' 크리스마스에 목도리 하나를 같이 둘렀던 날처럼, 어깨 사이가 한 뼘쯤 가까웠다.' : ''}
+        text: s => (s.flags.hohyeon_dejavu2 || s.flags.gave_package || (s.rel.hohyeon || 0) >= 60) ? `아무것도 묻지 않았다. 호현 옆에 앉아 꺼져 가는 불을 보았다. 오 분. 십 분. 호현도 아무 말이 없었다.${s.flags.gave_package ? ' 크리스마스에 목도리 하나를 같이 둘렀던 날처럼, 어깨 사이가 한 뼘쯤 가까웠다.' : ''}
 
 그러다 호현이 먼저 말했다. "…요즘 이상한 꿈을 꿔."
 
@@ -187,7 +187,7 @@ defineEvents([
 대답하지 않았다. 대답할 수 있는 말이 아니었다. 그 손목이 누구 것이었는지 나는 알았다. 대신 일어나지 않았다. 우리는 새벽 세 시까지 그렇게 앉아 있었다.` : `옆에 앉았다. 하지만 호현은 끝내 아무 말도 하지 않았다. 한참 뒤에 "자러 가자" 하고 일어섰을 뿐이다.
 
 오늘은 아니었을 뿐이다. 호현은 문을 아주 천천히 여는 사람이었다. 첫 번째 삶에서도. 다음에. 다음에는 조금 더.`,
-        fx: s => (s.flags.knows_hohyeon_home || s.flags.gave_package || (s.rel.hohyeon || 0) >= 60) ? { memory: 'hohyeon_story', rel: { hohyeon: 18 } } : { rel: { hohyeon: 5 }, flag: 'ho_story_later', mark: 'ho_story_later' },
+        fx: s => (s.flags.hohyeon_dejavu2 || s.flags.gave_package || (s.rel.hohyeon || 0) >= 60) ? { memory: 'hohyeon_story', rel: { hohyeon: 18 } } : { rel: { hohyeon: 5 }, flag: 'ho_story_later', mark: 'ho_story_later' },
       } },
     { label: '말없이 옆에 앉아, 약과를 반으로 쪼갠다', needs: { item: 'yakgwa' }, consume: true,
       outcome: { text: `아무것도 묻지 않았다. 호현 옆에 앉아, 주머니에서 약과를 꺼내 반으로 쪼갰다. 한쪽을 내밀었다.

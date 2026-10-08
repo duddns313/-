@@ -355,8 +355,9 @@ const UI = (() => {
     box.innerHTML = `
       <div class="owl" aria-hidden="true">🦉</div>
       <h1>호그와트 7년</h1>
+      <p class="tag-line">마지막 접기</p>
       <p class="tag-line">1학년 · 마법사의 돌</p>
-      <p class="opening">1991년 7월, 뉴몰든 하이 스트리트의 작은 식품점 차양 위에<br>커다란 갈색 부엉이 한 마리가 내려앉았다.</p>`;
+      <p class="opening">나는 이미 한 번 7년을 살았다.<br>마지막에 하나가 모자랐다.</p>`;
     if (saved && saved.screen) {
       const c = el('button', 'primary', `이어하기 <small>${saved.year}학년 · ${esc((CALENDAR[saved.year] || {})[saved.turn] || '')}</small>`);
       c.addEventListener('click', () => { Game.start(saved); lastRes = null; render(false); });

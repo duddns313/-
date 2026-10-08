@@ -68,7 +68,7 @@ const ITEMS = {
   wintercloak: { name: '두꺼운 겨울 망토',    icon: '🧥', desc: '안감에 양털을 덧댄 망토. 한겨울 탑 위에서도 따뜻하다.', price: 4, shop: 'owl', hint: '추운 곳 · 밤의 바깥' },
   sweater:     { name: '손뜨개 스웨터',       icon: '🧶', desc: '엄마가 서툰 솜씨로 떠서 보낸 스웨터. 소매 길이가 서로 다르다.' },
   chess_knight:{ name: '론의 체스 기사',      icon: '♞', desc: '론이 할아버지에게 물려받은 마법사 체스의 기사 말. "작전 짤 때 쥐고 있어. 머리가 잘 돌아가."' },
-  hohyeon_cap: { name: '서울 마트 병뚜껑',    icon: '🪙', desc: '호현이 늘 주머니에 넣고 다니던 식혜 병뚜껑. 기차에서 영운 손에 쥐여 주었다. "부적이야." 무엇을 막아 주는 부적인지는 말하지 않았다.' },
+  hohyeon_cap: { name: '찌그러진 병뚜껑',    icon: '🪙', desc: '호현이 늘 주머니에 넣고 다니던 식혜 병뚜껑. 기차에서 내 손에 쥐여 주었다. 첫 번째 삶에서도 그랬다. "부적이야." 무엇을 막아 주는 부적인지는 말하지 않았다.' },
   cloak_note:  { name: '해리의 쪽지',         icon: '📝', desc: '"필요하면 말해. —H" 투명 망토를 한 번 빌릴 수 있다는 뜻이다.' },
 };
 
@@ -141,7 +141,7 @@ const MEMORIES = {
   troll_warning:    { name: '트롤의 밤', desc: '핼러윈 밤, 트롤과 헤르미온느 사이에서 해야 할 일을 했다.' },
   hermione_alone:   { name: '화장실 문 앞에서', desc: '울고 있는 헤르미온느를 혼자 두지 않았다.' },
   hermione_question:{ name: '질문 공책', desc: '헤르미온느와 함께 풀지 못한 질문들을 공책에 적기 시작했다.' },
-  hermione_tears:   { name: '처음 보여 준 눈물', desc: '헤르미온느가 영운 앞에서만 울었다.' },
+  hermione_tears:   { name: '처음 보여 준 눈물', desc: '헤르미온느가 내 앞에서만 울었다.' },
   ron_chess:        { name: '론의 체스판', desc: '론에게 마법사 체스를 배웠다. 론이 처음으로 자랑스러워 보였다.' },
   harry_cupboard:   { name: '계단 밑 벽장', desc: '해리가 자기 이야기를 처음으로 들려주었다.' },
   cloak_night:      { name: '투명 망토 아래', desc: '해리와 함께 투명 망토를 쓰고 한밤의 성을 걸었다.' },
@@ -157,7 +157,7 @@ const MEMORIES = {
   neville_comfort:  { name: '네빌 옆자리', desc: '모두가 등을 돌렸을 때 네빌 옆에 앉았다.' },
   centaur:          { name: '화성이 밝은 밤', desc: '금지된 숲에서 켄타우로스의 말을 들었다.' },
   myrtle_friend:    { name: '머틀의 친구', desc: '2층 화장실의 울보 머틀과 친구가 되었다.' },
-  stopped_world:    { name: '깜박인 세상', desc: '세상이 몇 분 전으로 돌아갔다. 영운만 그것을 기억한다. 그리고 호현은 아무 일도 없었다고 한다.' },
+  stopped_world:    { name: '깜박인 세상', desc: '세상이 몇 분 전으로 돌아갔다. 나만 그것을 기억한다. 그리고 호현은 아무 일도 없었다고 한다.' },
   quirrell_office:  { name: '터번 아래의 목소리', desc: '퀴렐의 연구실에서 터번 속 두 번째 목소리를 들었다. 그리고 지워지지 않고 빠져나왔다.' },
   neville_freed:    { name: '굳어 버린 네빌 곁에서', desc: '마지막 밤, 통나무처럼 굳은 네빌을 혼자 두지 않았다.' },
   lullaby:          { name: '섬집아기', desc: '머리 셋 달린 개 앞에서 엄마의 자장가를 불렀다. 목이 쉴 때까지.' },

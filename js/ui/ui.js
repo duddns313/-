@@ -251,9 +251,9 @@ const UI = (() => {
     wrap.appendChild(el('div', 'travel-head', `<span>${S.turn} / ${TURNS_PER_YEAR}</span><div class="progress"><i style="width:${(S.turn / TURNS_PER_YEAR) * 100}%"></i></div>`));
     wrap.appendChild(el('h2', 'scene-title', '어디로 갈까?'));
     wrap.appendChild(el('p', 'travel-mood', esc(season(S.turn))));
-    for (const id of sc.cutNotes || []) wrap.appendChild(el('p', 'cut-note', `✂️ 매듭이 끊어졌다 — ${esc(KNOTS[id].title)}`));
+    for (const id of sc.cutNotes || []) wrap.appendChild(el('p', 'cut-note', `✖️ 갈림길이 어긋났다 — ${esc(KNOTS[id].title)}`));
     const due = Object.values(KNOTS).filter(k => k.ready && !(S.knots || {})[k.id] && k.due >= S.turn && k.due <= S.turn + 1);
-    if (due.length) wrap.appendChild(el('p', 'due-note', `📓 곧 묶어야 할 매듭 · ${due.map(k => esc(k.title)).join(' · ')}`));
+    if (due.length) wrap.appendChild(el('p', 'due-note', `📓 곧 바로잡아야 할 갈림길 · ${due.map(k => esc(k.title)).join(' · ')}`));
     if (sc.weekNote) wrap.appendChild(el('p', 'week-note', sc.weekNote === 'hp' ? '❤️-1 · 수업과 숙제와 계단. 몸이 조금 무겁다.' : '💭-1 · 집 생각이 나는 한 주였다. 마음이 조금 가라앉았다.'));
     const list = el('div', 'cards');
     for (const c of sc.hand) {
@@ -330,9 +330,9 @@ const UI = (() => {
     box.innerHTML = broken ? `<div class="crest">🔥</div>
       <h2>무너진 길</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
-      <div class="prose"><p class="shown">그날 밤, 마법사의 돌은 퀴렐의 손에 들어갔다. 1년 동안 지켜야 했던 매듭이 너무 많이 끊겨 있었다. 셋은 마지막 방까지 가지 못했고, 덤블도어는 제때 돌아오지 못했다.</p>
+      <div class="prose"><p class="shown">그날 밤, 마법사의 돌은 퀴렐의 손에 들어갔다. 1년 동안 바로잡아야 했던 갈림길이 너무 많이 어긋나 있었다. 셋은 마지막 방까지 가지 못했고, 덤블도어는 제때 돌아오지 못했다.</p>
       <p class="shown">돌을 손에 넣은 볼드모트는 첫 번째 삶보다 훨씬 일찍 돌아올 것이다. 나는 그 뒤에 무슨 일이 벌어지는지 알고 있었다. 하지만 이번에는 시간을 거슬러 줄 호현의 마법이 남아 있지 않았다.</p></div>
-      <p class="note">무거운 매듭과 6월을 위한 준비가 마지막 밤을 가릅니다. 📓 일기장에서 끊긴 매듭을 확인해 보세요.</p>` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
+      <p class="note">큰 갈림길과 6월을 위한 준비가 마지막 밤을 가릅니다. 📓 일기장에서 어긋난 갈림길을 확인해 보세요.</p>` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
       <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">${hp
@@ -465,7 +465,7 @@ const UI = (() => {
     const code = encodeChronicle(c);
     const wrap = el('div', 'chronicle');
     wrap.innerHTML = `<h3>📜 ${c.y}학년의 기록</h3>
-      <p class="hint">${saved ? '이 기기에 보관해 두었다. ' : ''}${c.y + 1}학년이 열리면, 게임이 업데이트되어도 이 기록 — 묶은 매듭, 기억, 주문, 친밀도, 결말 — 을 이어 받아 시작한다. 다른 기기로 옮기거나 혹시 몰라 남겨 두려면 아래 코드를 복사해 두면 된다.</p>`;
+      <p class="hint">${saved ? '이 기기에 보관해 두었다. ' : ''}${c.y + 1}학년이 열리면, 게임이 업데이트되어도 이 기록 — 바로잡은 갈림길, 기억, 주문, 친밀도, 결말 — 을 이어 받아 시작한다. 다른 기기로 옮기거나 혹시 몰라 남겨 두려면 아래 코드를 복사해 두면 된다.</p>`;
     const ta = el('textarea', 'chronicle-code');
     ta.readOnly = true;
     ta.value = code;
@@ -567,14 +567,14 @@ const UI = (() => {
       const S = Game.state();
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, '📓 일기장 — 내가 기억하는 길'));
-      box.appendChild(el('p', 'hint', '첫 번째 삶에서 호현과 내가 뒤에서 만들어 낸 원작의 우연들. 기한까지 아무것도 하지 않으면 끊긴다. 🌱는 네빌 — 우리가 놓쳤던 마지막 열쇠.'));
-      const st = { tied: ['🪢', '묶음'], loose: ['〰️', '겨우'], cut: ['✂️', '끊김'] };
+      box.appendChild(el('p', 'hint', '원작의 이야기가 어긋날 수 있는 갈림길들. 첫 번째 삶에서 호현과 내가 뒤에서 하나씩 바로잡았던 곳이다. 기한까지 아무것도 하지 않으면 어긋난다. 🌱는 네빌의 갈림길 — 우리가 놓쳤던 마지막 열쇠.'));
+      const st = { tied: ['🧭', '바로잡음'], loose: ['〰️', '겨우 바로잡음'], cut: ['✖️', '어긋남'] };
       const ul = el('ul', 'knots');
       for (const k of Object.values(KNOTS).filter(k => (k.year || 1) === S.year)) {
         const v = (S.knots || {})[k.id];
         const now = !v && k.due >= S.turn && k.due <= S.turn + 1;
         const li = el('li', `knot ${v || (now ? 'now' : 'todo')} ${k.weight}`);
-        li.innerHTML = `<span class="ks">${v ? st[v][0] : now ? '❗' : '·'}</span><div><small>${esc(k.month)} · ${k.weight === 'heavy' ? '무거운 매듭' : '가벼운 매듭'}${k.neville ? ' · 🌱' : ''}${v ? ' · ' + st[v][1] : now ? ' · 이번에' : ''}</small><b>${esc(k.title)}</b>${v || now ? `<em>→ ${esc(k.feeds)}</em>` : ''}${now && k.life ? `<i>${esc(k.life)}</i>` : ''}</div>`;
+        li.innerHTML = `<span class="ks">${v ? st[v][0] : now ? '❗' : '·'}</span><div><small>${esc(k.month)} · ${k.weight === 'heavy' ? '큰 갈림길' : '작은 갈림길'}${k.neville ? ' · 🌱' : ''}${v ? ' · ' + st[v][1] : now ? ' · 이번에' : ''}</small><b>${esc(k.title)}</b>${v || now ? `<em>→ ${esc(k.feeds)}</em>` : ''}${now && k.life ? `<i>${esc(k.life)}</i>` : ''}</div>`;
         ul.appendChild(li);
       }
       box.appendChild(ul);
@@ -640,7 +640,7 @@ const UI = (() => {
       const res = el('ul', 'kvlist');
       res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 시간 역행</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
       box.appendChild(res);
-      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친밀도·평판)와 ⭐·🪙 대가, 얻는 것이 적혀 있다. ❤️·💭가 얼마나 드는지는 해 봐야 안다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃고, 매듭을 제대로 묶으면 채워진다. 평판은 교수님과 친구들이 나를 얼마나 믿는지 — 높으면 열리는 길이, 낮으면 말썽꾼들만 아는 길이 있다.'));
+      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친밀도·평판)와 ⭐·🪙 대가, 얻는 것이 적혀 있다. ❤️·💭가 얼마나 드는지는 해 봐야 안다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃고, 갈림길을 제대로 바로잡으면 채워진다. 평판은 교수님과 친구들이 나를 얼마나 믿는지 — 높으면 열리는 길이, 낮으면 말썽꾼들만 아는 길이 있다.'));
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
       const ru = el('ul', 'rels');

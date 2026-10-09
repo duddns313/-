@@ -32,7 +32,7 @@ const Game = (() => {
   function turnStart() {
     S.stage = S.turn <= TURNS_PER_YEAR ? 'travel' : 'done';
     const q = [];
-    /* 기한이 지난 매듭은 저절로 끊어진다 — 내가 아무것도 하지 않으면 원작은 일어나지 않는다 */
+    /* 기한이 지난 갈림길은 저절로 어긋난다 — 내가 아무것도 하지 않으면 원작대로 일어나지 않는다 */
     S.knots = S.knots || {};
     S.cutNotes = [];
     if (typeof KNOTS !== 'undefined') for (const k of Object.values(KNOTS)) {

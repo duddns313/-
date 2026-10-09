@@ -39,7 +39,7 @@ const Rules = (() => {
     if (n.seen) for (const id of asList(n.seen)) if (!S.seen.includes(id)) return false;
     if (n.visits) for (const p in n.visits) if (((S.visits || {})[p] || 0) < n.visits[p]) return false;
     if (n.spells != null && S.spells.length < n.spells) return false;
-    /* 운명의 매듭: tied = 묶였거나 느슨하게라도 묶임 · cutKnot = 끊김 · openKnot = 아직 아무 일도 없음 */
+    /* 갈림길: tied = 바로잡았거나 겨우라도 바로잡음 · cutKnot = 어긋남 · openKnot = 아직 아무 일도 없음 */
     for (const k of asList(n.tied)) if (!['tied', 'loose'].includes((S.knots || {})[k])) return false;
     for (const k of asList(n.firmly)) if ((S.knots || {})[k] !== 'tied') return false;
     for (const k of asList(n.cutKnot)) if ((S.knots || {})[k] !== 'cut') return false;
@@ -207,8 +207,8 @@ const Rules = (() => {
       if (h && !(h < 0 && S.res[k] <= 1)) S.res[k] = clamp(k, S.res[k] + h);
       chips.push({ t: `🫘 ${f}!${h ? ` ${RESOURCES[k].icon} ${sign(h)}` : ''}`, good: h >= 0 });
     }
-    /* 운명의 매듭 */
-    for (const [key, st, icon, word] of [['tie', 'tied', '🪢', '매듭을 묶었다'], ['loosen', 'loose', '〰️', '매듭을 겨우 붙잡았다'], ['cut', 'cut', '✂️', '매듭이 끊어졌다']]) {
+    /* 갈림길 — 원작이 어긋날 수 있는 지점. 내가 손을 써서 바로잡는다 */
+    for (const [key, st, icon, word] of [['tie', 'tied', '🧭', '갈림길을 바로잡았다'], ['loosen', 'loose', '〰️', '갈림길을 겨우 바로잡았다'], ['cut', 'cut', '✖️', '갈림길이 어긋났다']]) {
       for (const id of asList(fx[key])) {
         S.knots = S.knots || {};
         if (S.knots[id] === st) continue;
@@ -217,8 +217,8 @@ const Rules = (() => {
         if (S.screen && S.screen.id) S.knotFrom[id] = S.screen.id;
         chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true,
           note: st === 'cut' ? `이어질 곳을 잃었다: ${KNOTS[id].feeds}` : `→ ${KNOTS[id].feeds}` });
-        /* 매듭이 제대로 묶이면 마음이 놓인다 — 잘 고른 선택의 보상 */
-        if (st === 'tied' && S.res.mind < MAX.mind) { S.res.mind++; chips.push({ t: '💭 정신력 +1 — 매듭이 묶이는 소리에 숨이 놓였다', good: true }); }
+        /* 갈림길을 제대로 바로잡으면 마음이 놓인다 — 잘 고른 선택의 보상 */
+        if (st === 'tied' && S.res.mind < MAX.mind) { S.res.mind++; chips.push({ t: '💭 정신력 +1 — 원래 길로 돌아온 걸 보자 숨이 놓였다', good: true }); }
       }
     }
     if (fx.flag) for (const f of asList(fx.flag)) {

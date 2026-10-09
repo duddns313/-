@@ -23,7 +23,7 @@ function newState() {
     /* ❤️ 체력 · 💭 정신력 (한도 5, 0이면 게임 오버) · ⭐ 평판 (1~5) · 🪙 갈레온 · 기숙사 점수(이야기 속에만) */
     res: { hp: 4, mind: 4, rep: 3, galleon: 0, points: 0 },
     rewinds: 0,
-    knots: {},            // 운명의 매듭: id → tied | loose | cut
+    knots: {},            // 갈림길: id → tied(바로잡음) | loose(겨우) | cut(어긋남)
     spells: [], items: {}, memories: [], cards: [],
     flags: {}, marks: {}, rel: {}, visits: {},
     seen: [], later: [], queue: ['pro_1998'],

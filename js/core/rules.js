@@ -85,8 +85,9 @@ const Rules = (() => {
       for (const sp of asList(n.spell)) out.push({ t: `🪄 ${SPELLS[sp].name}`, ok: S.spells.includes(sp), kind: 'key' });
       for (const m of asList(n.memory)) out.push({ t: `💭 「${MEMORIES[m].name}」`, ok: S.memories.includes(m), kind: 'key' });
       for (const cd of asList(n.card)) out.push({ t: `🃏 ${CARDS[cd].name}`, ok: S.cards.includes(cd), kind: 'key' });
-      if (n.rel) for (const k in n.rel) out.push({ t: `💛 ${PEOPLE[k].short || PEOPLE[k].name} (${relTier(n.rel[k]).name})`, ok: (S.rel[k] || 0) >= n.rel[k], kind: 'key' });
+      if (n.rel) for (const k in n.rel) out.push({ t: `💛 ${PEOPLE[k].short || PEOPLE[k].name} ${S.rel[k] || 0}/${n.rel[k]}`, ok: (S.rel[k] || 0) >= n.rel[k], kind: 'key' });
       if (n.repMin != null) out.push({ t: `⭐ 평판 「${REP_NAMES[n.repMin]}」 이상`, ok: S.res.rep >= n.repMin, kind: 'key' });
+      if (n.repMax != null) out.push({ t: `⭐ 평판 「${REP_NAMES[n.repMax]}」 이하`, ok: S.res.rep <= n.repMax, kind: 'key' });
     }
     const e = eased(S, c);
     if (e) out.push({ t: `${thanksFor(e.needs).join(' · ')} 덕분에 수월하다`, ok: true, kind: 'ease' });
@@ -100,6 +101,7 @@ const Rules = (() => {
     if (fx.hp > 0) out.push({ t: `❤️+${fx.hp}`, ok: true, kind: 'gain' });
     if (fx.mind > 0) out.push({ t: `💭+${fx.mind}`, ok: true, kind: 'gain' });
     if (fx.galleon > 0) out.push({ t: `🪙+${fx.galleon}`, ok: true, kind: 'gain' });
+    if (fx.rep > 0) out.push({ t: `⭐+${fx.rep}`, ok: true, kind: 'gain' });
     return out;
   }
   /* 특별 보상(이야기와 이어지는 것)만 미리 보여 준다 */
@@ -133,7 +135,7 @@ const Rules = (() => {
     for (const i of asList(n.item)) out.push(`${ITEMS[i].icon} 챙겨 둔 ${ITEMS[i].name}`);
     for (const sp of asList(n.spell)) out.push(`🪄 되찾은 「${SPELLS[sp].name}」`);
     for (const c of asList(n.card)) out.push(`🃏 모아 둔 「${CARDS[c].name}」 카드`);
-    if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 우정`);
+    if (n.rel) for (const k in n.rel) out.push(`💛 ${PEOPLE[k].short || PEOPLE[k].name}와 쌓은 친밀도`);
     if (n.repMin != null) out.push(`⭐ 쌓아 둔 평판`);
     return out;
   }
@@ -161,7 +163,7 @@ const Rules = (() => {
       S.res[k] = clamp(k, before + fx[k]);
       const d = S.res[k] - before;
       if (d === 0 && k !== 'galleon') continue;
-      if (k === 'rep') chips.push({ t: `⭐ 평판 ${d > 0 ? '올랐다' : '떨어졌다'} — 「${REP_NAMES[S.res.rep]}」`, good: d > 0 });
+      if (k === 'rep') chips.push({ t: `⭐ 평판 ${sign(d)} — 「${REP_NAMES[S.res.rep]}」`, good: d > 0 });
       else chips.push({ t: `${RESOURCES[k].icon} ${RESOURCES[k].name} ${sign(fx[k])}`, good: fx[k] > 0 });
     }
     if (fx.points) S.res.points = (S.res.points || 0) + fx.points;   /* 기숙사 점수는 이야기 속에만 */
@@ -190,10 +192,8 @@ const Rules = (() => {
       /* 호현은 마음을 천천히 연다 */
       const d = k === 'hohyeon' && fx.rel[k] > 0 ? Math.max(1, Math.round(fx.rel[k] * 0.7)) : fx.rel[k];
       S.rel[k] = Math.max(0, Math.min(100, before + d));
-      const t0 = relTier(before), t1 = relTier(S.rel[k]);
       const name = PEOPLE[k].short || PEOPLE[k].name;
-      if (k !== 'housemate') chips.push({ t: `💛 ${name} ${d > 0 ? '▲' : '▼'}`, good: d > 0 });
-      if (t1.min > t0.min && k !== 'housemate') chips.push({ t: `💛 ${name} — 이제 「${t1.name}」`, good: true, big: true });
+      if (k !== 'housemate' && S.rel[k] !== before) chips.push({ t: `💛 ${name} ${sign(S.rel[k] - before)} → ${S.rel[k]}`, good: d > 0 });
     }
     for (const c of asList(fx.card)) {
       const id = c === 'random' ? randomCard(S, rnd) : c;
@@ -215,6 +215,8 @@ const Rules = (() => {
         S.knots[id] = st;
         chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true,
           note: st === 'cut' ? `이어질 곳을 잃었다: ${KNOTS[id].feeds}` : `→ ${KNOTS[id].feeds}` });
+        /* 매듭이 제대로 묶이면 마음이 놓인다 — 잘 고른 선택의 보상 */
+        if (st === 'tied' && S.res.mind < MAX.mind) { S.res.mind++; chips.push({ t: '💭 정신력 +1 — 매듭이 묶이는 소리에 숨이 놓였다', good: true }); }
       }
     }
     if (fx.flag) for (const f of asList(fx.flag)) {

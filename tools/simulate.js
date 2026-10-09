@@ -32,12 +32,7 @@ function run(policy) {
         if (sc.kind === 'travel') {
           (st.hpByTurn[S.turn] = st.hpByTurn[S.turn] || []).push(S.res.hp);
           (st.mindByTurn[S.turn] = st.mindByTurn[S.turn] || []).push(S.res.mind);
-          /* 사고 먹기 */
-          if (policy !== 'random' || rnd() < 0.5) {
-            const want = policy === 'careful' ? ['pasty', 'frog', 'pepperup', 'bezoar', 'biscuits', 'gum', 'dungbomb', 'fireworks', 'gloves', 'wintercloak'] : Object.keys(ITEMS);
-            const can = want.filter(k => ITEMS[k].price && Game.priceOf(k) <= S.res.galleon && Game.shopOpen(ITEMS[k].shop));
-            if (can.length && rnd() < 0.5) { Game.buy(can[Math.floor(rnd() * can.length)]); st.bought++; }
-          }
+          /* 물건은 이제 장(market) 사건에서만 산다 */
           if (policy !== 'random' && (S.res.hp <= 2 || S.res.mind <= 2)) {
             for (const k of Object.keys(S.items)) {
               const u = S.items[k] > 0 && ITEMS[k].use;

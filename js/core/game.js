@@ -38,17 +38,17 @@ const Game = (() => {
     if (typeof KNOTS !== 'undefined') for (const k of Object.values(KNOTS)) {
       if (k.ready && (k.year || 1) === S.year && k.due < S.turn && !S.knots[k.id]) { S.knots[k.id] = 'cut'; S.cutNotes.push(k.id); }
     }
-    /* 학교생활의 피로 — 짝수 주엔 몸이, 홀수 주엔 마음이 한 칸 닳는다. 피로만으로 쓰러지지는 않는다(1에서 멈춘다) */
+    /* 학교생활의 피로 — 두 주에 한 번, 몸과 마음이 번갈아 한 칸 닳는다. 피로만으로 쓰러지지는 않는다(1에서 멈춘다) */
     S.weekNote = null;
-    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR) {
-      const k = S.turn % 2 === 0 ? 'hp' : 'mind';
+    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR && S.turn % 2 === 0) {
+      const k = S.turn % 4 === 2 ? 'hp' : 'mind';
       if (S.res[k] > 1) { S.res[k]--; S.weekNote = k; }
     }
     /* 쓰러지기 직전, 1년에 한 번씩 누군가 붙잡아 준다 */
     if (S.res.hp === 1 && !S.flags.mercy_hp && EVENTS.sp_lowhp) q.push('sp_lowhp');
     if (S.res.mind === 1 && !S.flags.mercy_mind && EVENTS.sp_lowmind) q.push('sp_lowmind');
     /* 평판이 부르는 사건 — 두 주에 한 번쯤 */
-    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR && S.turn - (S.repTurn || 0) >= 2) {
+    if (S.turn >= 2 && S.turn <= TURNS_PER_YEAR && S.turn - (S.repTurn || 0) >= 3) {
       const tier = S.res.rep >= 4 ? 'high' : S.res.rep <= 2 ? 'low' : null;
       if (tier) {
         const pool = Object.values(EVENTS).filter(ev => ev.repEvent === tier && (ev.year || 1) === S.year && !S.seen.includes(ev.id) && Rules.meets(S, ev.needs));
@@ -199,7 +199,7 @@ const Game = (() => {
 
   /* ── 행선지 카드 ── */
   /* 평판이 낮으면 필치가 따라다녀 밤에만 갈 수 있는 곳이 닫힌다 */
-  const nightClosed = () => S.res.rep <= 2;
+  const nightClosed = () => false;   /* 평판은 선택지의 열쇠로만 쓴다 — 갈 수 있는 곳을 막지 않는다 */
   function eligiblePlaceEvents(pid) {
     return Object.values(EVENTS).filter(ev =>
       ev.place === pid && !ev.turn && ev.type !== 'special' && !ev.repEvent && (ev.year || 1) === S.year &&

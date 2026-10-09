@@ -266,9 +266,6 @@ const UI = (() => {
     }
     wrap.appendChild(list);
     wrap.appendChild(el('p', 'legend', `⭐ 이어지는 이야기 · 💛 누군가 기다린다 · ⚠️ 위험할 수 있다 · 🛋️ 휴게실에서는 쉴 수 있다${sc.nightClosed ? '<br>👁️ 평판이 낮아 필치가 따라다닌다 — 밤에만 갈 수 있는 곳은 닫혔다' : ''}`));
-    const shop = el('button', 'secondary shop-open', `🦉 부엉이 주문서 <small>${RESOURCES.galleon.icon} ${S.res.galleon}</small>`);
-    shop.addEventListener('click', () => openSheet('bag'));
-    wrap.appendChild(shop);
     st.appendChild(wrap);
   }
 
@@ -289,7 +286,7 @@ const UI = (() => {
       <p class="sub">${h.name} · ${esc(WANDS[S.wand] ? WANDS[S.wand].name.split(',')[0] + ' 지팡이' : '')}${S.pet ? ' · ' + PETS[S.pet].kind + ' ' + PETS[S.pet].name : ''}</p>
       <ul class="summary">
         <li><span>❤️ 체력 · 💭 정신력</span><b>${S.res.hp} · ${S.res.mind}</b></li>
-        <li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li>
+        <li><span>⭐ 평판</span><b>${S.res.rep} · ${Rules.REP_NAMES[S.res.rep]}</b></li>
         <li><span>⏪ 호현이 되감은 횟수</span><b>${S.rewinds || 0} / ${Game.REWINDS_PER_YEAR}</b></li>
         <li><span>🏆 기숙사에 보탠 점수</span><b>${S.res.points > 0 ? '+' : ''}${S.res.points}</b></li>
         <li><span>📖 만난 사건</span><b>${seen} / ${total}</b></li>
@@ -571,8 +568,8 @@ const UI = (() => {
       }
       if (!items.length) ul.appendChild(el('li', 'empty', '주머니가 비어 있다.'));
       box.appendChild(ul);
-      box.appendChild(shopPanel());
-      box.appendChild(el('h3', null, '🪄 익힌 주문'));
+      box.appendChild(el('p', 'hint', `🪙 ${S.res.galleon}갈레온. 성 안에 장이 서거나 쌍둥이가 다가올 때 쓸 수 있다.`));
+      box.appendChild(el('h3', null, '🪄 되찾은 주문'));
       const sp = el('ul', 'items');
       S.spells.forEach(id => sp.appendChild(el('li', null, `<span class="ic">✨</span><div><b>${esc(SPELLS[id].name)}</b><small>${esc(SPELLS[id].desc)}</small></div>`)));
       if (!S.spells.length) sp.appendChild(el('li', 'empty', '머리는 일곱 해 동안 쓴 주문을 기억한다. 이 지팡이로 되찾은 건 아직 없다.'));
@@ -586,11 +583,11 @@ const UI = (() => {
       const res = el('ul', 'kvlist');
       res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 되감기</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
       box.appendChild(res);
-      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친구·평판)와 대가(❤️·💭·⭐·🪙)가 적혀 있다. 모자라면 잠긴다. 체력이나 정신력이 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃으면 채워진다. 평판이 높으면 좋은 일이, 낮으면 귀찮은 일이 찾아온다.'));
+      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친밀도·평판)와 ⭐·🪙 대가, 얻는 것이 적혀 있다. ❤️·💭가 얼마나 드는지는 해 봐야 안다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃고, 매듭을 제대로 묶으면 채워진다. 평판은 교수님과 친구들이 나를 얼마나 믿는지 — 높으면 열리는 길이, 낮으면 말썽꾼들만 아는 길이 있다.'));
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
       const ru = el('ul', 'rels');
-      rels.forEach(([k, v]) => ru.appendChild(el('li', null, `<span>${esc(PEOPLE[k].name)}<small>${Rules.relTier(v).name}</small></span><i style="width:${v}%"></i>`)));
+      rels.forEach(([k, v]) => ru.appendChild(el('li', null, `<span>${esc(PEOPLE[k].name)}<small>친밀도 ${v}</small></span><i style="width:${v}%"></i>`)));
       if (!rels.length) ru.appendChild(el('li', 'empty', '아직 아는 사람이 없다.'));
       box.appendChild(ru);
       box.appendChild(el('h3', null, '💭 기억'));

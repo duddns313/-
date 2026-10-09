@@ -425,7 +425,7 @@ ${s.flags.prep_owl ? '태피스트리 뒤의 좁은 계단. 헤르미온느가 �
 },
 {
   id: 'ron_mirror', type: 'place', year: 1, place: 'common', who: 'ron', priority: 1, title: '론이 본 것',
-  needs: { turnMin: 8, turnMax: 11, rel: { ron: 40 } },
+  needs: { turnMin: 8, turnMax: 11, rel: { ron: 40 }, tied: 'k_mirror' },
   text: `크리스마스가 지나고, 론이 이상하게 조용해졌다. 체스를 두다가도 멍하니 창밖을 보았다. 호현이 장난을 쳐도 반 박자 늦게 웃었다.
 
 어느 밤, 휴게실에 둘만 남았을 때 론이 불쑥 말했다. "윤. 너 거울 얘기 알아? 해리가 찾은 거."

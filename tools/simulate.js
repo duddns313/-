@@ -7,14 +7,14 @@
 const { loadGame } = require('./load');
 const RUNS = Number((process.argv.find(a => /^\d+$/.test(a))) || 300);
 const PARG = (process.argv.find(a => a.startsWith('--policy=')) || '--policy=all').split('=')[1];
-const POLICIES = PARG === 'all' ? ['careful', 'random', 'greedy'] : [PARG];
+const POLICIES = PARG === 'all' ? ['careful', 'designer', 'random', 'greedy'] : [PARG];
 const VERBOSE = process.argv.includes('-v');
 
 function mulberry(seed) {
   return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const g = loadGame();
-const { Game, EVENTS, ITEMS, Rules, newState } = g;
+const { Game, EVENTS, ITEMS, Rules, newState, PREPS } = g;
 const avg = a => (a.length ? (a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : '-');
 
 function run(policy) {
@@ -56,11 +56,20 @@ function run(policy) {
             let pool = open;
             if (policy !== 'random') { const safe = open.filter(x => !x.lethal); if (safe.length) pool = safe; }
             const gain = x => { let f = x.c.outcome && x.c.outcome.fx; try { if (typeof f === 'function') f = f(S); } catch (e) { f = null; } return f || {}; };
-            if (policy === 'careful') {
+            if (policy === 'careful' || policy === 'designer') {
               const low = S.res.hp <= 2 || S.res.mind <= 2;
               const healers = pool.filter(x => (S.res.hp <= 2 && gain(x).hp > 0) || (S.res.mind <= 2 && gain(x).mind > 0));
               const free = pool.filter(x => { const k = Rules.costOf(S, x.c); return !k.hp && !k.mind; });
               if (low && healers.length) pool = healers; else if (low && free.length) pool = free;
+            }
+            /* 설계자: 매듭을 묶고 6월을 준비하는 선택을 먼저 (몸이 버틸 때만) */
+            if (policy === 'designer' && !(S.res.hp <= 1 || S.res.mind <= 1)) {
+              const fl = x => [].concat(gain(x).flag || []);
+              const prep = pool.filter(x => fl(x).some(f => PREPS[f] && !S.flags[f]));
+              const tie = pool.filter(x => [].concat(gain(x).tie || []).length);
+              const loose = pool.filter(x => [].concat(gain(x).loosen || []).length);
+              const nocut = pool.filter(x => ![].concat(gain(x).cut || []).length);
+              if (prep.length) pool = prep; else if (tie.length) pool = tie; else if (loose.length) pool = loose; else if (nocut.length) pool = nocut;
             }
             if (policy === 'greedy') {
               const rich = pool.filter(x => Rules.specialRewards(S, x.c).length);
@@ -100,6 +109,9 @@ function run(policy) {
     st.rep[S.res.rep] = (st.rep[S.res.rep] || 0) + 1;
     st.rewinds.push(S.rewinds || 0);
     st.end.push(S.res.hp + S.res.mind);
+    const endK = ['ending_true', 'ending_bent'].find(f => S.flags[f]) || 'none';
+    st.endings = st.endings || {}; st.endings[endK] = (st.endings[endK] || 0) + 1;
+    st.preps = (st.preps || []).concat(Object.keys(PREPS).filter(f => S.flags[f]).length);
   }
   return { st, firstError };
 }
@@ -111,6 +123,7 @@ for (const policy of POLICIES) {
   console.log(`  주별 💭 ${Object.keys(st.mindByTurn).map(t => avg(st.mindByTurn[t])).join(' ')}`);
   console.log(`  대가를 치른 선택 ${(st.paid / Math.max(1, st.chose) * 100).toFixed(0)}% · fallback ${st.forcedFallback} · 쓰러질 선택 ${st.lethalPicks} · 구입 ${(st.bought / RUNS).toFixed(1)}/회`);
   console.log(`  완주 시: 기억 ${avg(st.mem)} · 주문 ${avg(st.spells)} · 물건 ${avg(st.items)} · 되감기 ${avg(st.rewinds)} · 평판 ${JSON.stringify(st.rep)} · 남은 ❤️+💭 ${avg(st.end)}`);
+  console.log(`  결말 ${JSON.stringify(st.endings || {})} · 6월 준비 평균 ${avg(st.preps || [])}/5`);
   const never = Object.keys(EVENTS).filter(id => !st.seen[id]);
   if (policy === POLICIES[0] || VERBOSE) console.log(`  한 번도 안 나온 사건 (${never.length}): ${never.join(', ') || '없음'}`);
   if (firstError) { console.log('\n첫 오류:\n' + firstError); process.exitCode = 1; }

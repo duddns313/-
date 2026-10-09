@@ -8,7 +8,10 @@ const Y1_SPELLBOOK = ['lumos', 'nox', 'reparo', 'wingardium', 'alohomora', 'blue
 function y1NextSpell(s) { return Y1_SPELLBOOK.find(sp => !s.spells.includes(sp)); }
 function y1BookLabel(s) {
   const sp = y1NextSpell(s);
-  return sp ? `『표준 마법서』로 ${SPELLS[sp].name}을(를) 되찾는다` : '『표준 마법서』를 산다';
+  if (!sp) return '『표준 마법서』를 산다';
+  const nm = SPELLS[sp].name, c = nm.charCodeAt(nm.length - 1);
+  const obj = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '을' : '를';   /* 받침이 있으면 '을' */
+  return `『표준 마법서』로 「${nm}」${obj} 되찾는다`;
 }
 /* 결과 글은 주문을 되찾은 뒤에 읽힌다 — 방금 손에 붙은 주문은 목록의 마지막 것 */
 function y1BookText(s, opener) {

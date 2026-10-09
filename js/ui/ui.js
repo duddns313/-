@@ -215,7 +215,7 @@ const UI = (() => {
         const rw = Game.rewindInfo();
         if (rw) {
           const tired = ['', '호현이 관자놀이를 누를 것이다', '호현의 코피가 날 것이다 · 💭-1', '호현이 버티지 못할 것이다'][rw.nth];
-          const rb = el('button', 'retry rewind', `⏪ 호현이 세상을 되감는다<small>올해 남은 횟수 ${rw.left} · ${tired}</small>`);
+          const rb = el('button', 'retry rewind', `⏪ 호현의 시간 역행 — 몇 분 전으로<small>올해 남은 횟수 ${rw.left} · ${tired}</small>`);
           if (rw.cost && S.res.mind <= rw.cost.mind) rb.disabled = true;
           rb.addEventListener('click', () => { if (skipTyping()) return; Game.rewind(); render(true); });
           box.appendChild(rb);
@@ -286,7 +286,7 @@ const UI = (() => {
       <ul class="summary">
         <li><span>❤️ 체력 · 💭 정신력</span><b>${S.res.hp} · ${S.res.mind}</b></li>
         <li><span>⭐ 평판</span><b>${S.res.rep} · ${Rules.REP_NAMES[S.res.rep]}</b></li>
-        <li><span>⏪ 호현이 되감은 횟수</span><b>${S.rewinds || 0} / ${Game.REWINDS_PER_YEAR}</b></li>
+        <li><span>⏪ 시간이 거꾸로 흐른 횟수</span><b>${S.rewinds || 0} / ${Game.REWINDS_PER_YEAR}</b></li>
         <li><span>🏆 기숙사에 보탠 점수</span><b>${S.res.points > 0 ? '+' : ''}${S.res.points}</b></li>
         <li><span>📖 만난 사건</span><b>${seen} / ${total}</b></li>
         <li><span>💭 남은 기억</span><b>${S.memories.length}</b></li>
@@ -331,14 +331,14 @@ const UI = (() => {
       <h2>무너진 길</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">그날 밤, 마법사의 돌은 퀴렐의 손에 들어갔다. 1년 동안 지켜야 했던 매듭이 너무 많이 끊겨 있었다. 셋은 마지막 방까지 가지 못했고, 덤블도어는 제때 돌아오지 못했다.</p>
-      <p class="shown">돌을 손에 넣은 볼드모트는 첫 번째 삶보다 훨씬 일찍 돌아올 것이다. 나는 그 뒤에 무슨 일이 벌어지는지 알고 있었다. 하지만 이번에는 세상을 다시 접어 줄 호현의 힘이 남아 있지 않았다.</p></div>
+      <p class="shown">돌을 손에 넣은 볼드모트는 첫 번째 삶보다 훨씬 일찍 돌아올 것이다. 나는 그 뒤에 무슨 일이 벌어지는지 알고 있었다. 하지만 이번에는 시간을 거슬러 줄 호현의 마법이 남아 있지 않았다.</p></div>
       <p class="note">무거운 매듭과 6월을 위한 준비가 마지막 밤을 가릅니다. 📓 일기장에서 끊긴 매듭을 확인해 보세요.</p>` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
       <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">${hp
         ? '몸이 더는 버티지 못했다. 폼프리 부인은 나를 의무실에 오래 눕혀 두었지만, 결국 집으로 돌려보내야 한다는 편지가 뉴몰든으로 날아갔다. 나는 호그와트 특급 창가에 앉아 멀어지는 성을 끝까지 바라보았다. 앞으로 무슨 일이 일어날지 아는 사람은 이제 성 안에 아무도 없었다.'
         : '어느 아침, 나는 침대에서 일어나지 못했다. 몸이 아픈 게 아니었다. 두 번째로 사는 이 7년을 혼자 짊어지는 일이 더는 감당되지 않았다. 커튼 너머에서 호현이 내 이름을 불렀지만, 나는 대답하지 못했다. 그 주가 끝나기 전에 나는 집으로 돌아가는 기차를 탔다.'}</p>
-      <p class="shown">${esc(S.rewinds >= 3 ? '올해 호현이 되감을 수 있는 횟수는 이미 다 써 버린 뒤였다.' : '이번에는 세상을 다시 접을 방법이 없었다.')}</p></div>
+      <p class="shown">${esc(S.rewinds >= 3 ? '올해 호현의 몸이 견딜 수 있는 시간 역행은 이미 다 써 버린 뒤였다.' : '이번에는 시간을 되돌려 줄 사람이 없었다.')}</p></div>
       <p class="note">❤️ 체력이나 💭 정신력이 0이 되면 호그와트를 떠나게 됩니다. 쉬고, 먹고, 친구와 웃는 것도 선택입니다.</p>`;
     const again = el('button', 'primary', loadPrologue() ? '처음부터 — 프롤로그 건너뛰기' : '처음부터 다시');
     again.addEventListener('click', () => { lastRes = null; if (loadPrologue()) Game.skipPrologue(); else Game.start(newState()); render(true); });
@@ -366,7 +366,7 @@ const UI = (() => {
     box.innerHTML = `
       <div class="owl" aria-hidden="true">🦉</div>
       <h1>호그와트 7년</h1>
-      <p class="tag-line">마지막 접기</p>
+      <p class="tag-line">마지막 역행</p>
       <p class="tag-line">1학년 · 마법사의 돌</p>
       <p class="opening">나는 이미 한 번 7년을 살았다.<br>마지막에 하나가 모자랐다.</p>`;
     if (saved && saved.screen) {
@@ -505,7 +505,7 @@ const UI = (() => {
       const S = Game.state();
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, '💾 저장 · 불러오기'));
-      box.appendChild(el('p', 'hint', '세 칸까지 남겨 둘 수 있다. 저장 칸은 게임 오버가 되어도 지워지지 않는다. (호현의 되감기와는 다르다 — 이건 나만 아는 책갈피다.)'));
+      box.appendChild(el('p', 'hint', '세 칸까지 남겨 둘 수 있다. 저장 칸은 게임 오버가 되어도 지워지지 않는다. (호현의 시간 역행과는 다르다 — 이건 나만 아는 책갈피다.)'));
       const canSave = S && S.screen && S.screen.kind !== 'gameover' && S.screen.kind !== 'yearEnd';
       const ul = el('ul', 'slots');
       for (let n = 1; n <= SLOT_COUNT; n++) {
@@ -638,7 +638,7 @@ const UI = (() => {
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, `🪄 윤영운${S.house ? ' · ' + HOUSES[S.house].name : ''}`));
       const res = el('ul', 'kvlist');
-      res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 되감기</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
+      res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 시간 역행</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
       box.appendChild(res);
       box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친밀도·평판)와 ⭐·🪙 대가, 얻는 것이 적혀 있다. ❤️·💭가 얼마나 드는지는 해 봐야 안다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃고, 매듭을 제대로 묶으면 채워진다. 평판은 교수님과 친구들이 나를 얼마나 믿는지 — 높으면 열리는 길이, 낮으면 말썽꾼들만 아는 길이 있다.'));
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);

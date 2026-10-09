@@ -106,7 +106,7 @@ const Game = (() => {
     const ev = EVENTS[S.screen.id];
     const choice = ev.choices[index];
     if (!choice || S.screen.stage !== 'intro' || !openChoices(ev).some(x => x.i === index)) return;
-    /* 되감기를 위해 고르기 직전을 보관한다 */
+    /* 시간 역행을 위해 고르기 직전을 보관한다 */
     const snapshot = JSON.stringify(Object.assign({}, S, { screen: null }));
     const thanks = Rules.thanksFor(choice.needs);
     const ez = Rules.eased(S, choice);
@@ -148,7 +148,7 @@ const Game = (() => {
     return true;
   }
 
-  /* ── 호현의 되감기: 1년에 세 번. 쓸수록 호현이 힘들어한다. 나만 기억한다. ── */
+  /* ── 호현의 시간 역행: 1년에 세 번. 금지된 마법이 호현의 몸에서 새어 나온다. 쓸수록 호현이 힘들어한다. 나만 기억한다. ── */
   function rewindInfo() {
     const sc = S.screen;
     if (!sc || sc.kind !== 'event' || sc.stage !== 'result' || !sc.undo) return null;
@@ -157,9 +157,9 @@ const Game = (() => {
     return { left: REWINDS_PER_YEAR - used, nth: used + 1, cost: used + 1 === 2 ? { mind: 1 } : null };
   }
   const REWIND_NOTE = {
-    1: '*눈앞이 한 번 깜박이더니 귀가 먹먹해졌다. 정신을 차려 보니 나는 몇 분 전에 서 있던 자리에 다시 서 있었다. 방금 일어난 일은 없던 일이 되어 있었다. 호현이 세상을 되감은 것이다. 저만치에서 호현이 관자놀이를 누르고 있었다. 눈이 마주치자 호현은 아무 일 없다는 듯 웃었다. 호현은 자기가 무엇을 했는지 모른다.*',
-    2: '*다시 눈앞이 깜박였다. 이번에는 아까보다 길었다. 정신을 차리고 보니 호현의 코밑에 피가 한 줄 흘러내리고 있었다. 호현은 소매로 피를 훔치며 "건조해서 그래" 하고 넘겼다. 나는 그게 건조해서가 아니라는 걸 알았다. 되감기는 쓸 때마다 호현의 몸을 상하게 한다. 첫 번째 삶의 마지막 밤에도 호현은 똑같이 코피를 흘렸다.*',
-    3: '*세 번째로 눈앞이 깜박였다. 이번에는 호현이 버티지 못하고 그 자리에 무릎을 꿇었다. 올해 호현의 몸이 견딜 수 있는 건 여기까지였다.*',
+    1: '*귀가 먹먹해지더니 주변의 모든 것이 거꾸로 흘렀다. 사람들이 뒷걸음질 치고, 떨어진 물건이 손으로 돌아왔다. 정신을 차려 보니 나는 몇 분 전에 서 있던 자리에 다시 서 있었다. 시간 역행 마법이었다. 첫 번째 삶에서 호현이 금서 구역에서 찾아낸 금지된 마법. 저만치에서 호현이 관자놀이를 누르고 있었다. 눈이 마주치자 호현은 아무 일 없다는 듯 웃었다. 호현은 그 주문을 배운 기억이 없다. 호현의 몸만 그 주문을 기억하고 있었다.*',
+    2: '*다시 시간이 거꾸로 흘렀다. 이번에는 아까보다 길었다. 정신을 차리고 보니 호현의 코밑에 피가 한 줄 흘러내리고 있었다. 호현은 소매로 피를 훔치며 "건조해서 그래" 하고 넘겼다. 나는 그게 건조해서가 아니라는 걸 알았다. 시간을 거스른 대가는 마법을 건 사람이 치른다. 쓸 때마다 호현의 몸이 상한다. 첫 번째 삶의 마지막 밤에도 호현은 똑같이 코피를 흘렸다.*',
+    3: '*세 번째로 시간이 거꾸로 흘렀다. 이번에는 호현이 버티지 못하고 그 자리에 무릎을 꿇었다. 올해 호현의 몸이 견딜 수 있는 건 여기까지였다.*',
   };
   function rewind() {
     const info = rewindInfo();
@@ -187,7 +187,7 @@ const Game = (() => {
       if (S.screen.stage === 'intro' && openChoices(ev).length) return;
     }
     if (k === 'travel') return;
-    /* 되감기 세 번째: 호현이 쓰러진다 — 다음 장면 바로 앞에 끼워 넣는다 */
+    /* 시간 역행 세 번째: 호현이 쓰러진다 — 다음 장면 바로 앞에 끼워 넣는다 */
     const due = S.later.filter(l => l.id === 'ho_rewind_fall');
     if (due.length && EVENTS.ho_rewind_fall && !S.seen.includes('ho_rewind_fall')) {
       S.later = S.later.filter(l => l.id !== 'ho_rewind_fall');

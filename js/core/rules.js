@@ -213,6 +213,8 @@ const Rules = (() => {
         S.knots = S.knots || {};
         if (S.knots[id] === st) continue;
         S.knots[id] = st;
+        S.knotFrom = S.knotFrom || {};
+        if (S.screen && S.screen.id) S.knotFrom[id] = S.screen.id;
         chips.push({ t: `${icon} ${word} — ${KNOTS[id].title}`, good: st !== 'cut', big: true, knot: true,
           note: st === 'cut' ? `이어질 곳을 잃었다: ${KNOTS[id].feeds}` : `→ ${KNOTS[id].feeds}` });
         /* 매듭이 제대로 묶이면 마음이 놓인다 — 잘 고른 선택의 보상 */
@@ -221,6 +223,11 @@ const Rules = (() => {
     }
     if (fx.flag) for (const f of asList(fx.flag)) {
       /* 6월을 위한 준비는 심는 순간 알려 준다 */
+      if (typeof PREPS !== 'undefined' && PREPS[f] && !S.flags[f]) {
+        /* 어디서 심었는지 기억해 둔다 — 마지막 밤에 그 장면이 되살아난다 */
+        S.prepFrom = S.prepFrom || {};
+        if (S.screen && S.screen.id) S.prepFrom[f] = S.screen.id;
+      }
       if (typeof PREPS !== 'undefined' && PREPS[f] && !S.flags[f]) chips.push({ t: `🗝️ 6월을 위한 준비 — ${PREPS[f].title}`, good: true, big: true, note: `${PREPS[f].trap}에서 ${PREPS[f].who}에게 피어날 것이다.` });
       S.flags[f] = true;
     }

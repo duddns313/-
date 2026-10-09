@@ -159,12 +159,11 @@ const UI = (() => {
     }
   }
 
-  /* 선택지 아래 한 줄: 열쇠 · 대가 · 회복 · 특별 보상 */
+  /* 선택지 아래 한 줄: 필요한 열쇠와 ⭐·🪙 대가만. 얻는 것은 말하지 않는다 — 글만 보고 고른다 */
   function reqHtml(S, c) {
-    const req = Rules.reqLine(S, c);
-    const rew = Rules.specialRewards(S, c);
-    if (!req.length && !rew.length) return '';
-    return `<div class="req">${req.map(r => `<span class="rq ${r.kind}${r.ok ? '' : ' miss'}${r.danger ? ' danger' : ''}">${esc(r.t)}${''}</span>`).join('')}${rew.length ? `<span class="rq reward">얻는 것 ${esc(rew.join(' · '))}</span>` : ''}</div>`;
+    const req = Rules.reqLine(S, c).filter(r => r.kind !== 'gain');
+    if (!req.length) return '';
+    return `<div class="req">${req.map(r => `<span class="rq ${r.kind}${r.ok ? '' : ' miss'}${r.danger ? ' danger' : ''}">${esc(r.t)}</span>`).join('')}</div>`;
   }
 
   function renderChoices(box, ev) {
@@ -298,6 +297,7 @@ const UI = (() => {
       <h3>기억</h3>
       <ul class="mems">${S.memories.map(m => `<li><b>${esc(MEMORIES[m].name)}</b> ${esc(MEMORIES[m].desc)}</li>`).join('')}</ul>
       <p class="note">2학년 — 비밀의 방 — 은 아직 쓰이는 중입니다.<br>다른 선택으로 1학년을 다시 걸어 보세요. 한 번에 만날 수 있는 사건은 절반쯤입니다.</p>`;
+    box.appendChild(chronicleBox(S));
     const again = el('button', 'primary', '처음부터 다시');
     again.addEventListener('click', () => confirmNew());
     box.appendChild(again);
@@ -374,8 +374,16 @@ const UI = (() => {
       c.addEventListener('click', () => { Game.start(saved); lastRes = null; render(false); });
       box.appendChild(c);
     }
-    if (anySlot()) {
-      const l = el('button', 'secondary', '💾 불러오기');
+    const chron = latestChronicle();
+    if (chron && yearReady(chron.y + 1)) {
+      const ny = el('button', 'primary', `${chron.y + 1}학년 시작 <small>${chron.y}학년 기록 이어 받기</small>`);
+      ny.addEventListener('click', () => { lastRes = null; Game.start(stateFromChronicle(chron)); render(true); });
+      box.appendChild(ny);
+    } else if (chron) {
+      box.appendChild(el('p', 'fine', `📜 ${chron.y}학년 기록이 보관되어 있다. ${chron.y + 1}학년이 열리면 여기서 이어서 시작한다.`));
+    }
+    if (anySlot() || Object.keys(readChronicles()).length) {
+      const l = el('button', 'secondary', '💾 불러오기 · 📜 기록');
       l.addEventListener('click', () => openSheet('saves'));
       box.appendChild(l);
     }
@@ -450,6 +458,30 @@ const UI = (() => {
     return wrap;
   }
 
+  /* 📜 학년 기록 — 학년이 끝나면 자동 보관 + 코드로 옮기기 */
+  function chronicleBox(S) {
+    const c = makeChronicle(S);
+    const saved = saveChronicle(c);
+    const code = encodeChronicle(c);
+    const wrap = el('div', 'chronicle');
+    wrap.innerHTML = `<h3>📜 ${c.y}학년의 기록</h3>
+      <p class="hint">${saved ? '이 기기에 보관해 두었다. ' : ''}${c.y + 1}학년이 열리면, 게임이 업데이트되어도 이 기록 — 묶은 매듭, 기억, 주문, 친밀도, 결말 — 을 이어 받아 시작한다. 다른 기기로 옮기거나 혹시 몰라 남겨 두려면 아래 코드를 복사해 두면 된다.</p>`;
+    const ta = el('textarea', 'chronicle-code');
+    ta.readOnly = true;
+    ta.value = code;
+    wrap.appendChild(ta);
+    const cp = el('button', 'secondary', '📋 기록 코드 복사');
+    cp.addEventListener('click', () => {
+      const done = () => toast('📜 기록 코드를 복사했다. 메모장 같은 곳에 붙여 두자.');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { ta.select(); document.execCommand('copy'); done(); });
+      else { ta.select(); document.execCommand('copy'); done(); }
+    });
+    wrap.appendChild(cp);
+    return wrap;
+  }
+  /* 다음 학년이 준비되어 있는가 */
+  const yearReady = y => Object.values(EVENTS).some(e => (e.year || 1) === y);
+
   /* 저장 칸에 붙일 한 줄 */
   function slotLabel(S) {
     const when = S.turn > 0 ? `${S.year}학년 · ${(CALENDAR[S.year] || {})[S.turn] || ''}` : '프롤로그';
@@ -504,6 +536,31 @@ const UI = (() => {
         ul.appendChild(li);
       }
       box.appendChild(ul);
+      /* 학년 기록 */
+      box.appendChild(el('h3', null, '📜 학년 기록'));
+      const all = readChronicles();
+      const ys = Object.keys(all).sort();
+      box.appendChild(el('p', 'hint', ys.length
+        ? ys.map(y => `${y}학년 기록 보관됨 — ${({ true: '참된 길', bent: '휘어진 길' })[all[y].ending] || '끝까지 걸었다'}`).join('<br>') + '<br>다음 학년이 열리면 이 기록으로 이어서 시작한다.'
+        : '학년을 끝까지 마치면 기록이 여기에 보관된다. 다른 기기에서 받은 기록 코드는 아래에 붙여 넣는다.'));
+      const ta = el('textarea', 'chronicle-code');
+      ta.placeholder = 'HP7-… 로 시작하는 기록 코드';
+      box.appendChild(ta);
+      const imp = el('button', 'secondary', '📜 코드로 기록 불러오기');
+      imp.addEventListener('click', () => {
+        const c = decodeChronicle(ta.value);
+        if (!c) { toast('코드를 읽을 수 없다. 끝까지 빠짐없이 붙여 넣었는지 확인해 보자.'); return; }
+        saveChronicle(c);
+        toast(`📜 ${c.y}학년 기록을 보관했다.`);
+        openSheet('saves');
+      });
+      box.appendChild(imp);
+      const last = latestChronicle();
+      if (last && yearReady(last.y + 1)) {
+        const go = el('button', 'primary', `${last.y + 1}학년 시작 — 기록 이어 받기`);
+        go.addEventListener('click', () => { closeSheet(); lastRes = null; Game.start(stateFromChronicle(last)); render(true); });
+        box.appendChild(go);
+      }
       return box;
     },
     log() {

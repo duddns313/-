@@ -485,3 +485,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .preps li small { display: block; color: var(--ink2); }
 .preps li.done b { color: var(--good); }
 .slots .slot.empty { border: 1px dashed var(--rule) !important; padding: 12px 14px; background: transparent; font-size: inherit; }
+
+/* 학년 기록 */
+.chronicle { text-align: left; margin: 18px 0; padding: 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--slip); }
+.chronicle h3 { margin-top: 0; }
+.chronicle-code { width: 100%; min-height: 72px; font: 12px/1.4 ui-monospace, monospace; padding: 8px; border-radius: 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); word-break: break-all; resize: vertical; margin: 6px 0 10px; box-sizing: border-box; }

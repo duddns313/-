@@ -1029,3 +1029,139 @@ ${s.flags.owl_dumbledore ? `덤블도어의 망토 주머니에서 양피지 조
   ],
 },
 ]);
+
+/* ═════════════ 마지막 밤의 메아리 — 1년 동안 내가 한 일이, 그날 밤 조용히 되살아난다 ═════════════
+   어디서 심었는지(S.prepFrom · S.knotFrom)에 따라 그 장면의 한 조각이 떠오른다. 셋은 우연이라 여긴다. */
+const Y1_ECHO = {
+  prep_snare: {
+    st_diligence2: '*온실의 흙냄새. "손이 차분한 애가 하나 더 있어요." 그날 스프라우트 교수 앞에서 밑줄을 긋던 헤르미온느의 깃펜.*',
+    gr_snare: '*온실 구석, 내가 덩굴 끝에 피운 푸른 불에 움찔하던 덩굴. 그걸 말없이 지켜보던 헤르미온느의 눈.*',
+    lib_bluebell: '*도서관 창가에서 그 애를 따라 휘두르던 내 지팡이. 일부러 주황색으로 피워 올렸던 불.*',
+    lib_study: '*목요일 모임. "덩굴한테도 통할까?" 지나가듯 던진 내 질문에, 헤르미온느는 공책 귀퉁이를 접었었다.*',
+    y1_last_prep: '*시험 전 마지막 일요일, 늦게나마 스프라우트 교수에게 던진 질문. 밑줄 두 개.*',
+    _: '*언젠가 그 애 앞에서 흘려 둔 한 마디. "어둡고 축축한 걸 좋아하면…"*',
+  },
+  prep_keys: {
+    harry_broom: '*빗속에 던져 올린 구슬과 단추. 젖은 손으로 그걸 하나도 놓치지 않던 해리.*',
+    pitch_broom: '*경기장 위로 흩뿌린 젤리빈 한 줌. 해리는 마지막 한 알까지 잡아 냈었다.*',
+    st_courage1: '*"골프공은 너무 커요." 우드 앞에서 해리 밑으로 굴려 보낸 구슬들.*',
+    y1_last_prep: '*호숫가에서 하나씩 던진 레몬 사탕. 열 번째부터는 하나도 놓치지 않았다.*',
+    _: '*작고, 빠르고, 날아다니는 것. 1년 내내 해리 앞에 던져 둔 것들.*',
+  },
+  prep_chess: {
+    ron_chess: '*휴게실 난롯가. 내가 몰아간 판 위에서, 론이 자기 기사를 집어 들던 손.*',
+    com_rest: '*"퀸을 내줘야 이기는 자리." 난롯가에서 론이 한참 들여다보던 그 판.*',
+    y1_last_prep: '*시험 공부를 핑계로 둔 마지막 판. "아깝지만, 이게 맞지?"*',
+    _: '*언젠가 론과 둔 판. 이기려면 자기 말을 내줘야 했던 자리.*',
+  },
+  prep_riddle: {
+    he_questions: '*질문 공책 첫 장에 적어 준 수수께끼. 그 애는 그걸 하룻밤 만에 풀어 왔었다.*',
+    lib_hermione: '*숙제 끝에 덧붙인 병 일곱 개짜리 시. 헤르미온느는 그 종이를 버리지 않았다.*',
+    st_wisdom1: '*독수리 문고리 앞. "부르면 깨지는 것." 침묵이라고 답하던 그 애의 목소리.*',
+    y1_last_prep: '*복습 노트 마지막 장. 그 아래 그 애의 글씨 — 이거 누가 냈어? 하나 더 줘.*',
+    _: '*언젠가 그 애에게 건넨 수수께끼 하나.*',
+  },
+  prep_owl: {
+    he_alone: '*"편지 부치러 가는데, 같이 갈래?" 헤르미온느에게 알려 준 부엉이장 지름길. 왼쪽.*',
+    he_tears: '*먼지 많은 서가 뒤에서 데리고 올라갔던 부엉이장. "급하면 선생님께 먼저."*',
+    owl_letter: '*부엉이장 계단에서 건넨 한 마디. "급하면 선생님께 먼저."*',
+    _: '*"무슨 일이 생기면, 선생님께 먼저." 언젠가 그 애에게 심어 둔 말.*',
+  },
+};
+const Y1_REGRET = {
+  prep_snare: '*헤르미온느에게 그 덩굴 이야기를 한 번이라도 해 두었더라면.*',
+  prep_keys: '*해리 앞에 작은 것 하나라도 던져 두었더라면.*',
+  prep_chess: '*론과 그 판을 한 번만 더 두었더라면.*',
+  prep_riddle: '*헤르미온느에게 수수께끼 하나만 건네 두었더라면.*',
+};
+function y1Echo(s, prep) {
+  const m = Y1_ECHO[prep];
+  if (!m) return '';
+  const from = (s.prepFrom || {})[prep];
+  return m[from] || m._;
+}
+/* 문단 하나 뒤에 메아리를 끼워 넣는다 */
+function y1Weave(text, line) {
+  if (!line) return text;
+  const parts = String(text).split('\n\n');
+  parts.splice(Math.min(1, parts.length), 0, line);
+  return parts.join('\n\n');
+}
+/* 네빌에게 심어 둔 것들 */
+function y1NevilleEcho(s) {
+  const out = [];
+  if (s.flags.neville_seed_fall) out.push('비행 수업 날, 의무실 침대 옆에 앉아 있던 오후');
+  if (s.memories.includes('trevor_friend')) out.push('기차 복도에서 함께 쫓던 트레버');
+  if (s.memories.includes('gimbap_shared')) out.push('창가에서 반으로 나눈 김밥 한 줄');
+  if (s.memories.includes('neville_comfort')) out.push('"넌 말포이 열두 명 몫이야"라고 해 주던 밤');
+  if (s.flags.neville_saw_fluffy) out.push('초상화 밖에서 떨던 네빌의 손을 잡아끌던 자정');
+  return out.length ? `*${out.slice(0, 2).join(', ')}. 그 애는 그걸 하나도 잊지 않고 있었다.*` : '';
+}
+/* 덤블도어가 은근히 짚는 올해의 "우연" */
+function y1DeedHint(s) {
+  const hints = [];
+  if (s.flags.fn_quiet) hints.push('오늘 밤 피브스가 4층에서 이상하리만치 조용했다더구나');
+  if (['tied', 'loose'].includes((s.knots || {}).k_mirror)) hints.push('크리스마스에 누군가 그 교실 문을 꼭 알맞게 열어 두었지');
+  if (s.flags.prep_owl) hints.push('그레인저 양은 부엉이장 가는 지름길을 아주 잘 알더구나');
+  if (s.flags.prep_chess) hints.push('위즐리 군은 오늘 밤 자기를 내주는 수를 두었다지');
+  if (s.flags.owl_dumbledore) hints.push('런던 가는 길 위에서 받은 쪽지 한 장도 있었고');
+  return hints.length ? `"올해 이 성에는 우연이 유난히 많았단다." 덤블도어가 지나가듯 말했다. "${hints.slice(0, 2).join('. ')}."` : '';
+}
+(function weaveEchoes() {
+  const traps = { fn_snare: 'prep_snare', fn_keys: 'prep_keys', fn_chess: 'prep_chess', fn_potions: 'prep_riddle' };
+  for (const [id, prep] of Object.entries(traps)) {
+    const ev = EVENTS[id];
+    if (!ev) continue;
+    /* 준비가 없을 때 — 도입부에 짧은 후회 */
+    const t0 = ev.text;
+    ev.text = s => { const t = typeof t0 === 'function' ? t0(s) : t0; return s.flags[prep] ? t : `${t}\n\n${Y1_REGRET[prep]}`; };
+    /* 준비가 있을 때 — 셋이 지나가는 순간, 그 장면이 떠오른다 */
+    for (const c of ev.choices) {
+      if (!c.needs || c.needs.flag !== prep || !c.outcome) continue;
+      const o = c.outcome.text;
+      c.outcome.text = s => y1Weave(typeof o === 'function' ? o(s) : o, y1Echo(s, prep));
+    }
+  }
+  /* 헤르미온느가 부엉이장으로 돌아갈 때 */
+  const po = EVENTS.fn_potions;
+  if (po) for (const c of po.choices) {
+    const o = c.outcome && c.outcome.text;
+    if (!o) continue;
+    c.outcome.text = s => { const t = typeof o === 'function' ? o(s) : o; return s.flags.prep_owl ? `${t}\n\n${y1Echo(s, 'prep_owl')}` : t; };
+  }
+  /* 네빌이 막아설 때 */
+  const fc = EVENTS.fn_common;
+  if (fc && fc.choices[0] && fc.choices[0].outcome) {
+    const o = fc.choices[0].outcome.text;
+    fc.choices[0].outcome.text = s => y1Weave(typeof o === 'function' ? o(s) : o, y1NevilleEcho(s));
+  }
+  /* 거울 앞의 해리 */
+  const fm = EVENTS.fn_mirror;
+  if (fm) {
+    const t0 = fm.text;
+    fm.text = s => { const t = typeof t0 === 'function' ? t0(s) : t0; const k = (s.knots || {}).k_mirror; return ['tied', 'loose'].includes(k) ? `${t}\n\n*크리스마스 밤, 내가 열어 둔 그 교실 문. 해리는 거기서 이 거울을 이미 한 번 만났다.*` : t; };
+  }
+  /* 덤블도어 */
+  const fd = EVENTS.fn_dumbledore;
+  if (fd && fd.choices[0] && fd.choices[0].outcome) {
+    const o = fd.choices[0].outcome.text;
+    fd.choices[0].outcome.text = s => { const t = typeof o === 'function' ? o(s) : o; const h = y1DeedHint(s); if (!h) return t; const p = t.split('\n\n'); p.splice(Math.max(1, p.length - 1), 0, h); return p.join('\n\n'); };
+  }
+})();
+
+/* 학년말 의무실 — 셋은 그날 밤을 운이라 부른다. 다만 이상하게 떠오르는 장면이 하나씩 있다 */
+(function weaveAftermath() {
+  const ev = EVENTS.y1_aftermath;
+  if (!ev) return;
+  const t0 = ev.text;
+  ev.text = s => {
+    const t = typeof t0 === 'function' ? t0(s) : t0;
+    const lines = [];
+    if (s.flags.prep_chess && !s.flags.trace_chess) lines.push('"웃기지." 론이 붕대 감은 머리를 긁적였다. "그 판 위에서 이상하게 휴게실 생각이 났어. 난롯가에서 둔 판. 누구랑 뒀더라."');
+    if (s.flags.prep_snare && !s.flags.trace_snare) lines.push('"그 덩굴 말이야." 헤르미온느가 말했다. "언제 배운 건지 기억도 안 나. 그냥 떠올랐어. 누가 귀에 대고 말해 준 것처럼."');
+    if (s.flags.prep_keys && !s.flags.trace_keys) lines.push('"열쇠들 사이에서 이상하게 눈이 편했어." 해리가 베개에 기대며 말했다. "꼭 연습한 것처럼."');
+    if (s.flags.prep_riddle && !s.flags.trace_potions) lines.push('헤르미온느는 병 일곱 개짜리 수수께끼 이야기를 하다가 잠깐 나를 보았다. 그리고 고개를 저었다. 설마, 하는 얼굴로.');
+    if (!lines.length) return t;
+    return `${t}\n\n${lines.slice(0, 2).join('\n\n')}\n\n나는 아무 말도 하지 않았다. 셋이 운이라고 부르는 것들의 목록을, 나는 일기장에 한 줄씩 적어 두었다.`;
+  };
+})();

@@ -53,7 +53,7 @@ const ITEMS = {
   frog:        { name: '개구리 초콜릿',       icon: '🐸', desc: '상자를 열면 한 번 뛰어오르니 재빨리 잡을 것. 안에는 유명한 마법사 카드가 한 장 들어 있다.', use: { mind: 1, card: 'random' }, price: 2, shop: 'honeydukes', hint: '먹으면 💭+1 · 카드 수집' },
   beans:       { name: '버티 보트의 온갖 맛이 나는 젤리', icon: '🫘', desc: '정말로 온갖 맛이 난다. 귀지 맛까지.', use: { beans: true }, price: 1, shop: 'honeydukes', hint: '운에 맡기는 간식' },
   pasty:       { name: '호박 파이',           icon: '🥧', desc: '아직 따뜻하다.', use: { hp: 1 }, price: 2, shop: 'honeydukes', hint: '먹으면 ❤️+1' },
-  pepperup:    { name: '페퍼업 물약',         icon: '🧪', desc: '마시면 귀에서 김이 난다. 대신 기운이 펄펄 난다.', use: { hp: 2 }, price: 5, shop: 'apothecary', hint: '마시면 ❤️+2' },
+  pepperup:    { name: '페퍼업 감기 마법약',         icon: '🧪', desc: '마시면 귀에서 김이 난다. 대신 기운이 펄펄 난다.', use: { hp: 2 }, price: 5, shop: 'apothecary', hint: '마시면 ❤️+2' },
   gimbap:      { name: '엄마의 김밥',         icon: '🍙', desc: '은박지에 싼 김밥 한 줄. 참기름 냄새가 난다.', use: { hp: 1, mind: 1 } },
   rockcake:    { name: '해그리드의 바위과자', icon: '🪨', desc: '이름 그대로 바위처럼 딱딱하다. 이가 튼튼할 때 먹을 것. 던지면 무기도 된다.', use: { hp: 1 } },
   yakgwa:      { name: '약과',               icon: '🍯', desc: '엄마가 소포로 보낸 약과. 꿀이 배어 달다. 누군가와 나눠 먹기 좋다.', use: { mind: 1 } },

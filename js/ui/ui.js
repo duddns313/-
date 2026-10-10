@@ -175,7 +175,7 @@ const UI = (() => {
       const b = el('button', `choice${lethal ? ' lethal' : ''}${fallback ? ' fallback' : ''}`);
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
-      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}`;
+      b.innerHTML = `<div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}`;
       b.addEventListener('click', () => {
         if (skipTyping()) return;
         box.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -202,7 +202,6 @@ const UI = (() => {
     const c = ev.choices[sc.choice];
     const res = el('div', 'result');
     res.appendChild(el('div', 'picked', `<span>›</span> ${esc(T(c.label))}`));
-    if (sc.thanks && sc.thanks.length) res.appendChild(el('div', 'thanks', sc.thanks.map(t => `<div>✨ ${esc(t)} 덕분에</div>`).join('')));
     const prose = el('div', 'prose');
     res.appendChild(prose);
     art.appendChild(res);
@@ -254,7 +253,7 @@ const UI = (() => {
     for (const id of sc.cutNotes || []) wrap.appendChild(el('p', 'cut-note', `✖️ 갈림길이 어긋났다 — ${esc(KNOTS[id].title)}`));
     const due = Object.values(KNOTS).filter(k => k.ready && !(S.knots || {})[k.id] && k.due >= S.turn && k.due <= S.turn + 1);
     if (due.length) wrap.appendChild(el('p', 'due-note', `📓 곧 바로잡아야 할 갈림길 · ${due.map(k => esc(k.title)).join(' · ')}`));
-    if (sc.weekNote) wrap.appendChild(el('p', 'week-note', sc.weekNote === 'hp' ? '❤️-1 · 수업과 숙제와 계단. 몸이 조금 무겁다.' : '💭-1 · 집 생각이 나는 한 주였다. 마음이 조금 가라앉았다.'));
+    if (sc.weekNote) wrap.appendChild(el('p', 'week-note', sc.weekNote === 'hp' ? '❤️-1 · 고된 한 주였다.' : '💭-1 · 지친 한 주였다.'));
     const list = el('div', 'cards');
     for (const c of sc.hand) {
       const p = PLACES[c.id];
@@ -264,7 +263,6 @@ const UI = (() => {
       list.appendChild(b);
     }
     wrap.appendChild(list);
-    wrap.appendChild(el('p', 'legend', `⭐ 이어지는 이야기 · 💛 누군가 기다린다 · ⚠️ 위험할 수 있다 · 🛋️ 휴게실에서는 쉴 수 있다${sc.nightClosed ? '<br>👁️ 평판이 낮아 필치가 따라다닌다 — 밤에만 갈 수 있는 곳은 닫혔다' : ''}`));
     st.appendChild(wrap);
   }
 
@@ -296,7 +294,7 @@ const UI = (() => {
       ${rels.length ? `<h3>가까워진 사람들</h3><ul class="rels">${rels.map(([k, v]) => `<li><span>${esc(PEOPLE[k].name)}</span><i style="width:${v}%"></i></li>`).join('')}</ul>` : ''}
       <h3>기억</h3>
       <ul class="mems">${S.memories.map(m => `<li><b>${esc(MEMORIES[m].name)}</b> ${esc(MEMORIES[m].desc)}</li>`).join('')}</ul>
-      <p class="note">2학년 — 비밀의 방 — 은 아직 쓰이는 중입니다.<br>다른 선택으로 1학년을 다시 걸어 보세요. 한 번에 만날 수 있는 사건은 절반쯤입니다.</p>`;
+      <p class="note">2학년은 아직 쓰이는 중입니다.</p>`;
     box.appendChild(chronicleBox(S));
     const again = el('button', 'primary', '처음부터 다시');
     again.addEventListener('click', () => confirmNew());
@@ -332,14 +330,14 @@ const UI = (() => {
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">그날 밤, 마법사의 돌은 퀴렐의 손에 들어갔다. 1년 동안 바로잡아야 했던 갈림길이 너무 많이 어긋나 있었다. 셋은 마지막 방까지 가지 못했고, 덤블도어는 제때 돌아오지 못했다.</p>
       <p class="shown">돌을 손에 넣은 볼드모트는 첫 번째 삶보다 훨씬 일찍 돌아올 것이다. 나는 그 뒤에 무슨 일이 벌어지는지 알고 있었다. 하지만 이번에는 시간을 거슬러 줄 호현의 마법이 남아 있지 않았다.</p></div>
-      <p class="note">큰 갈림길과 6월을 위한 준비가 마지막 밤을 가릅니다. 📓 일기장에서 어긋난 갈림길을 확인해 보세요.</p>` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
+` : `<div class="crest">${hp ? '🩹' : '🌧️'}</div>
       <h2>${hp ? '쓰러진 겨울' : '꺼진 촛불'}</h2>
       <p class="sub">${esc(S.screen.date || '')}</p>
       <div class="prose"><p class="shown">${hp
         ? '몸이 더는 버티지 못했다. 폼프리 부인은 나를 의무실에 오래 눕혀 두었지만, 결국 집으로 돌려보내야 한다는 편지가 뉴몰든으로 날아갔다. 나는 호그와트 특급 창가에 앉아 멀어지는 성을 끝까지 바라보았다. 앞으로 무슨 일이 일어날지 아는 사람은 이제 성 안에 아무도 없었다.'
         : '어느 아침, 나는 침대에서 일어나지 못했다. 몸이 아픈 게 아니었다. 두 번째로 사는 이 7년을 혼자 짊어지는 일이 더는 감당되지 않았다. 커튼 너머에서 호현이 내 이름을 불렀지만, 나는 대답하지 못했다. 그 주가 끝나기 전에 나는 집으로 돌아가는 기차를 탔다.'}</p>
       <p class="shown">${esc(S.rewinds >= 3 ? '올해 호현의 몸이 견딜 수 있는 시간 역행은 이미 다 써 버린 뒤였다.' : '이번에는 시간을 되돌려 줄 사람이 없었다.')}</p></div>
-      <p class="note">❤️ 체력이나 💭 정신력이 0이 되면 호그와트를 떠나게 됩니다. 쉬고, 먹고, 친구와 웃는 것도 선택입니다.</p>`;
+`;
     const again = el('button', 'primary', loadPrologue() ? '처음부터 — 프롤로그 건너뛰기' : '처음부터 다시');
     again.addEventListener('click', () => { lastRes = null; if (loadPrologue()) Game.skipPrologue(); else Game.start(newState()); render(true); });
     box.appendChild(again);
@@ -465,7 +463,7 @@ const UI = (() => {
     const code = encodeChronicle(c);
     const wrap = el('div', 'chronicle');
     wrap.innerHTML = `<h3>📜 ${c.y}학년의 기록</h3>
-      <p class="hint">${saved ? '이 기기에 보관해 두었다. ' : ''}${c.y + 1}학년이 열리면, 게임이 업데이트되어도 이 기록 — 바로잡은 갈림길, 기억, 주문, 친밀도, 결말 — 을 이어 받아 시작한다. 다른 기기로 옮기거나 혹시 몰라 남겨 두려면 아래 코드를 복사해 두면 된다.</p>`;
+      <p class="hint">${c.y + 1}학년은 이 기록을 이어 받아 시작한다. 혹시 몰라 코드도 남겨 둘 수 있다.</p>`;
     const ta = el('textarea', 'chronicle-code');
     ta.readOnly = true;
     ta.value = code;
@@ -505,7 +503,7 @@ const UI = (() => {
       const S = Game.state();
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, '💾 저장 · 불러오기'));
-      box.appendChild(el('p', 'hint', '세 칸까지 남겨 둘 수 있다. 저장 칸은 게임 오버가 되어도 지워지지 않는다. (호현의 시간 역행과는 다르다 — 이건 나만 아는 책갈피다.)'));
+      box.appendChild(el('p', 'hint', '게임 오버가 되어도 지워지지 않는다.'));
       const canSave = S && S.screen && S.screen.kind !== 'gameover' && S.screen.kind !== 'yearEnd';
       const ul = el('ul', 'slots');
       for (let n = 1; n <= SLOT_COUNT; n++) {
@@ -541,8 +539,8 @@ const UI = (() => {
       const all = readChronicles();
       const ys = Object.keys(all).sort();
       box.appendChild(el('p', 'hint', ys.length
-        ? ys.map(y => `${y}학년 기록 보관됨 — ${({ true: '참된 길', bent: '휘어진 길' })[all[y].ending] || '끝까지 걸었다'}`).join('<br>') + '<br>다음 학년이 열리면 이 기록으로 이어서 시작한다.'
-        : '학년을 끝까지 마치면 기록이 여기에 보관된다. 다른 기기에서 받은 기록 코드는 아래에 붙여 넣는다.'));
+        ? ys.map(y => `${y}학년 기록 — ${({ true: '참된 길', bent: '휘어진 길' })[all[y].ending] || '끝까지 걸었다'}`).join('<br>')
+        : '학년을 마치면 기록이 여기에 남는다.'));
       const ta = el('textarea', 'chronicle-code');
       ta.placeholder = 'HP7-… 로 시작하는 기록 코드';
       box.appendChild(ta);
@@ -567,7 +565,7 @@ const UI = (() => {
       const S = Game.state();
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, '📓 일기장 — 내가 기억하는 길'));
-      box.appendChild(el('p', 'hint', '원작의 이야기가 어긋날 수 있는 갈림길들. 첫 번째 삶에서 호현과 내가 뒤에서 하나씩 바로잡았던 곳이다. 기한까지 아무것도 하지 않으면 어긋난다. 🌱는 네빌의 갈림길 — 우리가 놓쳤던 마지막 열쇠.'));
+      box.appendChild(el('p', 'hint', '기한까지 바로잡지 않으면 어긋난다. 🌱 네빌의 갈림길.'));
       const st = { tied: ['🧭', '바로잡음'], loose: ['〰️', '겨우 바로잡음'], cut: ['✖️', '어긋남'] };
       const ul = el('ul', 'knots');
       for (const k of Object.values(KNOTS).filter(k => (k.year || 1) === S.year)) {
@@ -582,7 +580,7 @@ const UI = (() => {
       box.appendChild(el('p', 'kv', `<span>🌱 네빌에게 심은 씨앗</span><b>${nev} / ${Object.values(KNOTS).filter(k => k.neville).length}</b>`));
       if (typeof PREPS !== 'undefined') {
         box.appendChild(el('h3', null, '🗝️ 6월을 위한 준비'));
-        box.appendChild(el('p', 'hint', '마지막 밤, 셋은 스스로 함정을 지나가야 한다. 내가 미리 심어 두지 않으면, 그날 밤 어둠 속에서 내가 직접 손을 써야 한다. 흔적이 남는다.'));
+        box.appendChild(el('p', 'hint', '심어 두지 않은 함정은 그날 밤 내가 직접 손을 써야 한다.'));
         const pu = el('ul', 'preps');
         for (const [id, p] of Object.entries(PREPS)) {
           const done = !!S.flags[id];
@@ -625,7 +623,7 @@ const UI = (() => {
       }
       if (!items.length) ul.appendChild(el('li', 'empty', '주머니가 비어 있다.'));
       box.appendChild(ul);
-      box.appendChild(el('p', 'hint', `🪙 ${S.res.galleon}갈레온. 성 안에 장이 서거나 쌍둥이가 다가올 때 쓸 수 있다.`));
+      box.appendChild(el('p', 'kv', `<span>🪙 갈레온</span><b>${S.res.galleon}</b>`));
       box.appendChild(el('h3', null, '🪄 되찾은 주문'));
       const sp = el('ul', 'items');
       S.spells.forEach(id => sp.appendChild(el('li', null, `<span class="ic">✨</span><div><b>${esc(SPELLS[id].name)}</b><small>${esc(SPELLS[id].desc)}</small></div>`)));
@@ -640,7 +638,6 @@ const UI = (() => {
       const res = el('ul', 'kvlist');
       res.innerHTML = `<li><span>❤️ 체력</span><b>${S.res.hp} / 5</b></li><li><span>💭 정신력</span><b>${S.res.mind} / 5</b></li><li><span>⭐ 평판</span><b>${Rules.REP_NAMES[S.res.rep]}</b></li><li><span>🪙 갈레온</span><b>${S.res.galleon}</b></li>${S.flags.rewind_known ? `<li><span>⏪ 호현의 시간 역행</span><b>올해 ${Game.REWINDS_PER_YEAR - (S.rewinds || 0)}번 남음</b></li>` : ''}`;
       box.appendChild(res);
-      box.appendChild(el('p', 'hint', '선택지에는 필요한 열쇠(물건·주문·기억·친밀도·평판)와 ⭐·🪙 대가, 얻는 것이 적혀 있다. ❤️·💭가 얼마나 드는지는 해 봐야 안다. 0이 되면 호그와트를 떠나야 한다. 휴게실에서 쉬고, 먹고, 친구와 웃고, 갈림길을 제대로 바로잡으면 채워진다. 평판은 교수님과 친구들이 나를 얼마나 믿는지 — 높으면 열리는 길이, 낮으면 말썽꾼들만 아는 길이 있다.'));
       const rels = Object.entries(S.rel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
       box.appendChild(el('h3', null, '💛 사람들'));
       const ru = el('ul', 'rels');
@@ -689,7 +686,7 @@ const UI = (() => {
       seg('글자 크기', 'fontSize', [['m', '보통'], ['l', '크게'], ['xl', '아주 크게']]);
       seg('화면', 'theme', [['auto', '자동'], ['light', '양피지'], ['dark', '밤']]);
       seg('연출 줄이기', 'reduceMotion', [[true, '켜기'], [false, '끄기']]);
-      box.appendChild(el('p', 'hint', '연출 줄이기를 켜 두면 화면이 흔들리거나 번쩍이는 효과가 모두 꺼집니다. 글이 나오는 중에 화면을 누르면 바로 전부 보입니다.'));
+      box.appendChild(el('p', 'hint', '글이 나오는 중에 화면을 누르면 바로 전부 보입니다.'));
       const sb = el('button', 'secondary', '💾 저장 · 불러오기');
       sb.addEventListener('click', () => openSheet('saves'));
       box.appendChild(sb);
@@ -703,7 +700,7 @@ const UI = (() => {
     startMode() {
       const box = el('div', 'sheet-content');
       box.appendChild(el('h3', null, '어디서부터 시작할까요?'));
-      box.appendChild(el('p', 'hint', '프롤로그(편지 · 다이애건 앨리 · 기차 · 기숙사 배정)를 건너뛰면, 지난번에 프롤로그에서 고른 지팡이 · 동물 · 물건 그대로 첫 주부터 시작합니다.'));
+      box.appendChild(el('p', 'hint', '건너뛰면 지난번에 고른 지팡이·동물·물건 그대로 첫 주부터 시작합니다.'));
       const skip = el('button', 'primary', '프롤로그 건너뛰기');
       skip.addEventListener('click', () => { closeSheet(); Game.skipPrologue(); render(true); });
       const full = el('button', 'secondary', '프롤로그부터');

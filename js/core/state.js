@@ -9,6 +9,80 @@ function defineEvents(list) {
   }
 }
 
+/* ── 저장소 — 이 기기의 브라우저 저장소 + (아티팩트에서) 나만 보는 클라우드 사본 ──
+   브라우저 저장소는 앱을 닫거나 기기를 바꾸면 사라질 수 있다. 그래서 같은 내용을
+   아티팩트의 개인 저장 공간(data/users/<나>/…)에도 남겨 두고, 켤 때 더 새 쪽을 가져온다. */
+const Store = (() => {
+  const mem = {};                                   // 브라우저 저장소를 못 쓰는 환경의 임시 보관
+  const META = 'hp7_store_at';                     // 키마다 마지막으로 쓴 시각
+  const CLOUD_IDS = { hp7_save_v9: 'auto', hp7_prologue_v9: 'prologue', hp7_slot_v9_1: 'slot1', hp7_slot_v9_2: 'slot2', hp7_slot_v9_3: 'slot3', hp7_chronicle: 'chronicle' };
+  const cloud = { col: null, pending: {}, writing: {}, timer: {} };
+  const lsGet = k => { try { const v = localStorage.getItem(k); return v != null ? v : (k in mem ? mem[k] : null); } catch (e) { return k in mem ? mem[k] : null; } };
+  const lsSet = (k, v) => { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) { /* 메모리에만 */ } };
+  const lsDel = k => { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { /* 무시 */ } };
+  const metaAll = () => { try { return JSON.parse(lsGet(META) || '{}') || {}; } catch (e) { return {}; } };
+  const metaSet = (k, at) => { const m = metaAll(); if (at == null) delete m[k]; else m[k] = at; lsSet(META, JSON.stringify(m)); };
+
+  function push(k, raw) {
+    const id = CLOUD_IDS[k];
+    if (!id || !cloud.col) return;
+    cloud.pending[id] = { raw, at: metaAll()[k] || Date.now() };
+    clearTimeout(cloud.timer[id]);
+    cloud.timer[id] = setTimeout(() => flush(id), id === 'auto' ? 1500 : 200);
+  }
+  async function flush(id) {
+    if (cloud.writing[id]) return;                   // 쓰는 중이면 끝난 뒤 다시 돈다
+    cloud.writing[id] = true;
+    try {
+      while (cloud.pending[id]) {
+        const { raw, at } = cloud.pending[id];
+        delete cloud.pending[id];
+        const ref = cloud.col.doc(id);
+        try {
+          if (raw == null) await ref.delete();
+          else await ref.set({ json: raw, at });
+        } catch (e) { if (e && e.code === 'unavailable') { await new Promise(r => setTimeout(r, 800 + Math.random() * 800)); try { if (raw == null) await ref.delete(); else await ref.set({ json: raw, at }); } catch (e2) { /* 포기 — 다음 저장 때 다시 */ } } }
+      }
+    } finally { cloud.writing[id] = false; }
+  }
+
+  return {
+    get: lsGet,
+    set(k, raw) { lsSet(k, raw); metaSet(k, Date.now()); push(k, raw); },
+    remove(k) { lsDel(k); metaSet(k, Date.now()); push(k, null); },
+    /* 켤 때 한 번: 클라우드와 맞춘다. 무언가 새로 가져왔으면 onChanged() */
+    async init(onChanged) {
+      try {
+        if (!window.claude || !window.claude.use) return false;
+        const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        if (!db || !user) return false;
+        const uid = await user.id();
+        if (!uid) return false;
+        const col = db.collection('data/users/' + uid);
+        const snap = await col.get();
+        const meta = metaAll();
+        const byId = {};
+        snap.docs.forEach(d => { if (d.exists) byId[d.id] = d.data(); });
+        let changed = false;
+        cloud.col = col;
+        for (const [k, id] of Object.entries(CLOUD_IDS)) {
+          const remote = byId[id];
+          const localAt = meta[k] || 0;
+          const localRaw = lsGet(k);
+          if (remote && typeof remote.json === 'string' && (remote.at || 0) > localAt) {
+            lsSet(k, remote.json); metaSet(k, remote.at); changed = true;       // 클라우드가 더 새것
+          } else if (localRaw != null && (!remote || localAt > (remote.at || 0))) {
+            push(k, localRaw);                                                   // 이 기기가 더 새것
+          }
+        }
+        if (changed && onChanged) onChanged();
+        return true;
+      } catch (e) { return false; }
+    },
+    get cloudReady() { return !!cloud.col; },
+  };
+})();
+
 const SAVE_KEY = 'hp7_save_v9';
 const SAVE_VERSION = 9;
 const PROLOGUE_KEY = 'hp7_prologue_v9';
@@ -33,26 +107,26 @@ function newState() {
 }
 
 function saveGame(S) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* 저장 불가 환경 */ }
+  Store.set(SAVE_KEY, JSON.stringify(S));
 }
 function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = Store.get(SAVE_KEY);
     if (!raw) return null;
     const S = JSON.parse(raw);
     return S && S.v === SAVE_VERSION ? S : null;
   } catch (e) { return null; }
 }
 function clearSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 무시 */ }
+  Store.remove(SAVE_KEY);
 }
 /* 프롤로그를 마친 상태 — 게임 오버 뒤 다시 할 때 건너뛰기용 */
 function savePrologue(S) {
-  try { localStorage.setItem(PROLOGUE_KEY, JSON.stringify(Object.assign({}, S, { screen: null }))); } catch (e) { /* 무시 */ }
+  Store.set(PROLOGUE_KEY, JSON.stringify(Object.assign({}, S, { screen: null })));
 }
 function loadPrologue() {
   try {
-    const raw = localStorage.getItem(PROLOGUE_KEY);
+    const raw = Store.get(PROLOGUE_KEY);
     const S = raw && JSON.parse(raw);
     return S && S.v === SAVE_VERSION ? S : null;
   } catch (e) { return null; }
@@ -63,19 +137,19 @@ const SLOT_COUNT = 3;
 const SLOT_KEY = n => `hp7_slot_v9_${n}`;
 function saveSlot(n, S, label) {
   try {
-    localStorage.setItem(SLOT_KEY(n), JSON.stringify({ at: Date.now(), label: label || '', state: S }));
+    Store.set(SLOT_KEY(n), JSON.stringify({ at: Date.now(), label: label || '', state: S }));
     return true;
   } catch (e) { return false; }
 }
 function readSlot(n) {
   try {
-    const raw = localStorage.getItem(SLOT_KEY(n));
+    const raw = Store.get(SLOT_KEY(n));
     const d = raw && JSON.parse(raw);
     return d && d.state && d.state.v === SAVE_VERSION ? d : null;
   } catch (e) { return null; }
 }
 function loadSlot(n) { const d = readSlot(n); return d ? JSON.parse(JSON.stringify(d.state)) : null; }
-function clearSlot(n) { try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) { /* 무시 */ } }
+function clearSlot(n) { Store.remove(SLOT_KEY(n)); }
 function anySlot() { for (let n = 1; n <= SLOT_COUNT; n++) if (readSlot(n)) return true; return false; }
 
 /* ── 학년 기록(연대기) — 버전이 바뀌어도 다음 학년으로 이어 가기 위한 것 ──
@@ -97,10 +171,10 @@ function makeChronicle(S) {
   };
 }
 function readChronicles() {
-  try { return JSON.parse(localStorage.getItem(CHRONICLE_KEY) || '{}') || {}; } catch (e) { return {}; }
+  try { return JSON.parse(Store.get(CHRONICLE_KEY) || '{}') || {}; } catch (e) { return {}; }
 }
 function saveChronicle(c) {
-  try { const all = readChronicles(); all[c.y] = c; localStorage.setItem(CHRONICLE_KEY, JSON.stringify(all)); return true; } catch (e) { return false; }
+  try { const all = readChronicles(); all[c.y] = c; Store.set(CHRONICLE_KEY, JSON.stringify(all)); return true; } catch (e) { return false; }
 }
 function latestChronicle() {
   const all = readChronicles();

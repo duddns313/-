@@ -228,7 +228,7 @@ const Rules = (() => {
         S.prepFrom = S.prepFrom || {};
         if (S.screen && S.screen.id) S.prepFrom[f] = S.screen.id;
       }
-      if (typeof PREPS !== 'undefined' && PREPS[f] && !S.flags[f]) chips.push({ t: `🗝️ 6월을 위한 준비 — ${PREPS[f].title}`, good: true, big: true, note: `${PREPS[f].trap}에서 ${PREPS[f].who}에게 피어날 것이다.` });
+      if (typeof PREPS !== 'undefined' && PREPS[f] && !S.flags[f]) chips.push({ t: `🗝️ 6월을 위한 준비 — ${PREPS[f].title}`, good: true, big: true });
       S.flags[f] = true;
     }
     if (fx.unflag) for (const f of asList(fx.unflag)) delete S.flags[f];

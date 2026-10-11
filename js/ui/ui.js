@@ -175,7 +175,7 @@ const UI = (() => {
       const b = el('button', `choice${lethal ? ' lethal' : ''}${fallback ? ' fallback' : ''}`);
       const opened = Rules.thanksFor(c.needs);
       if (opened.length) b.classList.add('opened');
-      b.innerHTML = `<div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}`;
+      b.innerHTML = `${opened.length ? `<div class="opened-by">🔓 ${esc(opened.join(' · '))} 덕분에 열린 길</div>` : ''}<div class="choice-label">${esc(T(c.label))}</div>${reqHtml(S, c)}`;
       b.addEventListener('click', () => {
         if (skipTyping()) return;
         box.querySelectorAll('button').forEach(x => { x.disabled = true; });
@@ -202,6 +202,7 @@ const UI = (() => {
     const c = ev.choices[sc.choice];
     const res = el('div', 'result');
     res.appendChild(el('div', 'picked', `<span>›</span> ${esc(T(c.label))}`));
+    if (sc.thanks && sc.thanks.length) res.appendChild(el('div', 'thanks', sc.thanks.map(t => `<div>✨ ${esc(t)} 덕분에</div>`).join('')));
     const prose = el('div', 'prose');
     res.appendChild(prose);
     art.appendChild(res);
